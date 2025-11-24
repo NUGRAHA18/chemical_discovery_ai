@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.log
+npm-debug.log*
+
+public/images/structures/*
+!public/images/structures/.gitkeep
+
+.DS_Store
+.vscode/
+.idea/
+
+dist/
+build/

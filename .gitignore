@@ -1,0 +1,33 @@
+```
+# Environment
+.env
+*.env.local
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Uploads
+backend/public/images/structures/*
+!backend/public/images/structures/.gitkeep
