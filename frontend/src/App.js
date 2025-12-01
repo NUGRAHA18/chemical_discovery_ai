@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import Discovery from "./pages/Discovery";
 import History from "./pages/History";
 import Favorites from "./pages/Favorites";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -62,7 +63,9 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
               <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
           <Footer />
