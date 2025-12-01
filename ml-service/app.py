@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 
 # RDKit for molecular visualization
 try:
@@ -40,7 +41,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyDA_kzzWiAPXiuK2VkiETifkSM8XAfq41A")
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    raise RuntimeError("GEMINI_API_KEY environment variable not set. "
+                       "Please set it before running the app.")
+
+genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 @dataclass
@@ -972,31 +978,52 @@ Tugasmu menganalisis input user dan mengekstrak konsep kimia utama dan SENYAWA S
             return "Justifikasi tidak dapat diselesaikan."
 
     def _extract_json(self, text: str) -> str:
-        """Extract JSON from LLM response dengan enhanced parsing"""
-        # Try multiple JSON extraction strategies
+        """Extract JSON dari response LLM dengan parsing yang lebih robust."""
+        # 1) Coba parse seluruh text langsung
+        try:
+            json.loads(text)
+            return text
+        except Exception:
+            pass
+
+        # 2) Coba ambil JSON di dalam code fence ```json ... ```
+        fence_match = re.search(
+            r"```(?:json)?\s*([\s\S]*?)```",
+            text,
+            re.IGNORECASE
+        )
+        if fence_match:
+            candidate = fence_match.group(1).strip()
+            try:
+                json.loads(candidate)
+                return candidate
+            except Exception:
+                pass
+
+        # 3) Coba cari JSON object / array pertama (non-greedy biar nggak kebanyakan)
         strategies = [
-            r'\[[\s\S]*\]',  # JSON array
-            r'\{[\s\S]*\}',  # JSON object
+            r'\{[\s\S]*?\}',  # JSON object
+            r'\[[\s\S]*?\]',  # JSON array
         ]
-        
         for pattern in strategies:
             json_match = re.search(pattern, text)
-            if json_match:
-                extracted = json_match.group(0)
-                # Validate it's parseable JSON
-                try:
-                    json.loads(extracted)
-                    return extracted
-                except:
-                    continue
-        
-        # Fallback: try to clean and parse the entire text
+            if not json_match:
+                continue
+
+            candidate = json_match.group(0)
+            try:
+                json.loads(candidate)
+                return candidate
+            except Exception:
+                continue
+
+        # 4) Fallback: bersihkan code fence kalau ada
         cleaned = text.strip()
         if cleaned.startswith('```json'):
             cleaned = cleaned[7:]
         if cleaned.endswith('```'):
             cleaned = cleaned[:-3]
-        
+
         return cleaned.strip()
 
     def test_enhanced_preprocessing(self, criteria: str):
@@ -1042,13 +1069,23 @@ def discover_chemicals():
                 'error': 'Missing required field: criteria',
                 'status': 'failed'
             }), 400
-        
-        user_input = data['criteria'].strip()
+
+        raw_criteria = data.get('criteria')
+
+        # Pastikan tidak None dan bisa dijadikan string
+        if raw_criteria is None:
+            return jsonify({
+                'error': 'Criteria cannot be null',
+                'status': 'failed'
+            }), 400
+
+        user_input = str(raw_criteria).strip()
         if not user_input:
             return jsonify({
                 'error': 'Criteria cannot be empty',
                 'status': 'failed'
             }), 400
+        
         
         logger.info(f"Processing enhanced discovery request: {user_input}")
         
