@@ -8,6 +8,8 @@ from typing import List, Dict
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
+import os
+from dotenv import load_dotenv
 
 try:
     from rdkit import Chem
@@ -34,7 +36,8 @@ CORS(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key="AIzaSyDA_kzzWiAPXiuK2VkiETifkSM8XAfq41A")
+load_dotenv()
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 @dataclass

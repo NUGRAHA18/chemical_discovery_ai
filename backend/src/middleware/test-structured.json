@@ -1,0 +1,20 @@
+{
+  "inputMode": "structured",
+  "structuredData": {
+    "category": "surfactant",
+    "boilingPoint": {
+      "min": 80,
+      "max": 120
+    },
+    "viscosity": {
+      "min": 10,
+      "max": 50
+    },
+    "solubility": "water-soluble",
+    "thermalStability": {
+      "min": 70
+    },
+    "additionalProperties": ["biodegradable", "non-toxic"],
+    "notes": "For industrial cleaning applications with low environmental impact"
+  }
+}

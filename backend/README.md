@@ -362,6 +362,75 @@ Content-Type: application/json
 }
 ```
 
+#### Hybrid Input - Structured Form Mode
+
+**Request:**
+
+```bash
+POST http://localhost:3000/api/discover
+Authorization: Bearer <your_token>
+Content-Type: application/json
+
+{
+  "inputMode": "structured",
+  "structuredData": {
+    "category": "surfactant",
+    "boilingPoint": {
+      "min": 80,
+      "max": 120
+    },
+    "viscosity": {
+      "min": 10,
+      "max": 50
+    },
+    "solubility": "water-soluble",
+    "thermalStability": {
+      "min": 70
+    },
+    "additionalProperties": [
+      "biodegradable",
+      "non-toxic"
+    ],
+    "notes": "For industrial cleaning applications"
+  }
+}
+```
+
+**Backend Processing:**
+
+1. Validate structured data (at least 1 field required)
+2. Convert to natural language criteria string
+3. Send to ML service
+4. Store both `structuredData` (original) and `criteria` (converted)
+
+**Converted Criteria:**
+
+```
+"Surfactant compound with boiling point between 80°C and 120°C,
+viscosity between 10 and 50 cP, water-soluble,
+thermal stability above 70°C, biodegradable, non-toxic,
+For industrial cleaning applications"
+```
+
+**Response:** Same as AI prompt mode (compounds, analysis, validation, etc.)
+
+#### Hybrid Input - AI Prompt Mode (Original)
+
+**Request:**
+
+```bash
+POST http://localhost:3000/api/discover
+Authorization: Bearer <your_token>
+Content-Type: application/json
+
+{
+  "inputMode": "ai-prompt",
+  "criteria": "biodegradable polymer for food packaging with barrier properties"
+}
+```
+
+**Note:** `inputMode` is optional, defaults to `"ai-prompt"` if not specified.
+
 ### 4. Get History with Pagination
 
 **Request:**
