@@ -1,337 +1,177 @@
-\# System Architecture
+# System Architecture
 
-\## High-Level Architecture
+## High-Level Architecture
 
 ```mermaid
-
 graph TB
+    subgraph "Client Layer"
+        A[React Frontend<br/>Port 80/443]
+    end
 
-&nbsp;   subgraph "Client Layer"
+    subgraph "API Layer"
+        B[Express.js Backend<br/>Port 3000]
+        B1[Auth Controller]
+        B2[Discovery Controller]
+        B3[History Controller]
+        B --> B1
+        B --> B2
+        B --> B3
+    end
 
-&nbsp;       A\[React Frontend<br/>Port 80/443]
+    subgraph "ML Layer"
+        C[Flask ML Service<br/>Port 5000]
+        C1[Multi-Agent System]
+        C --> C1
+    end
 
-&nbsp;   end
+    subgraph "Data Layer"
+        D[(MongoDB<br/>Database)]
+    end
 
-&nbsp;
+    subgraph "External Services"
+        E[Gemini AI<br/>Google]
+        F[PubChem<br/>Database API]
+        G[RDKit<br/>Library]
+    end
 
-&nbsp;   subgraph "API Layer"
+    A -->|HTTP + JWT| B
+    B -->|Mongoose| D
+    B -->|REST API| C
+    C -->|API Call| E
+    C -->|Search| F
+    C -->|Calculate| G
 
-&nbsp;       B\[Express.js Backend<br/>Port 3000]
-
-&nbsp;       B1\[Auth Controller]
-
-&nbsp;       B2\[Discovery Controller]
-
-&nbsp;       B3\[History Controller]
-
-&nbsp;       B --> B1
-
-&nbsp;       B --> B2
-
-&nbsp;       B --> B3
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "ML Layer"
-
-&nbsp;       C\[Flask ML Service<br/>Port 5000]
-
-&nbsp;       C1\[Multi-Agent System]
-
-&nbsp;       C --> C1
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "Data Layer"
-
-&nbsp;       D\[(MongoDB<br/>Database)]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "External Services"
-
-&nbsp;       E\[Gemini AI<br/>Google]
-
-&nbsp;       F\[PubChem<br/>Database API]
-
-&nbsp;       G\[RDKit<br/>Library]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   A -->|HTTP + JWT| B
-
-&nbsp;   B -->|Mongoose| D
-
-&nbsp;   B -->|REST API| C
-
-&nbsp;   C -->|API Call| E
-
-&nbsp;   C -->|Search| F
-
-&nbsp;   C -->|Calculate| G
-
-&nbsp;
-
-&nbsp;   style A fill:#61dafb
-
-&nbsp;   style B fill:#68a063
-
-&nbsp;   style C fill:#3776ab
-
-&nbsp;   style D fill:#47a248
-
-&nbsp;   style E fill:#4285f4
-
-&nbsp;   style F fill:#1e88e5
-
-&nbsp;   style G fill:#ff6f00
-
+    style A fill:#61dafb
+    style B fill:#68a063
+    style C fill:#3776ab
+    style D fill:#47a248
+    style E fill:#4285f4
+    style F fill:#1e88e5
+    style G fill:#ff6f00
 ```
 
-\## Discovery Flow
+## Discovery Flow
 
 ```mermaid
-
 sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant ML as ML Service
+    participant G as Gemini AI
+    participant P as PubChem
+    participant R as RDKit
+    participant DB as MongoDB
 
-&nbsp;   participant U as User
+    U->>F: Submit criteria
+    F->>B: POST /api/discover + JWT
+    B->>B: Verify JWT
+    B->>ML: POST /api/discover
 
-&nbsp;   participant F as Frontend
+    ML->>ML: Preprocess input
+    ML->>P: Search base compounds
+    P-->>ML: Compound data
 
-&nbsp;   participant B as Backend
+    ML->>G: Generate novel compounds
+    G-->>ML: 3 compounds (JSON)
 
-&nbsp;   participant ML as ML Service
+    ML->>R: Calculate properties
+    R-->>ML: MW, LogP, etc.
 
-&nbsp;   participant G as Gemini AI
+    ML->>R: Generate images
+    R-->>ML: Base64 images
 
-&nbsp;   participant P as PubChem
+    ML-->>B: Discovery result
 
-&nbsp;   participant R as RDKit
+    B->>B: Convert base64 to PNG
+    B->>B: Save images to disk
+    B->>DB: Save discovery
+    DB-->>B: Saved document
 
-&nbsp;   participant DB as MongoDB
-
-&nbsp;
-
-&nbsp;   U->>F: Submit criteria
-
-&nbsp;   F->>B: POST /api/discover + JWT
-
-&nbsp;   B->>B: Verify JWT
-
-&nbsp;   B->>ML: POST /api/discover
-
-&nbsp;
-
-&nbsp;   ML->>ML: Preprocess input
-
-&nbsp;   ML->>P: Search base compounds
-
-&nbsp;   P-->>ML: Compound data
-
-&nbsp;
-
-&nbsp;   ML->>G: Generate novel compounds
-
-&nbsp;   G-->>ML: 3 compounds (JSON)
-
-&nbsp;
-
-&nbsp;   ML->>R: Calculate properties
-
-&nbsp;   R-->>ML: MW, LogP, etc.
-
-&nbsp;
-
-&nbsp;   ML->>R: Generate images
-
-&nbsp;   R-->>ML: Base64 images
-
-&nbsp;
-
-&nbsp;   ML-->>B: Discovery result
-
-&nbsp;
-
-&nbsp;   B->>B: Convert base64 to PNG
-
-&nbsp;   B->>B: Save images to disk
-
-&nbsp;   B->>DB: Save discovery
-
-&nbsp;   DB-->>B: Saved document
-
-&nbsp;
-
-&nbsp;   B-->>F: Discovery + image paths
-
-&nbsp;   F-->>U: Display results
-
+    B-->>F: Discovery + image paths
+    F-->>U: Display results
 ```
 
-\## Data Model
+## Data Model
 
 ```mermaid
-
 erDiagram
+    USER ||--o{ DISCOVERY : creates
+    USER ||--o{ FAVORITE : saves
 
-&nbsp;   USER ||--o{ DISCOVERY : creates
+    USER {
+        ObjectId _id
+        string email
+        string password
+        string name
+        date lastLogin
+        date createdAt
+    }
 
-&nbsp;   USER ||--o{ FAVORITE : saves
+    DISCOVERY {
+        ObjectId _id
+        ObjectId userId
+        string criteria
+        object preprocessingAnalysis
+        string analysis
+        array compounds
+        object validation
+        string justification
+        date createdAt
+    }
 
-&nbsp;
-
-&nbsp;   USER {
-
-&nbsp;       ObjectId \_id
-
-&nbsp;       string email
-
-&nbsp;       string password
-
-&nbsp;       string name
-
-&nbsp;       date lastLogin
-
-&nbsp;       date createdAt
-
-&nbsp;   }
-
-&nbsp;
-
-&nbsp;   DISCOVERY {
-
-&nbsp;       ObjectId \_id
-
-&nbsp;       ObjectId userId
-
-&nbsp;       string criteria
-
-&nbsp;       object preprocessingAnalysis
-
-&nbsp;       string analysis
-
-&nbsp;       array compounds
-
-&nbsp;       object validation
-
-&nbsp;       string justification
-
-&nbsp;       date createdAt
-
-&nbsp;   }
-
-&nbsp;
-
-&nbsp;   FAVORITE {
-
-&nbsp;       ObjectId \_id
-
-&nbsp;       ObjectId userId
-
-&nbsp;       object compoundData
-
-&nbsp;       array tags
-
-&nbsp;       string notes
-
-&nbsp;       date createdAt
-
-&nbsp;   }
-
+    FAVORITE {
+        ObjectId _id
+        ObjectId userId
+        object compoundData
+        array tags
+        string notes
+        date createdAt
+    }
 ```
 
-\## Deployment Architecture (Future)
+## Deployment Architecture (Future)
 
 ```mermaid
-
 graph LR
+    subgraph "User Devices"
+        A[Web Browser]
+        B[Mobile Browser]
+    end
 
-&nbsp;   subgraph "User Devices"
+    subgraph "CDN"
+        C[Cloudflare/Vercel]
+    end
 
-&nbsp;       A\[Web Browser]
+    subgraph "Frontend"
+        D[React App<br/>Vercel/Netlify]
+    end
 
-&nbsp;       B\[Mobile Browser]
+    subgraph "Backend Services"
+        E[Express API<br/>Railway/Render]
+        F[Flask ML<br/>Railway/Render]
+    end
 
-&nbsp;   end
+    subgraph "Database"
+        G[(MongoDB Atlas)]
+    end
 
-&nbsp;
+    subgraph "Storage"
+        H[AWS S3<br/>Images]
+    end
 
-&nbsp;   subgraph "CDN"
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    E --> G
+    E --> H
 
-&nbsp;       C\[Cloudflare/Vercel]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "Frontend"
-
-&nbsp;       D\[React App<br/>Vercel/Netlify]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "Backend Services"
-
-&nbsp;       E\[Express API<br/>Railway/Render]
-
-&nbsp;       F\[Flask ML<br/>Railway/Render]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "Database"
-
-&nbsp;       G\[(MongoDB Atlas)]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   subgraph "Storage"
-
-&nbsp;       H\[AWS S3<br/>Images]
-
-&nbsp;   end
-
-&nbsp;
-
-&nbsp;   A --> C
-
-&nbsp;   B --> C
-
-&nbsp;   C --> D
-
-&nbsp;   D --> E
-
-&nbsp;   E --> F
-
-&nbsp;   E --> G
-
-&nbsp;   E --> H
-
-&nbsp;
-
-&nbsp;   style C fill:#f38020
-
-&nbsp;   style D fill:#61dafb
-
-&nbsp;   style E fill:#68a063
-
-&nbsp;   style F fill:#3776ab
-
-&nbsp;   style G fill:#47a248
-
-&nbsp;   style H fill:#ff9900
-
+    style C fill:#f38020
+    style D fill:#61dafb
+    style E fill:#68a063
+    style F fill:#3776ab
+    style G fill:#47a248
+    style H fill:#ff9900
 ```
