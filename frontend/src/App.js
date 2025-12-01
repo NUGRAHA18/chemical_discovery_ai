@@ -1,8 +1,19 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
-import Landing from './pages/Landing';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import Navbar from "./components/layout/Navbar";
+import Footer from "./components/layout/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Discovery from "./pages/Discovery";
 
 function App() {
   return (
@@ -13,7 +24,26 @@ function App() {
           <main className="flex-grow">
             <Routes>
               <Route path="/" element={<Landing />} />
-              {/* More routes will be added here */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/discover"
+                element={
+                  <ProtectedRoute>
+                    <Discovery />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
           <Footer />

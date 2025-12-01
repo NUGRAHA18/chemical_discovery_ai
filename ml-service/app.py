@@ -42,12 +42,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configure Gemini
+load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     raise RuntimeError("GEMINI_API_KEY environment variable not set. "
                        "Please set it before running the app.")
 
-load_dotenv()
+
+
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 @dataclass
