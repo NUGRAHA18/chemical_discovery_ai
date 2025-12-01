@@ -9,6 +9,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
+from dotenv import load_dotenv
 
 # RDKit for molecular visualization
 try:
@@ -46,8 +47,8 @@ if not api_key:
     raise RuntimeError("GEMINI_API_KEY environment variable not set. "
                        "Please set it before running the app.")
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.5-flash')
+load_dotenv()
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 @dataclass
 class CompoundRecommendation:
