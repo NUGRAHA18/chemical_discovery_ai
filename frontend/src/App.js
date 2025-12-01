@@ -14,6 +14,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Discovery from "./pages/Discovery";
+import History from "./pages/History";
+import Favorites from "./pages/Favorites";
 
 function App() {
   return (
@@ -40,6 +42,23 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Discovery />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <ProtectedRoute>
+                    <History />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/favorites"
+                element={
+                  <ProtectedRoute>
+                    <Favorites />
                   </ProtectedRoute>
                 }
               />
