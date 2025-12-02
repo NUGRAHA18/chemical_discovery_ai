@@ -1,36 +1,39 @@
-import { useState } from 'react';
-import { discoveryService } from '../services/discovery';
-import { favoritesService } from '../services/favorites';
-import StructuredForm from '../components/discovery/StructuredForm';
-import AIPromptForm from '../components/discovery/AIPromptForm';
-import CompoundCard from '../components/discovery/CompoundCard';
-import Loading from '../components/common/Loading';
+import { useState } from "react";
+import { discoveryService } from "../services/discovery";
+import { favoritesService } from "../services/favorites";
+import StructuredForm from "../components/discovery/StructuredForm";
+import AIPromptForm from "../components/discovery/AIPromptForm";
+import CompoundCard from "../components/discovery/CompoundCard";
+import Loading from "../components/common/Loading";
 
 const Discovery = () => {
-  const [inputMode, setInputMode] = useState('structured'); // 'structured' or 'ai-prompt'
+  const [inputMode, setInputMode] = useState("structured"); // 'structured' or 'ai-prompt'
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [discovery, setDiscovery] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleStructuredSubmit = async (structuredData) => {
     setLoading(true);
     setProgress(10);
-    setError('');
+    setError("");
     setDiscovery(null);
 
     try {
       setProgress(30);
       const response = await discoveryService.createDiscovery({
-        inputMode: 'structured',
-        structuredData
+        inputMode: "structured",
+        structuredData,
       });
 
       setProgress(90);
       setDiscovery(response.discovery);
       setProgress(100);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate compounds. Please try again.');
+      setError(
+        err.response?.data?.error ||
+          "Failed to generate compounds. Please try again."
+      );
     } finally {
       setLoading(false);
       setProgress(0);
@@ -40,21 +43,24 @@ const Discovery = () => {
   const handleAIPromptSubmit = async (criteria) => {
     setLoading(true);
     setProgress(10);
-    setError('');
+    setError("");
     setDiscovery(null);
 
     try {
       setProgress(30);
       const response = await discoveryService.createDiscovery({
-        inputMode: 'ai-prompt',
-        criteria
+        inputMode: "ai-prompt",
+        criteria,
       });
 
       setProgress(90);
       setDiscovery(response.discovery);
       setProgress(100);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate compounds. Please try again.');
+      setError(
+        err.response?.data?.error ||
+          "Failed to generate compounds. Please try again."
+      );
     } finally {
       setLoading(false);
       setProgress(0);
@@ -63,6 +69,16 @@ const Discovery = () => {
 
   const handleAddToFavorites = async (compound) => {
     try {
+      const existing = await favoritesService.getFavorites();
+      const isDuplicate = existing.favorites?.some(
+        (fav) => fav.compoundData.smiles === compound.smiles
+      );
+
+      if (isDuplicate) {
+        alert("This compound is already in your favorites!");
+        return;
+      }
+
       await favoritesService.addFavorite({
         compoundData: {
           name: compound.name,
@@ -73,27 +89,38 @@ const Discovery = () => {
           modifications: compound.modifications,
           molecular_weight: compound.molecular_weight,
           logp: compound.logp,
-          structure_image: compound.structure_image
+          structure_image: compound.structure_image,
         },
-        tags: ['from-discovery'],
-        notes: 'Added from discovery'
+        tags: ["from-discovery"],
+        notes: "Added from discovery",
       });
-      alert('Added to favorites successfully!');
+      alert("Added to favorites successfully!");
     } catch (err) {
-      alert('Failed to add to favorites: ' + (err.response?.data?.error || 'Unknown error'));
+      alert(
+        "Failed to add to favorites: " +
+          (err.response?.data?.error || "Unknown error")
+      );
     }
   };
 
   const handleExport = async (format) => {
-    if (!discovery) return;
+    if (!discovery || !discovery._id) {
+      alert("No discovery to export");
+      return;
+    }
 
     try {
-      const blob = format === 'json' 
-        ? await discoveryService.exportJSON(discovery._id)
-        : await discoveryService.exportCSV(discovery._id);
-      
+      const blob =
+        format === "json"
+          ? await discoveryService.exportJSON(discovery._id)
+          : await discoveryService.exportCSV(discovery._id);
+
+      if (!blob || blob.size === 0) {
+        throw new Error("Export data is empty");
+      }
+
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `discovery-${discovery._id}.${format}`;
       document.body.appendChild(a);
@@ -101,14 +128,13 @@ const Discovery = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      alert('Export failed: ' + (err.message || 'Unknown error'));
+      alert("Export failed: " + (err.message || "Unknown error"));
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -125,21 +151,21 @@ const Discovery = () => {
             <h2 className="text-xl font-semibold text-gray-900">Input Mode</h2>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setInputMode('structured')}
+                onClick={() => setInputMode("structured")}
                 className={`px-4 py-2 rounded-md transition-colors ${
-                  inputMode === 'structured'
-                    ? 'bg-white text-primary-600 shadow-sm font-medium'
-                    : 'text-gray-600 hover:text-gray-900'
+                  inputMode === "structured"
+                    ? "bg-white text-primary-600 shadow-sm font-medium"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 📋 Structured Form
               </button>
               <button
-                onClick={() => setInputMode('ai-prompt')}
+                onClick={() => setInputMode("ai-prompt")}
                 className={`px-4 py-2 rounded-md transition-colors ${
-                  inputMode === 'ai-prompt'
-                    ? 'bg-white text-primary-600 shadow-sm font-medium'
-                    : 'text-gray-600 hover:text-gray-900'
+                  inputMode === "ai-prompt"
+                    ? "bg-white text-primary-600 shadow-sm font-medium"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 💬 AI Prompt
@@ -148,8 +174,11 @@ const Discovery = () => {
           </div>
 
           {/* Form Display */}
-          {inputMode === 'structured' ? (
-            <StructuredForm onSubmit={handleStructuredSubmit} loading={loading} />
+          {inputMode === "structured" ? (
+            <StructuredForm
+              onSubmit={handleStructuredSubmit}
+              loading={loading}
+            />
           ) : (
             <AIPromptForm onSubmit={handleAIPromptSubmit} loading={loading} />
           )}
@@ -195,13 +224,13 @@ const Discovery = () => {
               </h2>
               <div className="flex space-x-2">
                 <button
-                  onClick={() => handleExport('json')}
+                  onClick={() => handleExport("json")}
                   className="btn-outline text-sm"
                 >
                   📥 Export JSON
                 </button>
                 <button
-                  onClick={() => handleExport('csv')}
+                  onClick={() => handleExport("csv")}
                   className="btn-outline text-sm"
                 >
                   📥 Export CSV
@@ -241,7 +270,6 @@ const Discovery = () => {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

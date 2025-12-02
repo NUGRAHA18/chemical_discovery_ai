@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../../utils/constants";
 
 const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -32,7 +33,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
       {compoundData.structure_image && (
         <div className="mb-4 bg-gray-50 rounded-lg p-4 flex justify-center">
           <img
-            src={`http://localhost:3000${compoundData.structure_image}`}
+            src={`${API_BASE_URL}${compoundData.structure_image}`}
             alt={compoundData.name}
             className="max-w-full h-auto"
             onError={(e) => (e.target.style.display = "none")}

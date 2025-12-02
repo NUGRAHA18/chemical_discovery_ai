@@ -11,7 +11,22 @@ const app = express();
 connectDB();
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN }));
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? ["https://your-frontend-domain.com"] //add domain
+    : ["http://localhost:3001", "http://localhost:3000"];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(compression());
 app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));

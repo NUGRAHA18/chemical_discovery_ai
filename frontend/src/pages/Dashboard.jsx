@@ -24,14 +24,6 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loading size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,6 +41,13 @@ const Dashboard = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Total Discoveries
             </h3>
+            {loading ? (
+              <div className="animate-pulse bg-gray-200 h-10 w-20 rounded"></div>
+            ) : (
+              <p className="text-4xl font-bold">
+                {stats?.totalDiscoveries || 0}
+              </p>
+            )}
             <p className="text-4xl font-bold text-primary-600">
               {stats?.totalDiscoveries || 0}
             </p>

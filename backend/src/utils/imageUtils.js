@@ -1,54 +1,77 @@
-const fs = require('fs').promises;
-const path = require('path');
-const sharp = require('sharp');
-const { v4: uuidv4 } = require('uuid');
+const path = require("path");
+const fs = require("fs");
+const sharp = require("sharp");
 
-const UPLOAD_DIR = process.env.UPLOAD_PATH || './public/images/structures';
-
-const ensureUploadDir = async () => {
+/**
+ * Save base64 image to disk
+ */
+const saveBase64Image = async (base64Data, compoundId) => {
   try {
-    await fs.access(UPLOAD_DIR);
-  } catch {
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  }
-};
-
-const imageUtils = {
-  saveBase64Image: async (base64String) => {
-    if (!base64String) return null;
-
-    await ensureUploadDir();
-
-    const matches = base64String.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!matches) {
-      throw new Error('Invalid base64 image format');
+    if (!base64Data) {
+      console.log("No base64 data provided");
+      return null;
     }
 
-    const [, extension, data] = matches;
-    const buffer = Buffer.from(data, 'base64');
+    // Create directory if not exists
+    const imageDir = path.join(__dirname, "../../public/images/structures");
+    if (!fs.existsSync(imageDir)) {
+      console.log("Creating images directory:", imageDir);
+      fs.mkdirSync(imageDir, { recursive: true });
+    }
 
-    const filename = `${uuidv4()}.png`;
-    const filepath = path.join(UPLOAD_DIR, filename);
+    // Generate filename
+    const filename = `${compoundId}-${Date.now()}.png`;
+    const filePath = path.join(imageDir, filename); // FIXED: was undefined!
 
+    console.log("Saving image to:", filePath);
+
+    // Remove base64 prefix if exists
+    const base64String = base64Data.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(base64String, "base64");
+
+    // Save and optimize image
     await sharp(buffer)
-      .png({ quality: 90 })
-      .resize(300, 300, { fit: 'inside' })
-      .toFile(filepath);
+      .resize(300, 300)
+      .png({ compressionLevel: 9, quality: 80 })
+      .toFile(filePath);
 
+    console.log("Image saved successfully:", filename);
     return `/images/structures/${filename}`;
-  },
-
-  deleteImage: async (imagePath) => {
-    if (!imagePath) return;
-
-    try {
-      const filename = path.basename(imagePath);
-      const filepath = path.join(UPLOAD_DIR, filename);
-      await fs.unlink(filepath);
-    } catch (error) {
-      console.error('Delete image error:', error.message);
-    }
+  } catch (error) {
+    console.error("Save image error:", error);
+    return null;
   }
 };
 
-module.exports = imageUtils;
+/**
+ * Generate structure image from SMILES (future use)
+ */
+const generateStructureImage = async (smiles, compoundId) => {
+  try {
+    if (!smiles) {
+      return null;
+    }
+
+    // Create directory if not exists
+    const imageDir = path.join(__dirname, "../../public/images/structures");
+    if (!fs.existsSync(imageDir)) {
+      fs.mkdirSync(imageDir, { recursive: true });
+    }
+
+    const filename = `${compoundId}-${Date.now()}.png`;
+    const filePath = path.join(imageDir, filename);
+
+    // Note: This requires ML service with image generation endpoint
+    // For now, return null and rely on base64 from ML service
+
+    return null;
+  } catch (error) {
+    console.error("Image generation error:", error);
+    return null;
+  }
+};
+
+module.exports = {
+  saveBase64Image,
+  generateStructureImage,
+};

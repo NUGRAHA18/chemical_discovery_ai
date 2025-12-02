@@ -48,7 +48,7 @@ const Footer = () => {
             <h3 className="text-white font-semibold mb-4">Team</h3>
             <p className="text-sm">Cleo, Afif, Eska, Agung, Faris</p>
             <p className="text-xs mt-2 text-gray-400">
-              Capstone Project - Dicoding 2025
+              Capstone Project - Asah led by Dicoding 2025
             </p>
           </div>
         </div>
