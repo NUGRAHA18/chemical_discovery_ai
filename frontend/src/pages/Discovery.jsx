@@ -5,6 +5,9 @@ import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
 import Loading from "../components/common/Loading";
+import { showSuccess, showError } from "../utils/toast";
+import { useComparison } from "../contexts/ComparisonContext";
+import ComparisonModal from "../components/discovery/ComparisonModal";
 
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured"); // 'structured' or 'ai-prompt'
@@ -12,6 +15,8 @@ const Discovery = () => {
   const [progress, setProgress] = useState(0);
   const [discovery, setDiscovery] = useState(null);
   const [error, setError] = useState("");
+  const [showComparison, setShowComparison] = useState(false);
+  const { comparisonList } = useComparison();
 
   const handleStructuredSubmit = async (structuredData) => {
     setLoading(true);
@@ -75,7 +80,7 @@ const Discovery = () => {
       );
 
       if (isDuplicate) {
-        alert("This compound is already in your favorites!");
+        showError("This compound is already in your favorites!");
         return;
       }
 
@@ -94,18 +99,15 @@ const Discovery = () => {
         tags: ["from-discovery"],
         notes: "Added from discovery",
       });
-      alert("Added to favorites successfully!");
+      showSuccess("Added to favorites successfully!");
     } catch (err) {
-      alert(
-        "Failed to add to favorites: " +
-          (err.response?.data?.error || "Unknown error")
-      );
+      showError("Failed to add to favorites: " + err.response?.data?.error);
     }
   };
 
   const handleExport = async (format) => {
     if (!discovery || !discovery._id) {
-      alert("No discovery to export");
+      showError("No discovery to export");
       return;
     }
 
@@ -128,7 +130,7 @@ const Discovery = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      alert("Export failed: " + (err.message || "Unknown error"));
+      showError("Export failed: " + err.message);
     }
   };
 
@@ -219,10 +221,18 @@ const Discovery = () => {
           <div>
             {/* Results Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Generated Compounds ({discovery.compounds?.length || 0})
               </h2>
               <div className="flex space-x-2">
+                {comparisonList.length > 0 && (
+                  <button
+                    onClick={() => setShowComparison(true)}
+                    className="btn-secondary text-sm"
+                  >
+                    ⚖️ Compare ({comparisonList.length})
+                  </button>
+                )}
                 <button
                   onClick={() => handleExport("json")}
                   className="btn-outline text-sm"
@@ -237,6 +247,12 @@ const Discovery = () => {
                 </button>
               </div>
             </div>
+
+            {/* Comparison Modal */}
+            <ComparisonModal
+              isOpen={showComparison}
+              onClose={() => setShowComparison(false)}
+            />
 
             {/* Compounds Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

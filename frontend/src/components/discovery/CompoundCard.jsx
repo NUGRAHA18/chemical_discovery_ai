@@ -1,5 +1,19 @@
 import { API_BASE_URL } from "../../utils/constants";
+import { useComparison } from "../../contexts/ComparisonContext";
+import { showSuccess, showError } from "../../utils/toast";
+
 const CompoundCard = ({ compound, onAddToFavorites }) => {
+  const { addToComparison } = useComparison();
+
+  const handleAddToComparison = () => {
+    const result = addToComparison(compound);
+    if (result.success) {
+      showSuccess(result.message);
+    } else {
+      showError(result.message);
+    }
+  };
+
   const {
     name,
     formula,
@@ -114,6 +128,13 @@ const CompoundCard = ({ compound, onAddToFavorites }) => {
       <div className="mb-4 p-2 bg-gray-100 rounded font-mono text-xs break-all text-gray-600">
         {smiles}
       </div>
+
+      <button
+        onClick={handleAddToComparison}
+        className="btn-outline w-full mb-2"
+      >
+        ⚖️ Add to Compare
+      </button>
 
       {/* Action Button */}
       <button

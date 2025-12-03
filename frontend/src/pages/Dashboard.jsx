@@ -4,9 +4,9 @@ import { useAuth } from "../contexts/AuthContext";
 import { discoveryService } from "../services/discovery";
 import { useChartData } from "../utils/useChartData";
 import Loading from "../components/common/Loading";
-import LineChart from "../components/charts/LineChart";
-import DoughnutChart from "../components/charts/DoughnutChart";
-import BarChart from "../components/charts/BarChart";
+import LineChart from "../components/chart/LineChart";
+import DoughnutChart from "../components/chart/DoughnutChart";
+import BarChart from "../components/chart/BarChart";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -38,14 +38,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.name || "Researcher"}!
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 mt-2 dark:text-gray-400">
             Your chemical discovery dashboard
           </p>
         </div>
@@ -59,7 +59,7 @@ const Dashboard = () => {
               </h3>
               <span className="text-2xl">🧪</span>
             </div>
-            <p className="text-4xl font-bold text-primary-600">
+            <p className="text-4xl font-bold text-primary-600 dark:text-gray-400">
               {stats?.totalDiscoveries || 0}
             </p>
             <p className="text-sm text-gray-500 mt-2">All time</p>
@@ -72,10 +72,12 @@ const Dashboard = () => {
               </h3>
               <span className="text-2xl">⚗️</span>
             </div>
-            <p className="text-4xl font-bold text-secondary-600">
+            <p className="text-4xl font-bold text-secondary-600 dark:text-gray-400">
               {stats?.totalCompounds || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Generated</p>
+            <p className="text-sm text-gray-500 mt-2 dark:text-gray-400">
+              Generated
+            </p>
           </div>
 
           <div className="card">
@@ -85,13 +87,15 @@ const Dashboard = () => {
               </h3>
               <span className="text-2xl">✓</span>
             </div>
-            <p className="text-4xl font-bold text-accent-600">
+            <p className="text-4xl font-bold text-accent-600 dark:text-gray-400">
               {stats?.avgConfidence
                 ? (stats.avgConfidence * 100).toFixed(0)
                 : 0}
               %
             </p>
-            <p className="text-sm text-gray-500 mt-2">Validation score</p>
+            <p className="text-sm text-gray-500 mt-2 dark:text-gray-400">
+              Validation score
+            </p>
           </div>
 
           <div className="card">
@@ -99,10 +103,12 @@ const Dashboard = () => {
               <h3 className="text-sm font-medium text-gray-600">This Week</h3>
               <span className="text-2xl">📊</span>
             </div>
-            <p className="text-4xl font-bold text-blue-600">
+            <p className="text-4xl font-bold text-blue-600 dark:text-gray-400">
               {chartData?.activity?.thisWeek || 0}
             </p>
-            <p className="text-sm text-gray-500 mt-2">Recent activity</p>
+            <p className="text-sm text-gray-500 mt-2 dark:text-gray-400">
+              Recent activity
+            </p>
           </div>
         </div>
 
@@ -110,7 +116,7 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-6">
           {/* Discoveries Over Time */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-white">
               Discoveries Over Time (Last 7 Days)
             </h2>
             {chartData?.timeline ? (
@@ -124,7 +130,7 @@ const Dashboard = () => {
 
           {/* Input Mode Distribution */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-white">
               Input Mode Distribution
             </h2>
             {chartData?.inputMode ? (
@@ -141,7 +147,7 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Confidence Score Distribution */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-white">
               Confidence Score Distribution
             </h2>
             {chartData?.confidence ? (
@@ -155,7 +161,7 @@ const Dashboard = () => {
 
           {/* Quick Stats */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 dark:text-white">
               Quick Stats
             </h2>
             <div className="space-y-4">
@@ -198,7 +204,7 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="card">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 dark:text-white">
             Quick Actions
           </h2>
           <div className="grid md:grid-cols-3 gap-4">
@@ -210,7 +216,9 @@ const Dashboard = () => {
               <h3 className="font-semibold text-primary-700 mb-1">
                 Start Discovery
               </h3>
-              <p className="text-sm text-gray-600">Generate new compounds</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Generate new compounds
+              </p>
             </Link>
             <Link
               to="/history"
@@ -220,7 +228,9 @@ const Dashboard = () => {
               <h3 className="font-semibold text-secondary-700 mb-1">
                 View History
               </h3>
-              <p className="text-sm text-gray-600">Browse discoveries</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Browse discoveries
+              </p>
             </Link>
             <Link
               to="/favorites"

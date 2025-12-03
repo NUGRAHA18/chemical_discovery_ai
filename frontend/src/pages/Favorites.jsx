@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { favoritesService } from "../services/favorites";
 import FavoriteCard from "../components/favorites/FavoriteCard";
 import Loading from "../components/common/Loading";
+import { showError } from "../utils/toast";
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
@@ -39,7 +40,7 @@ const Favorites = () => {
       await favoritesService.updateFavorite(id, updates);
       loadFavorites();
     } catch (error) {
-      alert("Failed to update favorite");
+      showError("Failed to delete favorite");
     }
   };
 
@@ -50,7 +51,7 @@ const Favorites = () => {
       await favoritesService.deleteFavorite(id);
       setFavorites(favorites.filter((f) => f._id !== id));
     } catch (error) {
-      alert("Failed to delete favorite");
+      showError("Failed to update favorite");
     }
   };
 

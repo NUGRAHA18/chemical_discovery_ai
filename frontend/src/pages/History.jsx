@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { discoveryService } from "../services/discovery";
 import { favoritesService } from "../services/favorites";
+import { showSuccess, showError } from "../utils/toast";
 import HistoryList from "../components/history/HistoryList";
 import DetailModal from "../components/history/DetailModal";
 import Loading from "../components/common/Loading";
-import { useDebounce } from "../utils/hooks";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
@@ -12,13 +12,8 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedDiscovery, setSelectedDiscovery] = useState(null);
-  const debouncedSearch = useDebounce(search, 500);
 
-  useEffect(() => {
-    loadData();
-  }, [debouncedSearch]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [historyData, statsData] = await Promise.all([
@@ -32,15 +27,20 @@ const History = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleDelete = async (id) => {
     try {
       await discoveryService.deleteDiscovery(id);
       setDiscoveries(discoveries.filter((d) => d._id !== id));
       loadData(); // Reload stats
+      showSuccess("Discovery deleted successfully");
     } catch (error) {
-      alert("Failed to delete discovery");
+      showError("Failed to delete discovery");
     }
   };
 
@@ -61,9 +61,9 @@ const History = () => {
         tags: ["from-history"],
         notes: "Added from history",
       });
-      alert("Added to favorites!");
+      showSuccess("Added to favorites!");
     } catch (error) {
-      alert("Failed to add to favorites");
+      showError("Failed to add to favorites");
     }
   };
 
