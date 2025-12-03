@@ -54,7 +54,7 @@ if not api_key:
 genai.configure(api_key=api_key)  # ✅ FIXED: was 'gemini_key'
 
 # Initialize model GLOBALLY
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 print("✓ Gemini AI configured successfully")
 

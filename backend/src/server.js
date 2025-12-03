@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
 const connectDB = require("./config/database");
+const path = require("path");
 
 const app = express();
 
@@ -27,11 +28,25 @@ app.use(
     credentials: true,
   })
 );
+// === Body Parser ===
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(compression());
 app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use("/images", express.static("public/images"));
+app.use(
+  "/images",
+  (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header("Cross-Origin-Resource-Policy", "cross-origin");
+    next();
+  },
+  express.static(path.join(__dirname, "../public/images"))
+);
 
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/discover", require("./routes/discovery.routes"));
