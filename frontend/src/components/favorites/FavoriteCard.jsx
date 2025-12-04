@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { API_BASE_URL } from "../../utils/constants";
+import MoleculeViewer3DModal from "../discovery/MoleculeViewer3DModal";
 
 const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(favorite.notes || "");
   const [tags, setTags] = useState(favorite.tags?.join(", ") || "");
+  const [show3D, setShow3D] = useState(false);
 
   const handleSave = () => {
     const tagsArray = tags
@@ -119,6 +121,12 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
         ) : (
           <>
             <button
+              onClick={() => setShow3D(true)}
+              className="btn-secondary flex-1 text-sm"
+            >
+              🧬 3D
+            </button>
+            <button
               onClick={() => setIsEditing(true)}
               className="btn-outline flex-1 text-sm"
             >
@@ -133,6 +141,13 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
           </>
         )}
       </div>
+
+      {/* 3D Modal */}
+      <MoleculeViewer3DModal
+        isOpen={show3D}
+        onClose={() => setShow3D(false)}
+        compound={favorite.compoundData}
+      />
     </div>
   );
 };
