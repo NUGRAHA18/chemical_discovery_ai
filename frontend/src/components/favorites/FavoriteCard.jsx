@@ -68,9 +68,11 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
               : "N/A"}
           </p>
         </div>
-        <div className="bg-secondary-50 rounded-lg p-3">
-          <p className="text-xs text-secondary-600 font-medium">LogP</p>
-          <p className="text-lg font-bold text-secondary-900">
+        <div className="bg-secondary-50 dark:bg-secondary-900/20 rounded-lg p-3">
+          <p className="text-xs text-secondary-600 dark:text-secondary-400 font-medium">
+            LogP
+          </p>
+          <p className="text-lg font-bold text-secondary-900 dark:text-secondary-300">
             {compoundData.logp !== null && compoundData.logp !== undefined
               ? compoundData.logp.toFixed(2)
               : "N/A"}
@@ -93,7 +95,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
             {favorite.tags?.map((tag, idx) => (
               <span
                 key={idx}
-                className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                className="px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 text-xs rounded-full"
               >
                 {tag}
               </span>
@@ -113,7 +115,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
             className="input-field resize-none text-sm"
           />
         ) : (
-          <p className="text-sm text-gray-600 italic">
+          <p className="text-sm text-gray-600 dark:text-gray-400 italic">
             {favorite.notes || "No notes"}
           </p>
         )}

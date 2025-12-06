@@ -13,8 +13,11 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Hook fetch & process data sendiri
-  const { chartData, loading: chartsLoading } = useChartData();
+  const {
+    chartData,
+    loading: chartsLoading,
+    error: chartsError,
+  } = useChartData();
 
   useEffect(() => {
     loadStats();
@@ -42,7 +45,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.name || "Researcher"}!
@@ -52,7 +54,12 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Stats Cards */}
+        {chartsError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
+            ⚠️ Failed to load chart data: {chartsError}
+          </div>
+        )}
+
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="card">
             <div className="flex items-center justify-between mb-2">
@@ -118,9 +125,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts Row 1 */}
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {/* Discoveries Over Time */}
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Discoveries Over Time (Last 7 Days)
@@ -128,13 +133,19 @@ const Dashboard = () => {
             {chartData?.timeline ? (
               <LineChart data={chartData.timeline} />
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-600">
-                No data available
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                <div className="text-4xl mb-2">📊</div>
+                <p className="text-sm">No discoveries yet</p>
+                <Link
+                  to="/discover"
+                  className="text-primary-600 dark:text-primary-400 text-sm mt-2 hover:underline"
+                >
+                  Create your first discovery →
+                </Link>
               </div>
             )}
           </div>
 
-          {/* Input Mode Distribution */}
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Input Mode Distribution
@@ -142,16 +153,21 @@ const Dashboard = () => {
             {chartData?.inputMode ? (
               <DoughnutChart data={chartData.inputMode} />
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-600">
-                No data available
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                <div className="text-4xl mb-2">📋</div>
+                <p className="text-sm">No data available</p>
+                <Link
+                  to="/discover"
+                  className="text-primary-600 dark:text-primary-400 text-sm mt-2 hover:underline"
+                >
+                  Start discovering →
+                </Link>
               </div>
             )}
           </div>
         </div>
 
-        {/* Charts Row 2 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Confidence Score Distribution */}
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Confidence Score Distribution
@@ -159,13 +175,19 @@ const Dashboard = () => {
             {chartData?.confidence ? (
               <BarChart data={chartData.confidence} />
             ) : (
-              <div className="h-64 flex items-center justify-center text-gray-400 dark:text-gray-600">
-                No data available
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                <div className="text-4xl mb-2">📈</div>
+                <p className="text-sm">No data available</p>
+                <Link
+                  to="/discover"
+                  className="text-primary-600 dark:text-primary-400 text-sm mt-2 hover:underline"
+                >
+                  Generate compounds →
+                </Link>
               </div>
             )}
           </div>
 
-          {/* Quick Stats */}
           <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Quick Stats
@@ -201,14 +223,15 @@ const Dashboard = () => {
                   {chartData?.inputMode?.datasets?.[0]?.data?.[0] >
                   chartData?.inputMode?.datasets?.[0]?.data?.[1]
                     ? "Structured"
-                    : "AI Prompt"}
+                    : chartData?.inputMode?.datasets?.[0]?.data?.[1] > 0
+                    ? "AI Prompt"
+                    : "N/A"}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="card">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
             Quick Actions

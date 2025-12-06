@@ -10,7 +10,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - add token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -24,19 +23,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const shouldLogout = window.confirm(
-        "Your session has expired. Click OK to login again."
-      );
-      if (shouldLogout) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-      }
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login?session=expired";
     }
     return Promise.reject(error);
   }

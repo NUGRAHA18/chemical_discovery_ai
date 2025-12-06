@@ -41,10 +41,12 @@ const DetailModal = ({ discovery, onClose, onAddToFavorites, onExportPDF }) => {
         <div className="p-6 space-y-6">
           {/* Criteria */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Criteria
             </h3>
-            <p className="text-gray-700">{discovery.criteria}</p>
+            <p className="text-gray-700 dark:text-gray-300">
+              {discovery.criteria}
+            </p>
           </div>
 
           {/* Compounds */}

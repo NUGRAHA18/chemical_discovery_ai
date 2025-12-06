@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { favoritesService } from "../services/favorites";
 import FavoriteCard from "../components/favorites/FavoriteCard";
 import Loading from "../components/common/Loading";
-import { showError } from "../utils/toast";
+import { showError, showSuccess } from "../utils/toast";
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
@@ -12,15 +12,23 @@ const Favorites = () => {
 
   useEffect(() => {
     loadFavorites();
-  }, [selectedTags]);
+  }, []);
 
   const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
       const data = await favoritesService.getFavorites();
-      setFavorites(data.favorites || []);
+      const favs = data.favorites || [];
+      setFavorites(favs);
+
+      const tags = new Set();
+      favs.forEach((fav) => {
+        fav.tags?.forEach((tag) => tags.add(tag));
+      });
+      setAvailableTags(Array.from(tags));
     } catch (error) {
       console.error("Failed to load favorites:", error);
+      showError("Failed to load favorites");
     } finally {
       setLoading(false);
     }
@@ -58,21 +66,28 @@ const Favorites = () => {
     );
   };
 
+  const filteredFavorites =
+    selectedTags.length > 0
+      ? favorites.filter((fav) =>
+          fav.tags?.some((tag) => selectedTags.includes(tag))
+        )
+      : favorites;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Favorite Compounds
           </h1>
-          <p className="text-gray-600">Manage your saved compounds</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage your saved compounds
+          </p>
         </div>
 
-        {/* Tag Filter */}
         {availableTags.length > 0 && (
           <div className="card mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Filter by Tags:
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -83,7 +98,7 @@ const Favorites = () => {
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     selectedTags.includes(tag)
                       ? "bg-primary-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
                   }`}
                 >
                   {tag}
@@ -92,7 +107,7 @@ const Favorites = () => {
               {selectedTags.length > 0 && (
                 <button
                   onClick={() => setSelectedTags([])}
-                  className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                  className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800"
                 >
                   Clear Filters
                 </button>
@@ -101,14 +116,13 @@ const Favorites = () => {
           </div>
         )}
 
-        {/* Favorites Grid */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Loading size="lg" />
           </div>
-        ) : favorites.length === 0 ? (
+        ) : filteredFavorites.length === 0 ? (
           <div className="card text-center">
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               {selectedTags.length > 0
                 ? "No favorites with selected tags"
                 : "No favorites yet"}
@@ -119,7 +133,7 @@ const Favorites = () => {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {favorites.map((favorite) => (
+            {filteredFavorites.map((favorite) => (
               <FavoriteCard
                 key={favorite._id}
                 favorite={favorite}

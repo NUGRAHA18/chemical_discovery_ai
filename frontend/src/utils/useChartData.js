@@ -4,14 +4,17 @@ import { discoveryService } from "../services/discovery";
 export const useChartData = () => {
   const [discoveries, setDiscoveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setError(null);
         const data = await discoveryService.getHistory({ limit: 100 });
         setDiscoveries(data.discoveries || []);
       } catch (error) {
         console.error("Failed to load chart data:", error);
+        setError(error.message || "Failed to load chart data");
       } finally {
         setLoading(false);
       }
@@ -24,9 +27,6 @@ export const useChartData = () => {
       return null;
     }
 
-    // ============================================
-    // 1. TIMELINE DATA (Last 7 Days)
-    // ============================================
     const last7Days = [];
     const today = new Date();
     for (let i = 6; i >= 0; i--) {
@@ -67,9 +67,6 @@ export const useChartData = () => {
       ],
     };
 
-    // ============================================
-    // 2. INPUT MODE DISTRIBUTION
-    // ============================================
     const structuredCount = discoveries.filter(
       (d) => d.inputMode === "structured"
     ).length;
@@ -92,68 +89,53 @@ export const useChartData = () => {
       ],
     };
 
-    // ============================================
-    // 3. CONFIDENCE SCORE DISTRIBUTION
-    // ============================================
-    let highConfidence = 0;
-    let mediumConfidence = 0;
-    let lowConfidence = 0;
+    const confidenceBuckets = {
+      "0-20%": 0,
+      "20-40%": 0,
+      "40-60%": 0,
+      "60-80%": 0,
+      "80-100%": 0,
+    };
 
     discoveries.forEach((discovery) => {
-      if (discovery.metadata?.overall_confidence >= 0.8) {
-        highConfidence++;
-      } else if (discovery.metadata?.overall_confidence >= 0.6) {
-        mediumConfidence++;
-      } else {
-        lowConfidence++;
-      }
+      const confidence = (discovery.metadata?.overall_confidence || 0) * 100;
+      if (confidence < 20) confidenceBuckets["0-20%"]++;
+      else if (confidence < 40) confidenceBuckets["20-40%"]++;
+      else if (confidence < 60) confidenceBuckets["40-60%"]++;
+      else if (confidence < 80) confidenceBuckets["60-80%"]++;
+      else confidenceBuckets["80-100%"]++;
     });
 
     const confidenceData = {
-      labels: ["High (≥80%)", "Medium (60-79%)", "Low (<60%)"],
+      labels: Object.keys(confidenceBuckets),
       datasets: [
         {
           label: "Discoveries",
-          data: [highConfidence, mediumConfidence, lowConfidence],
-          backgroundColor: [
-            "rgba(16, 185, 129, 0.8)",
-            "rgba(251, 191, 36, 0.8)",
-            "rgba(239, 68, 68, 0.8)",
-          ],
-          borderColor: [
-            "rgb(16, 185, 129)",
-            "rgb(251, 191, 36)",
-            "rgb(239, 68, 68)",
-          ],
-          borderWidth: 2,
+          data: Object.values(confidenceBuckets),
+          backgroundColor: "rgba(16, 185, 129, 0.6)",
+          borderColor: "rgb(16, 185, 129)",
+          borderWidth: 1,
         },
       ],
     };
 
-    // ============================================
-    // 4. ACTIVITY STATS
-    // ============================================
-    const thisWeekStart = new Date(today);
-    thisWeekStart.setDate(today.getDate() - 7);
+    const thisWeekCount = discoveries.filter((d) => {
+      const createdAt = new Date(d.createdAt);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return createdAt >= weekAgo;
+    }).length;
 
-    const thisWeekCount = discoveries.filter(
-      (d) => new Date(d.createdAt) >= thisWeekStart
-    ).length;
-
-    // ============================================
-    // RETURN ALL PROCESSED DATA
-    // ============================================
     return {
       timeline: timelineData,
       inputMode: inputModeData,
       confidence: confidenceData,
       activity: {
         thisWeek: thisWeekCount,
+        total: discoveries.length,
       },
     };
   }, [discoveries]);
 
-  return { chartData, loading };
+  return { chartData, loading, error };
 };
-
-export default useChartData;

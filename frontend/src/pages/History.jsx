@@ -1,12 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { discoveryService } from "../services/discovery";
 import { favoritesService } from "../services/favorites";
-import { showSuccess, showError } from "../utils/toast";
+import {
+  showSuccess,
+  showError,
+  showLoading,
+  dismissToast,
+} from "../utils/toast";
 import HistoryList from "../components/history/HistoryList";
 import DetailModal from "../components/history/DetailModal";
 import Loading from "../components/common/Loading";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
-import { showLoading, dismissToast } from "../utils/toast";
 import useDebounce from "../utils/useDebounce";
 
 const History = () => {
@@ -16,33 +20,37 @@ const History = () => {
   const [search, setSearch] = useState("");
   const [selectedDiscovery, setSelectedDiscovery] = useState(null);
 
-  // ✅ ADD DEBOUNCE
-  const debouncedSearch = useDebounce(search, 500); // 500ms delay
+  const debouncedSearch = useDebounce(search, 500);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [historyData, statsData] = await Promise.all([
-        discoveryService.getHistory({ search: debouncedSearch }), // ✅ Use debounced value
+        discoveryService.getHistory({ search: debouncedSearch }),
         discoveryService.getStats(),
       ]);
       setDiscoveries(historyData.discoveries || []);
       setStats(statsData);
     } catch (error) {
       console.error("Failed to load history:", error);
+      showError("Failed to load history");
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch]); // ✅ Depend on debouncedSearch
+  }, [debouncedSearch]);
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [debouncedSearch]);
+
   const handleDelete = async (id) => {
     try {
       await discoveryService.deleteDiscovery(id);
-      setDiscoveries(discoveries.filter((d) => d._id !== id));
-      loadData(); // Reload stats
+      setDiscoveries((prev) => prev.filter((d) => d._id !== id));
+
+      const statsData = await discoveryService.getStats();
+      setStats(statsData);
+
       showSuccess("Discovery deleted successfully");
     } catch (error) {
       showError("Failed to delete discovery");
@@ -87,7 +95,6 @@ const History = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">
             Discovery History
@@ -97,7 +104,6 @@ const History = () => {
           </p>
         </div>
 
-        {/* Stats Cards */}
         {stats && (
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <div className="card">
@@ -112,22 +118,21 @@ const History = () => {
               <h3 className="text-sm font-medium text-gray-600 mb-2 dark:text-gray-400">
                 Total Compounds
               </h3>
-              <p className="text-3xl font-bold text-secondary-600 dark:text-gray-400">
+              <p className="text-3xl font-bold text-secondary-600 dark:text-secondary-400">
                 {stats.totalCompounds}
               </p>
             </div>
             <div className="card">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 dark:text-gray-400">
                 Avg Confidence
               </h3>
-              <p className="text-3xl font-bold text-accent-600">
+              <p className="text-3xl font-bold text-accent-600 dark:text-accent-400">
                 {(stats.avgConfidence * 100).toFixed(0)}%
               </p>
             </div>
           </div>
         )}
 
-        {/* Search */}
         <div className="card mb-6">
           <input
             type="text"
@@ -138,7 +143,6 @@ const History = () => {
           />
         </div>
 
-        {/* History List */}
         {loading ? (
           <div className="flex justify-center py-12">
             <Loading size="lg" />
@@ -152,7 +156,6 @@ const History = () => {
           />
         )}
 
-        {/* Detail Modal */}
         {selectedDiscovery && (
           <DetailModal
             discovery={selectedDiscovery}
