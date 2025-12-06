@@ -6,7 +6,7 @@ AI-powered platform for discovering novel chemical compounds using multi-agent s
 
 **Novel Chemicals Discovery Agent** adalah platform web-based yang membantu peneliti di industri petrokimia menemukan senyawa kimia baru dengan lebih cepat dan efisien menggunakan Agentic AI.
 
-**Capstone Project - Dicoding 2024**  
+**Capstone Project - Dicoding 2025**  
 **Team:** Cleo (ML), Afif (ML), Eska (Backend), Agung (Full Stack), Faris (Backend)
 
 ---
