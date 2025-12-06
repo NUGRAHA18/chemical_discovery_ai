@@ -53,6 +53,7 @@ app.use("/api/discover", require("./routes/discovery.routes"));
 app.use("/api/history", require("./routes/history.routes"));
 app.use("/api/favorites", require("./routes/favorites.routes"));
 app.use("/api/export", require("./routes/export.routes"));
+app.use("/api", require("./routes/propertyCalculator"));
 
 app.get("/health", (req, res) => {
   res.json({

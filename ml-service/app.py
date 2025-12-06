@@ -828,7 +828,46 @@ def discover_chemicals():
             'status': 'failed',
             'details': str(e)
         }), 500
-
+    
+@app.route('/api/calculate-properties', methods=['POST'])
+def calculate_properties():
+    """Calculate molecular properties from SMILES"""
+    try:
+        data = request.get_json()
+        smiles = data.get('smiles')
+        
+        if not smiles or not RDKIT_AVAILABLE:
+            return jsonify({
+                'error': 'SMILES required and RDKit must be available'
+            }), 400
+        
+        try:
+            mol = Chem.MolFromSmiles(smiles)
+            if not mol:
+                return jsonify({'error': 'Invalid SMILES notation'}), 400
+            
+            # Calculate properties
+            properties = {
+                'molecular_weight': round(Descriptors.MolWt(mol), 2),
+                'logp': round(Crippen.MolLogP(mol), 2),
+                'h_bond_donors': Descriptors.NumHDonors(mol),
+                'h_bond_acceptors': Descriptors.NumHAcceptors(mol),
+                'tpsa': round(Descriptors.TPSA(mol), 2),
+                'rotatable_bonds': Descriptors.NumRotatableBonds(mol),
+                'heavy_atoms': mol.GetNumHeavyAtoms(),
+                'aromatic': bool(len([atom for atom in mol.GetAromaticAtoms()]) > 0)
+            }
+            
+            logger.info(f"Calculated properties for: {smiles}")
+            return jsonify({'properties': properties})
+            
+        except Exception as e:
+            logger.error(f"Property calculation error: {e}")
+            return jsonify({'error': 'Failed to calculate properties'}), 500
+            
+    except Exception as e:
+        logger.error(f"Request error: {e}")
+        return jsonify({'error': 'Invalid request'}), 400
 
 # === RUN SERVER ===
 if __name__ == "__main__":

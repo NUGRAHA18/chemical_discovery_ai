@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import ToastNotification from "./components/common/ToastNotification";
 import { ComparisonProvider } from "./contexts/ComparisonContext";
+import PropertyCalculator from "./pages/PropertyCalculator";
 
 function App() {
   return (
@@ -66,6 +67,15 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Favorites />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/property-calculator"
+                    element={
+                      <ProtectedRoute>
+                        <PropertyCalculator />
                       </ProtectedRoute>
                     }
                   />

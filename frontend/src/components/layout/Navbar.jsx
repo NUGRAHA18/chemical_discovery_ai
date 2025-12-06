@@ -25,7 +25,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link
               to="/"
-              className="text-gray-700 hover:text-primary-600 transition-colors"
+              className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               Home
             </Link>
@@ -33,25 +33,31 @@ const Navbar = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/discover"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   Discover
                 </Link>
                 <Link
+                  to="/property-calculator"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  Calculator
+                </Link>
+                <Link
                   to="/history"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   History
                 </Link>
                 <Link
                   to="/favorites"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   Favorites
                 </Link>
@@ -59,18 +65,18 @@ const Navbar = () => {
             )}
           </div>
 
-          <DarkModeToggle />
-
-          {/* Desktop Auth Buttons */}
+          {/* Dark Mode Toggle & Auth */}
           <div className="hidden md:flex items-center space-x-4">
+            <DarkModeToggle />
+
             {isAuthenticated ? (
               <>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   {user?.name || user?.email}
                 </span>
                 <button
                   onClick={logout}
-                  className="text-gray-700 hover:text-red-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 >
                   Logout
                 </button>
@@ -79,7 +85,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                 >
                   Login
                 </Link>
@@ -93,7 +99,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden text-gray-700 hover:text-primary-600"
+            className="md:hidden text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
           >
             <svg
               className="w-6 h-6"
@@ -123,11 +129,11 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="px-4 py-3 space-y-3">
             <Link
               to="/"
-              className="block text-gray-700 hover:text-primary-600 transition-colors"
+              className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
@@ -136,34 +142,41 @@ const Navbar = () => {
               <>
                 <Link
                   to="/dashboard"
-                  className="block text-gray-700 hover:text-primary-600 transition-colors"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/discover"
-                  className="block text-gray-700 hover:text-primary-600 transition-colors"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Discover
                 </Link>
                 <Link
+                  to="/property-calculator"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Calculator
+                </Link>
+                <Link
                   to="/history"
-                  className="block text-gray-700 hover:text-primary-600 transition-colors"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   History
                 </Link>
                 <Link
                   to="/favorites"
-                  className="block text-gray-700 hover:text-primary-600 transition-colors"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Favorites
                 </Link>
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 mb-2">
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     {user?.name || user?.email}
                   </p>
                   <button
@@ -171,7 +184,7 @@ const Navbar = () => {
                       logout();
                       setMobileMenuOpen(false);
                     }}
-                    className="text-red-600 hover:text-red-700 font-medium"
+                    className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-500 font-medium"
                   >
                     Logout
                   </button>
@@ -182,7 +195,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="block text-gray-700 hover:text-primary-600 transition-colors"
+                  className="block text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Login
