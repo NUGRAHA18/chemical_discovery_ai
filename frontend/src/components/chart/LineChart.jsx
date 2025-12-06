@@ -9,7 +9,7 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler, // ✅ ADD THIS
+  Filler,
 } from "chart.js";
 
 ChartJS.register(
@@ -20,7 +20,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler // ✅ ADD THIS
+  Filler
 );
 
 const LineChart = ({ data }) => {
@@ -64,8 +64,9 @@ const LineChart = ({ data }) => {
     },
   };
 
+  // PERBAIKAN DISINI: Gunakan className Tailwind agar konsisten
   return (
-    <div style={{ height: "256px" }}>
+    <div className="relative h-64 w-full">
       <Line data={data} options={options} />
     </div>
   );

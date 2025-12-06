@@ -10,6 +10,7 @@
     "3dmol": "^2.5.3",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "framer-motion": "^12.23.25",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "react": "^19.2.0",

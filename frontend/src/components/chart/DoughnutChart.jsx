@@ -33,7 +33,12 @@ const DoughnutChart = ({ data }) => {
     },
   };
 
-  return <Doughnut data={data} options={options} height={256} />;
+  // PERBAIKAN DISINI: Bungkus dengan div
+  return (
+    <div className="relative h-64 w-full flex justify-center items-center">
+      <Doughnut data={data} options={options} />
+    </div>
+  );
 };
 
 export default DoughnutChart;
