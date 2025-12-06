@@ -5,10 +5,10 @@ const Landing = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen dark:bg-gray-900">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary-50 via-secondary-50 to-accent-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Discover Novel Chemicals

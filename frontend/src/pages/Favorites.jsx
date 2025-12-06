@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { favoritesService } from "../services/favorites";
 import FavoriteCard from "../components/favorites/FavoriteCard";
 import Loading from "../components/common/Loading";
@@ -14,46 +14,43 @@ const Favorites = () => {
     loadFavorites();
   }, [selectedTags]);
 
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await favoritesService.getFavorites({
-        tags: selectedTags.length > 0 ? selectedTags : undefined,
-      });
+      const data = await favoritesService.getFavorites();
       setFavorites(data.favorites || []);
-
-      // Extract unique tags
-      const tags = new Set();
-      data.favorites?.forEach((fav) => {
-        fav.tags?.forEach((tag) => tags.add(tag));
-      });
-      setAvailableTags(Array.from(tags));
     } catch (error) {
       console.error("Failed to load favorites:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleUpdate = async (id, updates) => {
-    try {
-      await favoritesService.updateFavorite(id, updates);
-      loadFavorites();
-    } catch (error) {
-      showError("Failed to delete favorite");
-    }
-  };
+  const handleUpdate = useCallback(
+    async (id, updates) => {
+      try {
+        await favoritesService.updateFavorite(id, updates);
+        showSuccess("Favorite updated successfully!");
+        loadFavorites();
+      } catch (error) {
+        showError("Failed to update favorite");
+      }
+    },
+    [loadFavorites]
+  );
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Remove from favorites?")) return;
-
-    try {
-      await favoritesService.deleteFavorite(id);
-      setFavorites(favorites.filter((f) => f._id !== id));
-    } catch (error) {
-      showError("Failed to update favorite");
-    }
-  };
+  const handleDelete = useCallback(
+    async (id) => {
+      try {
+        await favoritesService.deleteFavorite(id);
+        showSuccess("Favorite deleted successfully!");
+        loadFavorites();
+      } catch (error) {
+        showError("Failed to delete favorite");
+      }
+    },
+    [loadFavorites]
+  );
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
@@ -62,7 +59,7 @@ const Favorites = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

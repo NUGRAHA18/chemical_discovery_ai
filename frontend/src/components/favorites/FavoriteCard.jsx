@@ -7,6 +7,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   const [notes, setNotes] = useState(favorite.notes || "");
   const [tags, setTags] = useState(favorite.tags?.join(", ") || "");
   const [show3D, setShow3D] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleSave = () => {
     const tagsArray = tags
@@ -24,30 +25,44 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
             {compoundData.name}
           </h3>
-          <p className="text-sm text-gray-600">{compoundData.formula}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {compoundData.formula}
+          </p>
         </div>
       </div>
 
       {/* Structure Image */}
       {compoundData.structure_image && (
-        <div className="mb-4 bg-gray-50 rounded-lg p-4 flex justify-center">
+        <div className="mb-4 bg-gray-50 rounded-lg p-4 flex justify-center dark:bg-gray-800">
           <img
             src={`${API_BASE_URL}${compoundData.structure_image}`}
             alt={compoundData.name}
             className="max-w-full h-auto"
-            onError={(e) => (e.target.style.display = "none")}
+            onError={(e) => setImageError(true)}
           />
+        </div>
+      )}
+
+      {/* ✅ ADD Fallback */}
+      {imageError && (
+        <div className="mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col items-center justify-center h-48">
+          <div className="text-4xl mb-2">⚗️</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Structure image unavailable
+          </p>
         </div>
       )}
 
       {/* Properties */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-primary-50 rounded-lg p-3">
-          <p className="text-xs text-primary-600 font-medium">MW</p>
-          <p className="text-lg font-bold text-primary-900">
+        <div className="bg-primary-50 rounded-lg p-3 dark:bg-primary-900/20">
+          <p className="text-xs text-primary-600 font-medium dark:text-primary-400">
+            MW
+          </p>
+          <p className="text-lg font-bold text-primary-900 dark:text-primary-300">
             {compoundData.molecular_weight
               ? `${compoundData.molecular_weight} g/mol`
               : "N/A"}

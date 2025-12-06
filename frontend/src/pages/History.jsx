@@ -7,6 +7,7 @@ import DetailModal from "../components/history/DetailModal";
 import Loading from "../components/common/Loading";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 import { showLoading, dismissToast } from "../utils/toast";
+import useDebounce from "../utils/useDebounce";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
@@ -15,11 +16,14 @@ const History = () => {
   const [search, setSearch] = useState("");
   const [selectedDiscovery, setSelectedDiscovery] = useState(null);
 
+  // ✅ ADD DEBOUNCE
+  const debouncedSearch = useDebounce(search, 500); // 500ms delay
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [historyData, statsData] = await Promise.all([
-        discoveryService.getHistory({ search }),
+        discoveryService.getHistory({ search: debouncedSearch }), // ✅ Use debounced value
         discoveryService.getStats(),
       ]);
       setDiscoveries(historyData.discoveries || []);
@@ -29,12 +33,11 @@ const History = () => {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [debouncedSearch]); // ✅ Depend on debouncedSearch
 
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   const handleDelete = async (id) => {
     try {
       await discoveryService.deleteDiscovery(id);
@@ -82,32 +85,34 @@ const History = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">
             Discovery History
           </h1>
-          <p className="text-gray-600">View and manage your past discoveries</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            View and manage your past discoveries
+          </p>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <div className="card">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 dark:text-gray-400">
                 Total Discoveries
               </h3>
-              <p className="text-3xl font-bold text-primary-600">
+              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">
                 {stats.totalDiscoveries}
               </p>
             </div>
             <div className="card">
-              <h3 className="text-sm font-medium text-gray-600 mb-2">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 dark:text-gray-400">
                 Total Compounds
               </h3>
-              <p className="text-3xl font-bold text-secondary-600">
+              <p className="text-3xl font-bold text-secondary-600 dark:text-gray-400">
                 {stats.totalCompounds}
               </p>
             </div>

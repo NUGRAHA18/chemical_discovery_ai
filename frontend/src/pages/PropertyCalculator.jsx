@@ -30,8 +30,16 @@ const PropertyCalculator = () => {
     setLoading(true);
     const loadingToast = showLoading("Calculating properties...");
 
+    // ✅ ADD TIMEOUT
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      dismissToast(loadingToast);
+      showError(
+        "Request timeout. Please check if backend and ML service are running."
+      );
+    }, 30000); // 30 seconds for property calculation
+
     try {
-      // Call backend to calculate properties
       const response = await fetch(
         "http://localhost:3000/api/calculate-properties",
         {
@@ -45,11 +53,11 @@ const PropertyCalculator = () => {
       );
 
       const data = await response.json();
+      clearTimeout(timeout); // ✅ Clear timeout
       dismissToast(loadingToast);
 
       if (data.success) {
         setProperties(data.properties);
-        // Add to history
         setHistory((prev) =>
           [
             {
@@ -59,12 +67,13 @@ const PropertyCalculator = () => {
             },
             ...prev,
           ].slice(0, 10)
-        ); // Keep last 10
+        );
         showSuccess("Properties calculated successfully!");
       } else {
         showError(data.error || "Failed to calculate properties");
       }
     } catch (error) {
+      clearTimeout(timeout); // ✅ Clear timeout
       dismissToast(loadingToast);
       showError("Invalid SMILES or calculation error");
       console.error(error);

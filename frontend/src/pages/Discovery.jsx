@@ -41,6 +41,13 @@ const Discovery = () => {
     setError("");
     setDiscovery(null);
 
+    // ✅ ADD TIMEOUT
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setProgress(0);
+      setError("Request timeout. ML service might be down. Please try again.");
+    }, 180000); // 3 minutes
+
     try {
       setProgress(30);
       const response = await discoveryService.createDiscovery({
@@ -48,10 +55,12 @@ const Discovery = () => {
         structuredData,
       });
 
+      clearTimeout(timeout); // ✅ Clear timeout if success
       setProgress(90);
       setDiscovery(response.discovery);
       setProgress(100);
     } catch (err) {
+      clearTimeout(timeout); // ✅ Clear timeout if error
       setError(
         err.response?.data?.error ||
           "Failed to generate compounds. Please try again."
@@ -68,6 +77,13 @@ const Discovery = () => {
     setError("");
     setDiscovery(null);
 
+    // ✅ ADD TIMEOUT
+    const timeout = setTimeout(() => {
+      setLoading(false);
+      setProgress(0);
+      setError("Request timeout. ML service might be down. Please try again.");
+    }, 180000); // 3 minutes
+
     try {
       setProgress(30);
       const response = await discoveryService.createDiscovery({
@@ -75,10 +91,12 @@ const Discovery = () => {
         criteria,
       });
 
+      clearTimeout(timeout);
       setProgress(90);
       setDiscovery(response.discovery);
       setProgress(100);
     } catch (err) {
+      clearTimeout(timeout);
       setError(
         err.response?.data?.error ||
           "Failed to generate compounds. Please try again."
@@ -88,7 +106,6 @@ const Discovery = () => {
       setProgress(0);
     }
   };
-
   const handleAddToFavorites = async (compound) => {
     try {
       const existing = await favoritesService.getFavorites();
@@ -213,23 +230,16 @@ const Discovery = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Chemical Discovery
-          </h1>
-          <p className="text-gray-600">
-            Generate novel chemical compounds using AI
-          </p>
-        </div>
+        <div className="mb-8"></div>
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               Discover New Compounds
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-gray-600 mt-2 dark:text-gray-400">
               Generate novel chemical compounds using AI
             </p>
           </div>
@@ -253,13 +263,13 @@ const Discovery = () => {
         <div className="card mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Input Mode</h2>
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1 dark:bg-gray-800">
               <button
                 onClick={() => setInputMode("structured")}
                 className={`px-4 py-2 rounded-md transition-colors ${
                   inputMode === "structured"
                     ? "bg-white text-primary-600 shadow-sm font-medium"
-                    : "text-gray-600 hover:text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 }`}
               >
                 📋 Structured Form
@@ -269,7 +279,7 @@ const Discovery = () => {
                 className={`px-4 py-2 rounded-md transition-colors ${
                   inputMode === "ai-prompt"
                     ? "bg-white text-primary-600 shadow-sm font-medium"
-                    : "text-gray-600 hover:text-gray-900"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 }`}
               >
                 💬 AI Prompt
@@ -300,7 +310,9 @@ const Discovery = () => {
           <div className="card mb-8">
             <div className="text-center">
               <Loading size="lg" />
-              <p className="text-gray-600 mt-4">Generating compounds...</p>
+              <p className="text-gray-600 mt-4 dark:text-gray-400">
+                Generating compounds...
+              </p>
               <p className="text-sm text-gray-500 mt-2">
                 This may take 10-30 seconds
               </p>
@@ -383,18 +395,18 @@ const Discovery = () => {
             {/* Analysis & Justification */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 dark:text-white">
                   Analysis
                 </h3>
-                <p className="text-gray-700 whitespace-pre-wrap">
+                <p className="text-gray-700 whitespace-pre-wrap dark:text-gray-300">
                   {discovery.analysis}
                 </p>
               </div>
               <div className="card">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 dark:text-white">
                   Justification
                 </h3>
-                <p className="text-gray-700 whitespace-pre-wrap">
+                <p className="text-gray-700 whitespace-pre-wrap dark:text-gray-300">
                   {discovery.justification}
                 </p>
               </div>

@@ -1,4 +1,5 @@
 import { Line } from "react-chartjs-2";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,7 +9,7 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler,
+  Filler, // ✅ ADD THIS
 } from "chart.js";
 
 ChartJS.register(
@@ -19,10 +20,12 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler // ✅ ADD THIS
 );
 
-const LineChart = ({ data, title }) => {
+const LineChart = ({ data }) => {
+  const { isDark } = useDarkMode();
+
   const options = {
     responsive: true,
     maintainAspectRatio: false,
@@ -30,27 +33,39 @@ const LineChart = ({ data, title }) => {
       legend: {
         display: false,
       },
-      title: {
-        display: false,
+      tooltip: {
+        backgroundColor: isDark
+          ? "rgba(0, 0, 0, 0.8)"
+          : "rgba(255, 255, 255, 0.9)",
+        titleColor: isDark ? "#fff" : "#000",
+        bodyColor: isDark ? "#fff" : "#000",
+        borderColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+        borderWidth: 1,
       },
     },
     scales: {
       y: {
         beginAtZero: true,
         grid: {
-          color: "rgba(0, 0, 0, 0.05)",
+          color: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+        },
+        ticks: {
+          color: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
         },
       },
       x: {
         grid: {
           display: false,
         },
+        ticks: {
+          color: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
+        },
       },
     },
   };
 
   return (
-    <div className="h-64">
+    <div style={{ height: "256px" }}>
       <Line data={data} options={options} />
     </div>
   );

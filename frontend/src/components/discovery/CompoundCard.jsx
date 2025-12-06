@@ -7,6 +7,7 @@ import MoleculeViewer3DModal from "./MoleculeViewer3DModal";
 const CompoundCard = ({ compound, onAddToFavorites }) => {
   const { addToComparison } = useComparison();
   const [show3D, setShow3D] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleAddToComparison = () => {
     const result = addToComparison(compound);
@@ -66,8 +67,18 @@ const CompoundCard = ({ compound, onAddToFavorites }) => {
               src={`${API_BASE_URL}${structure_image}`}
               alt={`Structure of ${name}`}
               className="max-w-full h-auto"
-              onError={(e) => (e.target.style.display = "none")}
+              onError={() => setImageError(true)}
             />
+          </div>
+        )}
+
+        {/* ✅ ADD Fallback */}
+        {imageError && (
+          <div className="mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-4 flex flex-col items-center justify-center h-48">
+            <div className="text-4xl mb-2">🧪</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Structure image unavailable
+            </p>
           </div>
         )}
 
