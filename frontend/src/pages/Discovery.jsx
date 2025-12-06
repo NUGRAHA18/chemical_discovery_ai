@@ -5,9 +5,12 @@ import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
 import Loading from "../components/common/Loading";
-import { showSuccess, showError } from "../utils/toast";
+import { showSuccess, showError, showLoading } from "../utils/toast";
 import { useComparison } from "../contexts/ComparisonContext";
 import ComparisonModal from "../components/discovery/ComparisonModal";
+import { exportDiscoveryToPDF } from "../utils/pdfExport";
+import { dismissToast } from "../utils/toast";
+import TemplatesModal from "../components/discovery/TemplatesModal";
 
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured"); // 'structured' or 'ai-prompt'
@@ -17,6 +20,20 @@ const Discovery = () => {
   const [error, setError] = useState("");
   const [showComparison, setShowComparison] = useState(false);
   const { comparisonList } = useComparison();
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const [criteria, setCriteria] = useState("");
+  const [structuredData, setStructuredData] = useState({
+    category: "",
+    boilingPointMin: "",
+    boilingPointMax: "",
+    viscosityMin: "",
+    viscosityMax: "",
+    solubility: "",
+    thermalStabilityMin: "",
+    additionalProperties: [],
+    notes: "",
+  });
 
   const handleStructuredSubmit = async (structuredData) => {
     setLoading(true);
@@ -106,32 +123,93 @@ const Discovery = () => {
   };
 
   const handleExport = async (format) => {
-    if (!discovery || !discovery._id) {
+    if (!discovery?._id) {
       showError("No discovery to export");
       return;
     }
 
     try {
-      const blob =
-        format === "json"
-          ? await discoveryService.exportJSON(discovery._id)
-          : await discoveryService.exportCSV(discovery._id);
+      if (format === "pdf") {
+        // PDF Export
+        const loadingToast = showLoading("Generating PDF...");
+        const result = await exportDiscoveryToPDF(discovery);
+        dismissToast(loadingToast);
 
-      if (!blob || blob.size === 0) {
-        throw new Error("Export data is empty");
+        if (result.success) {
+          showSuccess(`PDF exported: ${result.filename}`);
+        } else {
+          showError("Failed to generate PDF");
+        }
+      } else if (format === "json") {
+        // JSON Export - Direct implementation
+        const dataStr = JSON.stringify(discovery, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `discovery-${discovery._id}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showSuccess("Discovery exported as JSON");
+      } else if (format === "csv") {
+        // CSV Export - Direct implementation
+        let csvContent = "Name,Formula,SMILES,MW,LogP,Validation Score\n";
+
+        discovery.compounds?.forEach((compound) => {
+          csvContent += `"${compound.name}","${compound.formula}","${compound.smiles}",`;
+          csvContent += `${compound.molecular_weight || "N/A"},`;
+          csvContent += `${
+            compound.logp !== null && compound.logp !== undefined
+              ? compound.logp
+              : "N/A"
+          },`;
+          csvContent += `${((compound.validation_score || 0) * 100).toFixed(
+            0
+          )}%\n`;
+        });
+
+        const csvBlob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `discovery-${discovery._id}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        showSuccess("Discovery exported as CSV");
       }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `discovery-${discovery._id}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (err) {
-      showError("Export failed: " + err.message);
+      console.error("Export error:", err);
+      showError(`Export failed: ${err.message}`);
     }
+  };
+
+  const handleSelectTemplate = (template) => {
+    const defaultStructuredData = {
+      category: "",
+      boilingPointMin: "",
+      boilingPointMax: "",
+      viscosityMin: "",
+      viscosityMax: "",
+      solubility: "",
+      thermalStabilityMin: "",
+      additionalProperties: [],
+      notes: "",
+    };
+
+    if (template.inputMode === "structured") {
+      setInputMode("structured");
+      // Merge template data with defaults to ensure all fields exist
+      setStructuredData({
+        ...defaultStructuredData,
+        ...template.structuredData,
+      });
+      setCriteria("");
+    } else {
+      setInputMode("ai-prompt");
+      setCriteria(template.aiPrompt || "");
+      setStructuredData(defaultStructuredData);
+    }
+    showSuccess(`Template loaded: ${template.name}`);
   };
 
   return (
@@ -146,6 +224,30 @@ const Discovery = () => {
             Generate novel chemical compounds using AI
           </p>
         </div>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Discover New Compounds
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Generate novel chemical compounds using AI
+            </p>
+          </div>
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <span>📑</span>
+            <span>Use Template</span>
+          </button>
+        </div>
+
+        {/* Templates Modal */}
+        <TemplatesModal
+          isOpen={showTemplates}
+          onClose={() => setShowTemplates(false)}
+          onSelectTemplate={handleSelectTemplate}
+        />
 
         {/* Input Mode Toggle */}
         <div className="card mb-8">
@@ -180,9 +282,16 @@ const Discovery = () => {
             <StructuredForm
               onSubmit={handleStructuredSubmit}
               loading={loading}
+              initialData={structuredData}
+              //onChange={setStructuredData}
             />
           ) : (
-            <AIPromptForm onSubmit={handleAIPromptSubmit} loading={loading} />
+            <AIPromptForm
+              onSubmit={handleAIPromptSubmit}
+              loading={loading}
+              initialValue={criteria}
+              onChange={setCriteria}
+            />
           )}
         </div>
 
@@ -233,6 +342,12 @@ const Discovery = () => {
                     ⚖️ Compare ({comparisonList.length})
                   </button>
                 )}
+                <button
+                  onClick={() => handleExport("pdf")}
+                  className="btn-primary text-sm"
+                >
+                  📄 Export PDF
+                </button>
                 <button
                   onClick={() => handleExport("json")}
                   className="btn-outline text-sm"

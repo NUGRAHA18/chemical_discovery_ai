@@ -5,6 +5,8 @@ import { showSuccess, showError } from "../utils/toast";
 import HistoryList from "../components/history/HistoryList";
 import DetailModal from "../components/history/DetailModal";
 import Loading from "../components/common/Loading";
+import { exportDiscoveryToPDF } from "../utils/pdfExport";
+import { showLoading, dismissToast } from "../utils/toast";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
@@ -64,6 +66,18 @@ const History = () => {
       showSuccess("Added to favorites!");
     } catch (error) {
       showError("Failed to add to favorites");
+    }
+  };
+
+  const handleExportPDF = async (discovery) => {
+    const loadingToast = showLoading("Generating PDF...");
+    const result = await exportDiscoveryToPDF(discovery);
+    dismissToast(loadingToast);
+
+    if (result.success) {
+      showSuccess(`PDF exported: ${result.filename}`);
+    } else {
+      showError("Failed to generate PDF");
     }
   };
 
@@ -139,6 +153,7 @@ const History = () => {
             discovery={selectedDiscovery}
             onClose={() => setSelectedDiscovery(null)}
             onAddToFavorites={handleAddToFavorites}
+            onExportPDF={handleExportPDF}
           />
         )}
       </div>

@@ -2,7 +2,7 @@ import CompoundCard from "../discovery/CompoundCard";
 import { useState } from "react";
 import MoleculeViewer3DModal from "../discovery/MoleculeViewer3DModal";
 
-const DetailModal = ({ discovery, onClose, onAddToFavorites }) => {
+const DetailModal = ({ discovery, onClose, onAddToFavorites, onExportPDF }) => {
   const [selected3DCompound, setSelected3DCompound] = useState(null);
   if (!discovery) return null;
 
@@ -10,16 +10,31 @@ const DetailModal = ({ discovery, onClose, onAddToFavorites }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Discovery Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
-          >
-            ×
-          </button>
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Discovery Details
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {new Date(discovery.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            {onExportPDF && (
+              <button
+                onClick={() => onExportPDF(discovery)}
+                className="btn-primary text-sm"
+              >
+                📄 Export PDF
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Content */}
