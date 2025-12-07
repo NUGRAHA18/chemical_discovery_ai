@@ -207,19 +207,29 @@ exports.getHistory = async (req, res) => {
 
 exports.getStats = async (req, res) => {
   try {
+    const userId = req.user._id;
+
+    // Aggregate stats with BOTH possible confidence field locations
     const stats = await Discovery.aggregate([
-      { $match: { userId: req.user._id } },
+      { $match: { userId: userId } },
       {
         $group: {
           _id: null,
           totalDiscoveries: { $sum: 1 },
           totalCompounds: { $sum: { $size: "$compounds" } },
-          avgConfidence: { $avg: "$metadata.overall_confidence" },
+          // Check BOTH possible confidence locations
+          avgConfidenceFromMetadata: {
+            $avg: "$metadata.overall_confidence",
+          },
+          avgConfidenceFromPreprocessing: {
+            $avg: "$preprocessingAnalysis.confidenceScore",
+          },
         },
       },
     ]);
 
-    if (!stats.length) {
+    // Handle empty result
+    if (!stats.length || stats[0].totalDiscoveries === 0) {
       return res.json({
         success: true,
         totalDiscoveries: 0,
@@ -228,15 +238,24 @@ exports.getStats = async (req, res) => {
       });
     }
 
+    // Use whichever confidence field has data (fallback logic)
+    const avgConfidence =
+      stats[0].avgConfidenceFromMetadata ||
+      stats[0].avgConfidenceFromPreprocessing ||
+      0;
+
     res.json({
       success: true,
       totalDiscoveries: stats[0].totalDiscoveries,
       totalCompounds: stats[0].totalCompounds,
-      avgConfidence: stats[0].avgConfidence || 0,
+      avgConfidence: avgConfidence,
     });
   } catch (error) {
     console.error("Get stats error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
 

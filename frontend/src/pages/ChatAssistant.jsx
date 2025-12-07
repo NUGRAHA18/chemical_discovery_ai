@@ -28,6 +28,9 @@ const ChatAssistant = () => {
 
   const messagesEndRef = useRef(null);
   const eventSourceRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true); // Track if should auto-scroll
+  const userScrolledRef = useRef(false);
 
   useEffect(() => {
     loadChatHistory();
@@ -42,11 +45,30 @@ const ChatAssistant = () => {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if ((isLoading || isStreaming) && !userScrolledRef.current) {
+      scrollToBottom();
+    } else if (shouldAutoScrollRef.current && !userScrolledRef.current) {
+      scrollToBottom();
+    }
+  }, [messages, isLoading, isStreaming]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleScroll = (e) => {
+    const element = e.target;
+    const isAtBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight < 50;
+
+    shouldAutoScrollRef.current = isAtBottom;
+
+    // If user is NOT at bottom, they manually scrolled
+    if (!isAtBottom) {
+      userScrolledRef.current = true;
+    } else {
+      userScrolledRef.current = false;
+    }
   };
 
   const loadChatHistory = async () => {
@@ -54,12 +76,15 @@ const ChatAssistant = () => {
       const data = await chatService.getHistory();
 
       if (data.sessions && data.sessions.length > 0) {
-        const allMessages = data.sessions.flatMap((session) =>
-          session.messages.map((msg) => ({
-            ...msg,
-            sessionId: session.sessionId,
-          }))
-        );
+        const allMessages = data.sessions
+          .flatMap((session) =>
+            session.messages.map((msg) => ({
+              ...msg,
+              sessionId: session.sessionId,
+            }))
+          )
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
         setMessages(allMessages);
       }
     } catch (error) {
@@ -81,7 +106,20 @@ const ChatAssistant = () => {
   const handleSendMessage = async (message) => {
     if (!message.trim() || isLoading || isStreaming) return;
 
-    // 1. Tambahkan pesan user
+    // Close existing EventSource (defensive programming)
+    if (eventSourceRef.current) {
+      try {
+        eventSourceRef.current.close();
+      } catch (e) {
+        console.warn("Failed to close EventSource:", e);
+      }
+      eventSourceRef.current = null;
+    }
+
+    // Reset scroll flags when sending new message
+    userScrolledRef.current = false;
+    shouldAutoScrollRef.current = true;
+
     const userMessage = {
       role: "user",
       message: message.trim(),
@@ -93,17 +131,15 @@ const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
-      // 2. Kirim ke backend (POST)
       const { sessionId } = await chatService.sendMessage(
         message.trim(),
-        selectedDiscovery
+        selectedDiscovery || null
       );
 
-      // 3. Siapkan bubble chat kosong untuk asisten
       const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage = {
         role: "assistant",
-        message: "", // Mulai kosong
+        message: "",
         createdAt: new Date().toISOString(),
         _id: assistantMessageId,
         sessionId,
@@ -113,22 +149,17 @@ const ChatAssistant = () => {
       setIsLoading(false);
       setIsStreaming(true);
 
-      // 4. Mulai Streaming (SSE)
       eventSourceRef.current = chatService.streamResponse(
         sessionId,
         (chunk) => {
           setMessages((prev) => {
-            // Copy array messagenya (Immutability)
             const updated = [...prev];
             const lastIndex = updated.length - 1;
-            const lastMsg = updated[lastIndex];
 
-            // Pastikan kita mengupdate pesan terakhir dan itu adalah pesan assistant
-            if (lastMsg && lastMsg.role === "assistant") {
-              // Copy objek message-nya lalu update properti message
+            if (lastIndex >= 0 && updated[lastIndex]?.role === "assistant") {
               updated[lastIndex] = {
-                ...lastMsg,
-                message: lastMsg.message + chunk,
+                ...updated[lastIndex],
+                message: updated[lastIndex].message + chunk,
               };
               return updated;
             }
@@ -136,7 +167,6 @@ const ChatAssistant = () => {
           });
         },
         () => {
-          // On Complete
           setIsStreaming(false);
           if (eventSourceRef.current) {
             eventSourceRef.current.close();
@@ -144,7 +174,6 @@ const ChatAssistant = () => {
           }
         },
         (error) => {
-          // On Error
           setIsStreaming(false);
           showError(error || "Failed to get response");
           if (eventSourceRef.current) {
@@ -162,9 +191,8 @@ const ChatAssistant = () => {
   };
 
   const handleClearHistory = async () => {
-    if (!window.confirm("Are you sure you want to clear all chat history?")) {
+    if (!window.confirm("Are you sure you want to clear all chat history?"))
       return;
-    }
 
     try {
       await chatService.clearHistory();
@@ -214,7 +242,7 @@ const ChatAssistant = () => {
           )}
         </div>
 
-        {/* CONTEXT SELECTOR (DISCOVERY REFERENCE) */}
+        {/* CONTEXT SELECTOR */}
         {discoveries.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
             <div className="flex items-center gap-3 mb-2">
@@ -246,8 +274,10 @@ const ChatAssistant = () => {
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden flex flex-col"
           style={{ height: "600px" }}
         >
-          {/* Chat Messages Area */}
+          {/* Chat Messages Area - ADD onScroll handler */}
           <div
+            ref={chatContainerRef}
+            onScroll={handleScroll}
             className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50 scroll-smooth"
             style={{ minHeight: 0 }}
           >
@@ -298,7 +328,7 @@ const ChatAssistant = () => {
           </div>
         </div>
 
-        {/* EXAMPLE QUESTIONS (Suggestion Chips) */}
+        {/* EXAMPLE QUESTIONS */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
           <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />

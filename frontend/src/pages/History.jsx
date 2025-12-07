@@ -170,7 +170,10 @@ const History = () => {
                   Avg Confidence
                 </p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-                  {(stats.avgConfidence * 100).toFixed(0)}%
+                  {stats?.avgConfidence != null && !isNaN(stats.avgConfidence)
+                    ? (stats.avgConfidence * 100).toFixed(0)
+                    : 0}
+                  %
                 </p>
               </div>
               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
