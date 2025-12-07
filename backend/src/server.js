@@ -6,7 +6,7 @@ const compression = require("compression");
 const morgan = require("morgan");
 const connectDB = require("./config/database");
 const path = require("path");
-
+const chatRoutes = require("./routes/chat.routes");
 const app = express();
 
 connectDB();
@@ -53,9 +53,8 @@ app.use("/api/discover", require("./routes/discovery.routes"));
 app.use("/api/history", require("./routes/history.routes"));
 app.use("/api/favorites", require("./routes/favorites.routes"));
 app.use("/api/export", require("./routes/export.routes"));
-app.use("/api/chat", require("./routes/chat"));
+app.use("/api/chat", chatRoutes);
 app.use("/api", require("./routes/propertyCalculator"));
-app.use("/api/chat", require("./routes/chat"));
 
 app.get("/health", (req, res) => {
   res.json({

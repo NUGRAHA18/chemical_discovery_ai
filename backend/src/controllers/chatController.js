@@ -63,6 +63,10 @@ const chatController = {
     try {
       const { sessionId } = req.params;
       const userId = req.user.id;
+      console.log("Stream requested for Session ID:", sessionId);
+      if (!sessionId) {
+        return res.status(400).json({ error: "Session ID required" });
+      }
 
       const userMessage = await ChatMessage.findOne({
         sessionId,

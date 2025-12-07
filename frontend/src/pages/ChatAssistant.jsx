@@ -21,6 +21,7 @@ const ChatAssistant = () => {
     loadChatHistory();
     loadDiscoveries();
 
+    // Cleanup saat component unmount
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -68,6 +69,7 @@ const ChatAssistant = () => {
   const handleSendMessage = async (message) => {
     if (!message.trim() || isLoading || isStreaming) return;
 
+    // 1. Tambahkan pesan user
     const userMessage = {
       role: "user",
       message: message.trim(),
@@ -79,16 +81,19 @@ const ChatAssistant = () => {
     setIsLoading(true);
 
     try {
+      // 2. Kirim ke backend (POST)
       const { sessionId } = await chatService.sendMessage(
         message.trim(),
         selectedDiscovery
       );
 
+      // 3. Siapkan bubble chat kosong untuk asisten
+      const assistantMessageId = (Date.now() + 1).toString();
       const assistantMessage = {
         role: "assistant",
-        message: "",
+        message: "", // Mulai kosong
         createdAt: new Date().toISOString(),
-        _id: (Date.now() + 1).toString(),
+        _id: assistantMessageId,
         sessionId,
       };
 
@@ -96,26 +101,46 @@ const ChatAssistant = () => {
       setIsLoading(false);
       setIsStreaming(true);
 
+      // 4. Mulai Streaming (SSE)
+      // PERBAIKAN PENTING ADA DI SINI:
       eventSourceRef.current = chatService.streamResponse(
         sessionId,
         (chunk) => {
           setMessages((prev) => {
+            // Copy array messagenya (Immutability)
             const updated = [...prev];
-            const lastMsg = updated[updated.length - 1];
-            if (lastMsg.role === "assistant") {
-              lastMsg.message += chunk;
+            const lastIndex = updated.length - 1;
+            const lastMsg = updated[lastIndex];
+
+            // Pastikan kita mengupdate pesan terakhir dan itu adalah pesan assistant
+            if (lastMsg && lastMsg.role === "assistant") {
+              // Copy objek message-nya lalu update properti message
+              // INI YANG MEMPERBAIKI MASALAH DUPLIKASI/GLITCH
+              updated[lastIndex] = {
+                ...lastMsg,
+                message: lastMsg.message + chunk,
+              };
+              return updated;
             }
-            return updated;
+            return prev;
           });
         },
         () => {
+          // On Complete
           setIsStreaming(false);
-          eventSourceRef.current = null;
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+          }
         },
         (error) => {
+          // On Error
           setIsStreaming(false);
           showError(error || "Failed to get response");
-          eventSourceRef.current = null;
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+          }
         }
       );
     } catch (error) {
