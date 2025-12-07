@@ -963,6 +963,7 @@ Generated Compounds:
     base_prompt += f"\nUser Question: {message}\n\nAssistant:"
     
     return base_prompt
+
 # === RUN SERVER ===
 if __name__ == "__main__":
     print("\n" + "="*60)

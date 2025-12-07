@@ -1,323 +1,268 @@
 import { useState, useEffect } from "react";
-import Input from "../common/Input";
+import {
+  ClipboardList,
+  Thermometer,
+  Droplets,
+  FlaskConical,
+  Plus,
+  X,
+} from "lucide-react";
 
-const StructuredForm = ({ onSubmit, loading, initialData, onChange }) => {
-  const defaultData = {
-    category: "",
-    boilingPointMin: "",
-    boilingPointMax: "",
-    viscosityMin: "",
-    viscosityMax: "",
-    solubility: "",
-    thermalStabilityMin: "",
-    additionalProperties: [],
-    notes: "",
-  };
+// --- PINDAHKAN KE SINI (DI LUAR KOMPONEN) ---
+const DEFAULT_STATE = {
+  category: "",
+  boilingPointMin: "",
+  boilingPointMax: "",
+  viscosityMin: "",
+  viscosityMax: "",
+  solubility: "",
+  thermalStabilityMin: "",
+  additionalProperties: [],
+  notes: "",
+};
 
-  const [formData, setFormData] = useState({
-    ...defaultData,
-    ...initialData,
-  });
+const StructuredForm = ({ onSubmit, loading, initialData }) => {
+  // Gunakan DEFAULT_STATE yang ada di luar
+  const [formData, setFormData] = useState(initialData || DEFAULT_STATE);
+  const [newProperty, setNewProperty] = useState("");
 
-  // Sync with parent when initialData changes
-
+  // Sekarang 'DEFAULT_STATE' aman digunakan di sini tanpa masuk dependency array
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        ...defaultData,
-        ...initialData,
-      });
+      setFormData((prev) => ({
+        ...DEFAULT_STATE, // Reset ke default
+        ...initialData, // Timpa dengan data baru
+      }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
-  const [errors, setErrors] = useState({});
-
-  const categories = [
-    { value: "", label: "Select category..." },
-    { value: "surfactant", label: "Surfactant" },
-    { value: "polymer", label: "Polymer" },
-    { value: "solvent", label: "Solvent" },
-    { value: "catalyst", label: "Catalyst" },
-    { value: "additive", label: "Additive" },
-    { value: "other", label: "Other" },
-  ];
-
-  const solubilityOptions = [
-    { value: "", label: "Select solubility..." },
-    { value: "water-soluble", label: "Water Soluble" },
-    { value: "oil-soluble", label: "Oil Soluble" },
-    { value: "alcohol-soluble", label: "Alcohol Soluble" },
-    { value: "insoluble", label: "Insoluble" },
-    { value: "any", label: "Any" },
-  ];
-
-  const propertyOptions = [
-    { value: "biodegradable", label: "Biodegradable" },
-    { value: "non-toxic", label: "Non-toxic" },
-    { value: "UV-stable", label: "UV Stable" },
-    { value: "corrosion-resistant", label: "Corrosion Resistant" },
-    { value: "flame-retardant", label: "Flame Retardant" },
-  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleAddProperty = () => {
+    if (newProperty.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        additionalProperties: [
+          ...prev.additionalProperties,
+          newProperty.trim(),
+        ],
+      }));
+      setNewProperty("");
     }
   };
 
-  const handleCheckboxChange = (value) => {
+  const handleRemoveProperty = (index) => {
     setFormData((prev) => ({
       ...prev,
-      additionalProperties: prev.additionalProperties.includes(value)
-        ? prev.additionalProperties.filter((p) => p !== value)
-        : [...prev.additionalProperties, value],
+      additionalProperties: prev.additionalProperties.filter(
+        (_, i) => i !== index
+      ),
     }));
-  };
-
-  const validate = () => {
-    const newErrors = {};
-
-    // Check at least one field filled
-    const hasCategory = formData.category && formData.category !== "other";
-    const hasBoilingPoint =
-      formData.boilingPointMin || formData.boilingPointMax;
-    const hasViscosity = formData.viscosityMin || formData.viscosityMax;
-    const hasThermalStability = formData.thermalStabilityMin;
-    const hasSolubility = formData.solubility && formData.solubility !== "any";
-    const hasProperties = formData.additionalProperties.length > 0;
-    const hasNotes = formData.notes.trim();
-
-    if (
-      !hasCategory &&
-      !hasBoilingPoint &&
-      !hasViscosity &&
-      !hasThermalStability &&
-      !hasSolubility &&
-      !hasProperties &&
-      !hasNotes
-    ) {
-      newErrors.general = "Please fill at least one field";
-      return newErrors;
-    }
-
-    // Validate ranges
-    if (formData.boilingPointMin && formData.boilingPointMax) {
-      if (
-        parseFloat(formData.boilingPointMin) >=
-        parseFloat(formData.boilingPointMax)
-      ) {
-        newErrors.boilingPointMax = "Max must be greater than min";
-      }
-    }
-
-    if (formData.viscosityMin && formData.viscosityMax) {
-      if (
-        parseFloat(formData.viscosityMin) >= parseFloat(formData.viscosityMax)
-      ) {
-        newErrors.viscosityMax = "Max must be greater than min";
-      }
-    }
-
-    return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    // Convert to backend format
-    const structuredData = {
-      category: formData.category || undefined,
-      boilingPoint:
-        formData.boilingPointMin || formData.boilingPointMax
-          ? {
-              min: formData.boilingPointMin
-                ? parseFloat(formData.boilingPointMin)
-                : undefined,
-              max: formData.boilingPointMax
-                ? parseFloat(formData.boilingPointMax)
-                : undefined,
-            }
-          : undefined,
-      viscosity:
-        formData.viscosityMin || formData.viscosityMax
-          ? {
-              min: formData.viscosityMin
-                ? parseFloat(formData.viscosityMin)
-                : undefined,
-              max: formData.viscosityMax
-                ? parseFloat(formData.viscosityMax)
-                : undefined,
-            }
-          : undefined,
-      solubility: formData.solubility || undefined,
-      thermalStability: formData.thermalStabilityMin
-        ? {
-            min: parseFloat(formData.thermalStabilityMin),
-          }
-        : undefined,
-      additionalProperties:
-        formData.additionalProperties.length > 0
-          ? formData.additionalProperties
-          : undefined,
-      notes: formData.notes.trim() || undefined,
-    };
-
-    onSubmit(structuredData);
+    onSubmit(formData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {errors.general && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          {errors.general}
+    <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+      {/* Category Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Chemical Category
+        </label>
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FlaskConical className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+          </div>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="input-field pl-10 w-full transition-all"
+            required
+          >
+            <option value="">Select a category</option>
+            <option value="Surfactant">Surfactant (Cleaning/EOR)</option>
+            <option value="Polymer">Polymer (Plastics/Materials)</option>
+            <option value="Catalyst">Catalyst (Reaction Speed)</option>
+            <option value="Solvent">Solvent (Dissolving)</option>
+            <option value="Fuel Additive">Fuel Additive</option>
+            <option value="Pharmaceutical">Pharmaceutical Intermediate</option>
+          </select>
         </div>
-      )}
-
-      {/* Category */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Category
-        </label>
-        <select
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          className="input-field"
-          disabled={loading}
-        >
-          {categories.map((cat) => (
-            <option key={cat.value} value={cat.value}>
-              {cat.label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Boiling Point Range */}
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Boiling Point Min (°C)"
-          type="number"
-          name="boilingPointMin"
-          value={formData.boilingPointMin || ""}
-          onChange={handleChange}
-          placeholder="e.g., 80"
-          disabled={loading}
-        />
-        <Input
-          label="Boiling Point Max (°C)"
-          type="number"
-          name="boilingPointMax"
-          value={formData.boilingPointMax || ""}
-          onChange={handleChange}
-          placeholder="e.g., 120"
-          error={errors.boilingPointMax}
-          disabled={loading}
-        />
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Boiling Point */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Boiling Point Range (°C)
+          </label>
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1 group">
+              <Thermometer className="absolute top-2.5 left-3 h-4 w-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+              <input
+                type="number"
+                name="boilingPointMin"
+                value={formData.boilingPointMin}
+                onChange={handleChange}
+                placeholder="Min"
+                className="input-field pl-9 w-full"
+              />
+            </div>
+            <span className="text-gray-400 font-medium">-</span>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                name="boilingPointMax"
+                value={formData.boilingPointMax}
+                onChange={handleChange}
+                placeholder="Max"
+                className="input-field w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Viscosity */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Viscosity Range (cP)
+          </label>
+          <div className="flex items-center space-x-2">
+            <div className="relative flex-1 group">
+              <Droplets className="absolute top-2.5 left-3 h-4 w-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+              <input
+                type="number"
+                name="viscosityMin"
+                value={formData.viscosityMin}
+                onChange={handleChange}
+                placeholder="Min"
+                className="input-field pl-9 w-full"
+              />
+            </div>
+            <span className="text-gray-400 font-medium">-</span>
+            <div className="relative flex-1">
+              <input
+                type="number"
+                name="viscosityMax"
+                value={formData.viscosityMax}
+                onChange={handleChange}
+                placeholder="Max"
+                className="input-field w-full"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Viscosity Range */}
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Viscosity Min (cP)"
-          type="number"
-          name="viscosityMin"
-          value={formData.viscosityMin || ""}
-          onChange={handleChange}
-          placeholder="e.g., 10"
-          disabled={loading}
-        />
-        <Input
-          label="Viscosity Max (cP)"
-          type="number"
-          name="viscosityMax"
-          value={formData.viscosityMax || ""}
-          onChange={handleChange}
-          placeholder="e.g., 50"
-          error={errors.viscosityMax}
-          disabled={loading}
-        />
-      </div>
+      {/* Solubility & Thermal Stability */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Solubility Preference
+          </label>
+          <select
+            name="solubility"
+            value={formData.solubility}
+            onChange={handleChange}
+            className="input-field w-full"
+          >
+            <option value="">Any</option>
+            <option value="Water-soluble">Water-soluble (Hydrophilic)</option>
+            <option value="Oil-soluble">Oil-soluble (Lipophilic)</option>
+            <option value="Amphiphilic">Amphiphilic (Both)</option>
+          </select>
+        </div>
 
-      {/* Solubility */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Solubility
-        </label>
-        <select
-          name="solubility"
-          value={formData.solubility}
-          onChange={handleChange}
-          className="input-field"
-          disabled={loading}
-        >
-          {solubilityOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Min Thermal Stability (°C)
+          </label>
+          <input
+            type="number"
+            name="thermalStabilityMin"
+            value={formData.thermalStabilityMin}
+            onChange={handleChange}
+            placeholder="e.g. 150"
+            className="input-field w-full"
+          />
+        </div>
       </div>
-
-      {/* Thermal Stability */}
-      <Input
-        label="Thermal Stability Min (°C)"
-        type="number"
-        name="thermalStabilityMin"
-        value={formData.thermalStabilityMin || ""}
-        onChange={handleChange}
-        placeholder="e.g., 70"
-        disabled={loading}
-      />
 
       {/* Additional Properties */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Additional Properties
+      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+          <ClipboardList className="w-4 h-4 text-primary-500" />
+          Additional Criteria
         </label>
-        <div className="space-y-2">
-          {propertyOptions.map((prop) => (
-            <label key={prop.value} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.additionalProperties.includes(prop.value)}
-                onChange={() => handleCheckboxChange(prop.value)}
-                disabled={loading}
-                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">{prop.label}</span>
-            </label>
-          ))}
+
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            value={newProperty}
+            onChange={(e) => setNewProperty(e.target.value)}
+            onKeyPress={(e) =>
+              e.key === "Enter" && (e.preventDefault(), handleAddProperty())
+            }
+            placeholder="e.g. Biodegradable, Non-toxic"
+            className="input-field flex-1"
+          />
+          <button
+            type="button"
+            onClick={handleAddProperty}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-200 transition-colors flex items-center justify-center"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
         </div>
+
+        {formData.additionalProperties.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {formData.additionalProperties.map((prop, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm"
+              >
+                {prop}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveProperty(idx)}
+                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 italic">
+            No additional criteria added yet.
+          </p>
+        )}
       </div>
 
-      {/* Notes */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Additional Notes
-        </label>
-        <textarea
-          name="notes"
-          value={formData.notes}
-          onChange={handleChange}
-          placeholder="Any additional requirements or notes..."
-          rows="3"
-          disabled={loading}
-          className="input-field resize-none"
-        />
-      </div>
-
-      {/* Submit */}
-      <button type="submit" className="btn-primary w-full" disabled={loading}>
-        {loading ? "Generating..." : "Generate Compounds"}
+      <button
+        type="submit"
+        disabled={loading}
+        className="btn-primary w-full flex justify-center items-center py-3.5 text-base font-bold tracking-wide shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <span>Synthesizing...</span>
+          </div>
+        ) : (
+          <>
+            <FlaskConical className="w-5 h-5 mr-2" />
+            Start Discovery
+          </>
+        )}
       </button>
     </form>
   );

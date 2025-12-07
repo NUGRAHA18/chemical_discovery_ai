@@ -227,11 +227,19 @@ const Discovery = () => {
   const handleSelectTemplate = (template) => {
     if (template.inputMode === "structured") {
       setInputMode("structured");
-      setStructuredData(template.formData);
+
+      // ✅ UPDATE DI SINI: Gunakan 'template.structuredData'
+      // Sesuai dengan nama key di file discoveryTemplates.js yang baru kamu buat
+      setStructuredData(template.structuredData);
     } else {
       setInputMode("ai-prompt");
-      setCriteria(template.prompt);
+
+      // ✅ UPDATE DI SINI: Gunakan 'template.aiPrompt'
+      setCriteria(template.aiPrompt || template.description);
     }
+
+    // Tutup modal setelah memilih (opsional, jika belum ada di dalam modalnya)
+    setShowTemplates(false);
   };
 
   return (
