@@ -16,6 +16,21 @@ import ComparisonModal from "../components/discovery/ComparisonModal";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 import TemplatesModal from "../components/discovery/TemplatesModal";
 
+// Import Icons agar senada dengan Dashboard
+import {
+  FlaskConical,
+  Sparkles,
+  ClipboardList,
+  Scale,
+  FileJson,
+  FileSpreadsheet,
+  FileText,
+  AlertCircle,
+  LayoutTemplate,
+  TestTube,
+  Download,
+} from "lucide-react";
+
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured");
   const [loading, setLoading] = useState(false);
@@ -220,96 +235,126 @@ const Discovery = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex justify-between items-center">
+        {/* HEADER SECTION - Styled like Dashboard */}
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Chemical Discovery
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Generate novel chemical compounds using AI
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                <FlaskConical className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Chemical Discovery
+              </h1>
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 ml-1">
+              Generate novel chemical compounds using advanced AI models.
             </p>
           </div>
 
           <div className="flex space-x-3">
             <button
               onClick={() => setShowTemplates(true)}
-              className="btn-secondary"
+              className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm font-medium text-sm"
             >
-              📋 Templates
+              <LayoutTemplate className="w-4 h-4 mr-2 text-gray-500" />
+              Templates
             </button>
             {comparisonList.length > 0 && (
               <button
                 onClick={() => setShowComparison(true)}
-                className="btn-primary relative"
+                className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg shadow-sm transition-colors font-medium text-sm relative"
               >
-                ⚖️ Compare ({comparisonList.length})
+                <Scale className="w-4 h-4 mr-2" />
+                Compare
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm border border-white dark:border-gray-900">
+                  {comparisonList.length}
+                </span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="card mb-8">
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Input Mode:
+        {/* INPUT CARD */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8">
+          {/* Tabs Navigation */}
+          <div className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 px-6 py-4">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+              Select Input Method
             </label>
-            <div className="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+            <div className="flex space-x-2 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg w-fit">
               <button
                 onClick={() => setInputMode("structured")}
-                className={`px-4 py-2 rounded-md transition-colors ${
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   inputMode === "structured"
-                    ? "bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                 }`}
               >
-                📋 Structured Form
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Structured Form
               </button>
               <button
                 onClick={() => setInputMode("ai-prompt")}
-                className={`px-4 py-2 rounded-md transition-colors ${
+                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${
                   inputMode === "ai-prompt"
-                    ? "bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                 }`}
               >
-                💬 AI Prompt
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI Prompt
               </button>
             </div>
           </div>
 
-          {inputMode === "structured" ? (
-            <StructuredForm
-              onSubmit={handleStructuredSubmit}
-              loading={loading}
-              initialData={structuredData}
-            />
-          ) : (
-            <AIPromptForm
-              onSubmit={handleAIPromptSubmit}
-              loading={loading}
-              initialValue={criteria}
-              onChange={setCriteria}
-            />
-          )}
+          {/* Form Content */}
+          <div className="p-6">
+            {inputMode === "structured" ? (
+              <StructuredForm
+                onSubmit={handleStructuredSubmit}
+                loading={loading}
+                initialData={structuredData}
+              />
+            ) : (
+              <AIPromptForm
+                onSubmit={handleAIPromptSubmit}
+                loading={loading}
+                initialValue={criteria}
+                onChange={setCriteria}
+              />
+            )}
+          </div>
         </div>
 
+        {/* LOADING STATE - Styled */}
         {loading && (
-          <div className="card mb-8">
-            <div className="text-center">
-              <Loading size="lg" />
-              <p className="text-gray-600 dark:text-gray-400 mt-4">
-                Generating compounds...
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 mb-8 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative">
+                <Loading size="lg" />
+                <TestTube className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary-600 dark:text-primary-400 opacity-50" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mt-4">
+                Synthesizing Compounds...
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-md mx-auto">
+                Our AI is analyzing molecular structures and optimizing
+                properties based on your criteria. This typically takes 10-30
+                seconds.
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                This may take 10-30 seconds
-              </p>
+
+              {/* Progress Bar */}
               {progress > 0 && (
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="w-full max-w-md mt-6">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Processing</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                     <div
-                      className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-primary-600 h-2 rounded-full transition-all duration-500 ease-out"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>
@@ -319,36 +364,61 @@ const Discovery = () => {
           </div>
         )}
 
+        {/* ERROR STATE - Styled */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-8">
-            {error}
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-8 flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
+                Generation Failed
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">
+                {error}
+              </p>
+            </div>
           </div>
         )}
 
+        {/* RESULTS SECTION */}
         {discovery && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Generated Compounds
-              </h2>
-              <div className="flex space-x-2">
+          <div className="animate-fade-in">
+            <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                  <FlaskConical className="w-6 h-6 mr-2 text-green-500" />
+                  Generated Compounds
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                  Found {discovery.compounds?.length || 0} candidates matching
+                  your criteria.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 uppercase">
+                  Export
+                </span>
+                <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <button
                   onClick={() => handleExport("json")}
-                  className="btn-outline text-sm"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                  title="Export JSON"
                 >
-                  📄 JSON
+                  <FileJson className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleExport("csv")}
-                  className="btn-outline text-sm"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                  title="Export CSV"
                 >
-                  📊 CSV
+                  <FileSpreadsheet className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleExport("pdf")}
-                  className="btn-outline text-sm"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                  title="Export PDF"
                 >
-                  📑 PDF
+                  <FileText className="w-4 h-4" />
                 </button>
               </div>
             </div>

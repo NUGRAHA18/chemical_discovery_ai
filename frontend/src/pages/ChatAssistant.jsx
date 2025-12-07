@@ -6,6 +6,18 @@ import ChatMessage from "../components/chat/ChatMessage";
 import ChatInput from "../components/chat/ChatInput";
 import Loading from "../components/common/Loading";
 
+// Import Icons
+import {
+  Bot,
+  Trash2,
+  FlaskConical,
+  MessageSquare,
+  Sparkles,
+  HelpCircle,
+  ArrowRight,
+  History,
+} from "lucide-react";
+
 const ChatAssistant = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,7 +114,6 @@ const ChatAssistant = () => {
       setIsStreaming(true);
 
       // 4. Mulai Streaming (SSE)
-      // PERBAIKAN PENTING ADA DI SINI:
       eventSourceRef.current = chatService.streamResponse(
         sessionId,
         (chunk) => {
@@ -115,7 +126,6 @@ const ChatAssistant = () => {
             // Pastikan kita mengupdate pesan terakhir dan itu adalah pesan assistant
             if (lastMsg && lastMsg.role === "assistant") {
               // Copy objek message-nya lalu update properti message
-              // INI YANG MEMPERBAIKI MASALAH DUPLIKASI/GLITCH
               updated[lastIndex] = {
                 ...lastMsg,
                 message: lastMsg.message + chunk,
@@ -174,73 +184,84 @@ const ChatAssistant = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 font-sans">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* HEADER SECTION */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              AI Chat Assistant
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Ask questions about chemicals, compounds, and your discoveries
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                AI Research Assistant
+              </h1>
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 ml-1">
+              Your intelligent partner for chemical analysis and discovery
+              insights.
             </p>
           </div>
 
           {messages.length > 0 && (
             <button
               onClick={handleClearHistory}
-              className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
             >
+              <Trash2 className="w-4 h-4" />
               Clear History
             </button>
           )}
         </div>
 
+        {/* CONTEXT SELECTOR (DISCOVERY REFERENCE) */}
         {discoveries.length > 0 && (
-          <div className="card mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Reference a Discovery (Optional):
-            </label>
-            <select
-              value={selectedDiscovery || ""}
-              onChange={(e) => setSelectedDiscovery(e.target.value || null)}
-              className="input-field"
-            >
-              <option value="">No discovery selected</option>
-              {discoveries.map((discovery) => (
-                <option key={discovery._id} value={discovery._id}>
-                  {discovery.criteria.substring(0, 60)}...
-                  {" - "}
-                  {new Date(discovery.createdAt).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <FlaskConical className="w-4 h-4 text-primary-500" />
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Reference Context (Optional)
+              </label>
+            </div>
+            <div className="relative">
+              <select
+                value={selectedDiscovery || ""}
+                onChange={(e) => setSelectedDiscovery(e.target.value || null)}
+                className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white transition-all"
+              >
+                <option value="">No specific discovery context</option>
+                {discoveries.map((discovery) => (
+                  <option key={discovery._id} value={discovery._id}>
+                    {discovery.criteria.substring(0, 50)}... (
+                    {new Date(discovery.createdAt).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
+        {/* MAIN CHAT WINDOW */}
         <div
-          className="card mb-6"
-          style={{
-            minHeight: "500px",
-            maxHeight: "600px",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-          }}
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden flex flex-col"
+          style={{ height: "600px" }}
         >
+          {/* Chat Messages Area */}
           <div
-            className="flex-1 overflow-y-auto mb-4 space-y-4"
+            className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50 scroll-smooth"
             style={{ minHeight: 0 }}
           >
             {messages.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">💬</div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-80">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mb-6">
+                  <MessageSquare className="w-10 h-10 text-indigo-500 dark:text-indigo-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   Start a Conversation
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Ask me anything about chemistry, compounds, or your
-                  discoveries
+                <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                  Ask me about chemical properties, analyze your discovery
+                  results, or get guidance on synthesis pathways.
                 </p>
               </div>
             ) : (
@@ -250,27 +271,40 @@ const ChatAssistant = () => {
             )}
 
             {isLoading && (
-              <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-                <Loading size="sm" />
-                <span className="text-sm">Sending...</span>
+              <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400 pl-2">
+                <div className="relative">
+                  <Bot className="w-6 h-6 text-primary-500" />
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-500"></span>
+                  </span>
+                </div>
+                <span className="text-sm font-medium animate-pulse">
+                  Thinking...
+                </span>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          <ChatInput
-            onSend={handleSendMessage}
-            disabled={isLoading || isStreaming}
-            isStreaming={isStreaming}
-          />
+          {/* Input Area */}
+          <div className="border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+            <ChatInput
+              onSend={handleSendMessage}
+              disabled={isLoading || isStreaming}
+              isStreaming={isStreaming}
+            />
+          </div>
         </div>
 
-        <div className="card">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-            Example Questions:
+        {/* EXAMPLE QUESTIONS (Suggestion Chips) */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-yellow-500" />
+            Suggested Questions
           </h3>
-          <div className="grid md:grid-cols-2 gap-2">
+          <div className="grid md:grid-cols-2 gap-3">
             {[
               "Explain the properties of benzene",
               "What makes a good surfactant?",
@@ -281,9 +315,12 @@ const ChatAssistant = () => {
                 key={idx}
                 onClick={() => handleSendMessage(example)}
                 disabled={isLoading || isStreaming}
-                className="text-left p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-700/30 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800/50 rounded-xl text-left text-sm text-gray-700 dark:text-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                "{example}"
+                <span className="font-medium group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+                  {example}
+                </span>
+                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
               </button>
             ))}
           </div>

@@ -332,7 +332,11 @@ const Landing = () => {
       <section className="relative py-32 overflow-hidden">
         {/* Animated Background Mesh */}
         <div className="absolute inset-0 bg-slate-950">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/20 via-slate-900 to-purple-900/20 animate-pulse"></div>
+          {/* Perbaikan: Mengubah via-slate-900 menjadi via-slate-950 agar konsisten dengan warna section sebelumnya */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/20 via-slate-950 to-purple-900/20 animate-pulse"></div>
+
+          {/* Tambahan: Gradient Masking di bagian atas agar transisi mulus (fading) dari section sebelumnya */}
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-950 to-transparent z-10"></div>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">

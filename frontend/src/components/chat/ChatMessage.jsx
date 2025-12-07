@@ -89,13 +89,17 @@ const ChatMessage = ({ message }) => {
                 <p className="mb-2 last:mb-0" {...props} />
               ),
               // Styling Link
-              a: ({ node, ...props }) => (
+              a: (
+                { node, children, ...props } // Tambahkan 'children' disini
+              ) => (
                 <a
                   className="text-blue-500 underline hover:text-blue-400"
                   target="_blank"
                   rel="noopener noreferrer"
                   {...props}
-                />
+                >
+                  {children} {/* Render children secara eksplisit */}
+                </a>
               ),
             }}
           >
