@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 import google.generativeai as genai
 import json
@@ -869,6 +869,100 @@ def calculate_properties():
         logger.error(f"Request error: {e}")
         return jsonify({'error': 'Invalid request'}), 400
 
+@app.route('/api/chat-stream', methods=['POST'])
+def chat_stream():
+    """Stream AI chat responses using Server-Sent Events"""
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        context = data.get('context', {})
+        user_id = data.get('userId', '')
+        
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+        
+        def generate():
+            try:
+                # Build prompt with context
+                prompt = build_chat_prompt(user_message, context)
+                
+                logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")
+                
+                # Stream from Gemini
+                response = model.generate_content(
+                    prompt,
+                    stream=True,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0.7,
+                        max_output_tokens=2048,
+                    )
+                )
+                
+                # Yield chunks as SSE
+                for chunk in response:
+                    if chunk.text:
+                        yield f"data: {chunk.text}\n\n"
+                
+                # Signal completion
+                yield f"data: [DONE]\n\n"
+                logger.info(f"Chat response completed for user {user_id}")
+                
+            except Exception as e:
+                logger.error(f"Chat stream error: {str(e)}")
+                yield f"data: [ERROR] {str(e)}\n\n"
+        
+        return Response(generate(), mimetype='text/event-stream')
+        
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+def build_chat_prompt(message: str, context: Dict) -> str:
+    """Build chat prompt with discovery context if available"""
+    
+    base_prompt = """You are a Chemical Discovery AI Assistant. You help users understand chemical compounds, their properties, and provide insights about chemical discoveries.
+
+Your capabilities:
+1. Explain chemical properties and concepts
+2. Analyze discovery results
+3. Suggest improvements to search criteria
+4. Answer questions about molecular structures
+5. Provide chemical safety information
+
+Guidelines:
+- Be concise but informative
+- Use scientific terminology appropriately
+- Cite specific data when discussing compounds
+- Always prioritize safety
+- Acknowledge limitations when uncertain
+
+"""
+    
+    # Add discovery context if available
+    if context and context.get('discoveryData'):
+        discovery_data = context['discoveryData']
+        criteria = discovery_data.get('criteria', '')
+        compounds = discovery_data.get('compounds', [])
+        
+        context_section = f"""
+CONTEXT - User's Recent Discovery:
+Criteria: {criteria}
+
+Generated Compounds:
+"""
+        for i, compound in enumerate(compounds[:3], 1):
+            context_section += f"""
+{i}. {compound.get('name', 'Unknown')}
+   Formula: {compound.get('formula', 'N/A')}
+   Properties: {json.dumps(compound.get('properties', {}), indent=2)}
+"""
+        
+        base_prompt += context_section
+    
+    base_prompt += f"\nUser Question: {message}\n\nAssistant:"
+    
+    return base_prompt
 # === RUN SERVER ===
 if __name__ == "__main__":
     print("\n" + "="*60)

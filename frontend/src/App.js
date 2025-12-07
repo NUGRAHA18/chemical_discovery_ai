@@ -8,6 +8,7 @@ import { DarkModeProvider } from "./contexts/DarkModeContext";
 import ToastNotification from "./components/common/ToastNotification";
 import { ComparisonProvider } from "./contexts/ComparisonContext";
 import Loading from "./components/common/Loading";
+import ChatAssistant from "./pages/ChatAssistant";
 
 // ✅ LAZY LOAD PAGES
 const Landing = lazy(() => import("./pages/Landing"));
@@ -42,6 +43,7 @@ function App() {
                     <Route path="/" element={<Landing />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/chat" element={<ChatAssistant />} />
 
                     <Route
                       path="/dashboard"

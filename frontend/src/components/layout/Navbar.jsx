@@ -120,6 +120,12 @@ const Navbar = () => {
                   </svg>
                   <span>Calc</span>
                 </Link>
+                <Link
+                  to="/chat"
+                  className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                >
+                  AI Chat
+                </Link>
 
                 {/* Dropdown-like grouping for secondary items could go here, but inline for now */}
                 <Link to="/history" className={linkClass("/history")}>
