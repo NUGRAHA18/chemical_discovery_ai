@@ -40,7 +40,7 @@ const History = () => {
         discoveryService.getStats(),
       ]);
       setDiscoveries(historyData.discoveries || []);
-      setStats(statsData);
+      setStats(statsData.stats || statsData);
     } catch (error) {
       console.error("Failed to load history:", error);
       showError("Failed to load history");
@@ -69,7 +69,7 @@ const History = () => {
 
       // Update stats real-time
       const statsData = await discoveryService.getStats();
-      setStats(statsData);
+      setStats(statsData.stats || statsData);
 
       showSuccess("Discovery deleted successfully");
     } catch (error) {

@@ -39,7 +39,7 @@ const Dashboard = () => {
   const loadStats = async () => {
     try {
       const data = await discoveryService.getStats();
-      setStats(data);
+      setStats(data.stats || data);
     } catch (error) {
       console.error("Failed to load stats:", error);
     } finally {
