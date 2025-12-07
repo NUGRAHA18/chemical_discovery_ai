@@ -6,9 +6,10 @@ import {
   FlaskConical,
   Plus,
   X,
+  CheckCircle2,
 } from "lucide-react";
 
-// --- PINDAHKAN KE SINI (DI LUAR KOMPONEN) ---
+// Default state form
 const DEFAULT_STATE = {
   category: "",
   boilingPointMin: "",
@@ -22,16 +23,15 @@ const DEFAULT_STATE = {
 };
 
 const StructuredForm = ({ onSubmit, loading, initialData }) => {
-  // Gunakan DEFAULT_STATE yang ada di luar
   const [formData, setFormData] = useState(initialData || DEFAULT_STATE);
   const [newProperty, setNewProperty] = useState("");
 
-  // Sekarang 'DEFAULT_STATE' aman digunakan di sini tanpa masuk dependency array
+  // Sync dengan template
   useEffect(() => {
     if (initialData) {
       setFormData((prev) => ({
-        ...DEFAULT_STATE, // Reset ke default
-        ...initialData, // Timpa dengan data baru
+        ...DEFAULT_STATE,
+        ...initialData,
       }));
     }
   }, [initialData]);
@@ -65,7 +65,52 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // PERBAIKAN: Pastikan angka dikonversi dengan benar dan undefined jika kosong
+    const parseNum = (val) =>
+      val === "" || val === null || val === undefined
+        ? undefined
+        : parseFloat(val);
+
+    const payload = {
+      category: formData.category,
+
+      // Kirim objek boilingPoint hanya jika ada isinya
+      boilingPoint:
+        formData.boilingPointMin || formData.boilingPointMax
+          ? {
+              min: parseNum(formData.boilingPointMin),
+              max: parseNum(formData.boilingPointMax),
+            }
+          : undefined,
+
+      // Kirim objek viscosity hanya jika ada isinya
+      viscosity:
+        formData.viscosityMin || formData.viscosityMax
+          ? {
+              min: parseNum(formData.viscosityMin),
+              max: parseNum(formData.viscosityMax),
+            }
+          : undefined,
+
+      solubility: formData.solubility || undefined,
+
+      thermalStability: formData.thermalStabilityMin
+        ? {
+            min: parseNum(formData.thermalStabilityMin),
+          }
+        : undefined,
+
+      additionalProperties:
+        formData.additionalProperties.length > 0
+          ? formData.additionalProperties
+          : undefined,
+
+      notes: formData.notes ? formData.notes.trim() : undefined,
+    };
+
+    console.log("📤 Sending Payload:", payload); // Debugging di Console Browser
+    onSubmit(payload);
   };
 
   return (
@@ -73,12 +118,15 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
       {/* Category Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Chemical Category
+          Chemical Category <span className="text-red-500">*</span>
         </label>
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FlaskConical className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
           </div>
+          {/* PERBAIKAN VALUE: Mengembalikan value ke lowercase/format lama 
+             agar sesuai validasi Backend (Enum).
+          */}
           <select
             name="category"
             value={formData.category}
@@ -87,12 +135,15 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
             required
           >
             <option value="">Select a category</option>
-            <option value="Surfactant">Surfactant (Cleaning/EOR)</option>
-            <option value="Polymer">Polymer (Plastics/Materials)</option>
-            <option value="Catalyst">Catalyst (Reaction Speed)</option>
-            <option value="Solvent">Solvent (Dissolving)</option>
-            <option value="Fuel Additive">Fuel Additive</option>
-            <option value="Pharmaceutical">Pharmaceutical Intermediate</option>
+            <option value="surfactant">Surfactant</option>
+            <option value="polymer">Polymer</option>
+            <option value="catalyst">Catalyst</option>
+            <option value="solvent">Solvent</option>
+            <option value="additive">Additive</option>
+            <option value="coating">Coating</option>
+            <option value="lubricant">Lubricant</option>
+            <option value="resin">Resin</option>
+            <option value="other">Other</option>
           </select>
         </div>
       </div>
@@ -167,6 +218,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Solubility Preference
           </label>
+          {/* PERBAIKAN VALUE: Mengembalikan value ke format lama (lowercase/dash) */}
           <select
             name="solubility"
             value={formData.solubility}
@@ -174,9 +226,10 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
             className="input-field w-full"
           >
             <option value="">Any</option>
-            <option value="Water-soluble">Water-soluble (Hydrophilic)</option>
-            <option value="Oil-soluble">Oil-soluble (Lipophilic)</option>
-            <option value="Amphiphilic">Amphiphilic (Both)</option>
+            <option value="water-soluble">Water Soluble</option>
+            <option value="oil-soluble">Oil Soluble</option>
+            <option value="alcohol-soluble">Alcohol Soluble</option>
+            <option value="insoluble">Insoluble</option>
           </select>
         </div>
 

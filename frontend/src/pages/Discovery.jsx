@@ -28,7 +28,6 @@ import {
   AlertCircle,
   LayoutTemplate,
   TestTube,
-  Download,
 } from "lucide-react";
 
 const Discovery = () => {
@@ -227,25 +226,18 @@ const Discovery = () => {
   const handleSelectTemplate = (template) => {
     if (template.inputMode === "structured") {
       setInputMode("structured");
-
-      // ✅ UPDATE DI SINI: Gunakan 'template.structuredData'
-      // Sesuai dengan nama key di file discoveryTemplates.js yang baru kamu buat
       setStructuredData(template.structuredData);
     } else {
       setInputMode("ai-prompt");
-
-      // ✅ UPDATE DI SINI: Gunakan 'template.aiPrompt'
       setCriteria(template.aiPrompt || template.description);
     }
-
-    // Tutup modal setelah memilih (opsional, jika belum ada di dalam modalnya)
     setShowTemplates(false);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* HEADER SECTION - Styled like Dashboard */}
+        {/* HEADER SECTION */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -336,7 +328,7 @@ const Discovery = () => {
           </div>
         </div>
 
-        {/* LOADING STATE - Styled */}
+        {/* LOADING STATE */}
         {loading && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 mb-8 text-center">
             <div className="flex flex-col items-center justify-center">
@@ -372,7 +364,7 @@ const Discovery = () => {
           </div>
         )}
 
-        {/* ERROR STATE - Styled */}
+        {/* ERROR STATE */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-8 flex items-start">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
