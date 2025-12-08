@@ -86,7 +86,7 @@ const ChatMessage = ({ message }) => {
               },
               // Styling Paragraph agar tidak terlalu rapat
               p: ({ node, ...props }) => (
-                <p className="mb-2 last:mb-0" {...props} />
+                <div className="mb-2 last:mb-0" {...props} />
               ),
               // Styling Link
               a: (
