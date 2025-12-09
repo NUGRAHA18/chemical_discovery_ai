@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import DarkModeToggle from "../common/DarkModeToggle";
+import { Upload } from "lucide-react"; // Add to existing import
 
 // Import Icons
 import {
@@ -16,7 +17,6 @@ import {
   Menu,
   X,
   User,
-  Upload,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -102,7 +102,10 @@ const Navbar = () => {
                   <Star className="w-4 h-4" />
                   <span>Favorites</span>
                 </Link>
-                <Link to="/batch" className="...">
+                <Link
+                  to="/batch"
+                  className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
                   <Upload className="w-5 h-5" />
                   Batch Discovery
                 </Link>
