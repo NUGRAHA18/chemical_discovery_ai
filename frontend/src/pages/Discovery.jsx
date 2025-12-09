@@ -404,7 +404,32 @@ const Discovery = () => {
                   Analysis
                 </h2>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown>{discovery.analysis}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      // Override elemen paragraph agar warnanya ikut parent (inherit) atau force putih
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="text-gray-800 dark:text-gray-200 mb-2"
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li
+                          className="text-gray-800 dark:text-gray-200"
+                          {...props}
+                        />
+                      ),
+                      strong: ({ node, ...props }) => (
+                        <strong
+                          className="font-bold text-gray-900 dark:text-white"
+                          {...props}
+                        />
+                      ),
+                      // Tambahkan elemen lain jika perlu (h1, h2, dll)
+                    }}
+                  >
+                    {discovery.analysis}
+                  </ReactMarkdown>
                 </div>
               </div>
             )}
@@ -417,7 +442,32 @@ const Discovery = () => {
                   Justification
                 </h2>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown>{discovery.justification}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      // Override elemen paragraph agar warnanya ikut parent (inherit) atau force putih
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="text-gray-800 dark:text-gray-200 mb-2"
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li
+                          className="text-gray-800 dark:text-gray-200"
+                          {...props}
+                        />
+                      ),
+                      strong: ({ node, ...props }) => (
+                        <strong
+                          className="font-bold text-gray-900 dark:text-white"
+                          {...props}
+                        />
+                      ),
+                      // Tambahkan elemen lain jika perlu (h1, h2, dll)
+                    }}
+                  >
+                    {discovery.justification}
+                  </ReactMarkdown>
                 </div>
               </div>
             )}
