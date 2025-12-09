@@ -12,6 +12,7 @@ import ChatAssistant from "./pages/ChatAssistant";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import BatchDiscovery from "./pages/BatchDiscovery";
 import BatchDetail from "./pages/BatchDetail";
+import Profile from "./pages/Profile";
 
 // ✅ LAZY LOAD PAGES
 const Landing = lazy(() => import("./pages/Landing"));
@@ -101,6 +102,7 @@ function App() {
                       />
                       <Route path="/batch" element={<BatchDiscovery />} />
                       <Route path="/batch/:id" element={<BatchDetail />} />
+                      <Route path="/profile" element={<Profile />} />
 
                       {/* 404 Not Found */}
                       <Route path="*" element={<NotFound />} />

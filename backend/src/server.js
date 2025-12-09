@@ -8,7 +8,6 @@ const connectDB = require("./config/database");
 const path = require("path");
 const chatRoutes = require("./routes/chat.routes");
 const app = express();
-const path = require("path");
 
 connectDB();
 

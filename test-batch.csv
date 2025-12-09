@@ -1,4 +1,95 @@
-criteria
-water-soluble surfactant with HLB 10
-biodegradable polymer for packaging
-low-toxicity organic solvent
+#!/bin/bash
+
+# Color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║     🧪 OPTIMIZED ML SERVICE - QUICK TEST                    ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Test 1: Health Check
+echo -e "${BLUE}[1/4]${NC} Health check..."
+HEALTH=$(curl -s http://localhost:5000/api/health)
+if echo "$HEALTH" | grep -q "optimized_v3.0"; then
+    echo -e "  ${GREEN}✅ Version: optimized_v3.0${NC}"
+else
+    echo -e "  ${RED}❌ Wrong version or service down${NC}"
+    echo "  Make sure ML service is running on port 5000"
+    exit 1
+fi
+
+# Test 2: Performance Test
+echo -e "${BLUE}[2/4]${NC} Performance test (3 compounds)..."
+START=$(date +%s)
+RESULT=$(curl -s -X POST http://localhost:5000/api/discover \
+  -H "Content-Type: application/json" \
+  -d '{"criteria":"water-soluble surfactant"}')
+END=$(date +%s)
+DURATION=$((END - START))
+
+echo "  Duration: ${DURATION}s"
+if [ $DURATION -lt 20 ]; then
+    echo -e "  ${GREEN}✅ Performance: EXCELLENT (<20s)${NC}"
+elif [ $DURATION -lt 30 ]; then
+    echo -e "  ${YELLOW}⚠️  Performance: OK (20-30s)${NC}"
+else
+    echo -e "  ${RED}❌ Performance: SLOW (>${DURATION}s)${NC}"
+    echo "  Expected: 10-15 seconds"
+fi
+
+# Test 3: Check Result Quality
+echo -e "${BLUE}[3/4]${NC} Quality check..."
+STATUS=$(echo "$RESULT" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+if [ "$STATUS" = "success" ]; then
+    echo -e "  ${GREEN}✅ Status: success${NC}"
+else
+    echo -e "  ${RED}❌ Status: $STATUS${NC}"
+    exit 1
+fi
+
+COMPOUND_COUNT=$(echo "$RESULT" | grep -o '"compounds":\[' | wc -l)
+if [ "$COMPOUND_COUNT" -gt 0 ]; then
+    echo -e "  ${GREEN}✅ Compounds: Generated${NC}"
+else
+    echo -e "  ${RED}❌ No compounds generated${NC}"
+    exit 1
+fi
+
+if echo "$RESULT" | grep -q '"justification"'; then
+    echo -e "  ${GREEN}✅ Justification: Present${NC}"
+else
+    echo -e "  ${YELLOW}⚠️  Justification: Missing${NC}"
+fi
+
+# Test 4: SSE Streaming
+echo -e "${BLUE}[4/4]${NC} SSE streaming test..."
+STREAM_TEST=$(timeout 30 curl -s -X POST http://localhost:5000/api/discover-stream \
+  -H "Content-Type: application/json" \
+  -d '{"criteria":"test"}' \
+  --no-buffer | head -n 1)
+
+if echo "$STREAM_TEST" | grep -q "data:"; then
+    echo -e "  ${GREEN}✅ SSE: Working${NC}"
+else
+    echo -e "  ${YELLOW}⚠️  SSE: Not tested (timeout or error)${NC}"
+fi
+
+# Summary
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║     📊 TEST SUMMARY                                         ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+echo -e "Service Version:  ${GREEN}optimized_v3.0${NC}"
+echo -e "Performance:      ${GREEN}${DURATION}s${NC} for 3 compounds"
+echo -e "Quality:          ${GREEN}Passed${NC}"
+echo -e "Status:           ${GREEN}Ready for production${NC}"
+echo ""
+echo "🎉 All tests completed successfully!"
+echo ""

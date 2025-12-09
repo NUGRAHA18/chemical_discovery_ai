@@ -13,11 +13,12 @@ import {
   LogOut,
   Menu,
   X,
-  Upload, // Icon Batch Discovery
+  Upload,
   ChevronDown,
   Layers,
   Archive,
   User,
+  Settings, // Icon tambahan untuk profile
 } from "lucide-react";
 
 const Navbar = () => {
@@ -28,16 +29,26 @@ const Navbar = () => {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
 
+  // State baru untuk dropdown User Profile
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const location = useLocation();
 
   // Reset semua menu saat navigasi berpindah
   useEffect(() => {
     setToolsOpen(false);
     setLibraryOpen(false);
+    setUserMenuOpen(false); // Reset user menu
     setMobileMenuOpen(false);
   }, [location]);
 
   const isActive = (path) => location.pathname === path;
+
+  // Helper untuk menampilkan Avatar
+  const getAvatarUrl = (path) => {
+    if (!path) return null;
+    return path.startsWith("http") ? path : `http://localhost:3000${path}`;
+  };
 
   // Style untuk link menu utama (Top Level)
   const linkClass = (path) =>
@@ -182,21 +193,78 @@ const Navbar = () => {
             <DarkModeToggle />
             {isAuthenticated ? (
               <div className="flex items-center space-x-4 pl-4 border-l border-gray-200 dark:border-slate-700">
-                <div className="flex flex-col text-right">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
-                    {user?.name || "Scientist"}
-                  </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-0.5">
-                    Researcher
-                  </span>
+                {/* --- MODIFIKASI: DROPDOWN USER PROFILE --- */}
+                <div className="relative group">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    onBlur={() => setTimeout(() => setUserMenuOpen(false), 200)}
+                    className="flex items-center space-x-3 text-left outline-none p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
+                  >
+                    <div className="flex flex-col text-right">
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
+                        {user?.username || user?.name || "Scientist"}
+                      </span>
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-0.5">
+                        Researcher
+                      </span>
+                    </div>
+                    {/* Avatar Image */}
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                      {user?.avatar ? (
+                        <img
+                          src={getAvatarUrl(user.avatar)}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                          <User className="w-5 h-5" />
+                        </div>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={`w-3 h-3 text-gray-400 transition-transform ${
+                        userMenuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Dropdown Content User */}
+                  <div
+                    className={`absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-200 origin-top-right z-50 ${
+                      userMenuOpen
+                        ? "opacity-100 scale-100 translate-y-0"
+                        : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+                    }`}
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Signed in as
+                      </p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        className={dropdownItemClass("/profile")}
+                      >
+                        <Settings className="w-4 h-4 mr-3 text-slate-500" />
+                        My Profile
+                      </Link>
+
+                      <button
+                        onClick={logout}
+                        className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={logout}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all"
-                  title="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+                {/* --- END MODIFIKASI --- */}
               </div>
             ) : (
               <div className="flex items-center space-x-3">
@@ -303,16 +371,35 @@ const Navbar = () => {
 
                 <div className="border-t border-gray-200 dark:border-gray-700 my-4 pt-4">
                   <div className="flex items-center px-2 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-3">
-                      <User className="w-5 h-5 text-gray-500" />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-3 overflow-hidden border border-gray-200 dark:border-gray-600">
+                      {user?.avatar ? (
+                        <img
+                          src={getAvatarUrl(user.avatar)}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-5 h-5 text-gray-500" />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {user?.name}
+                        {user?.username || user?.name}
                       </p>
                       <p className="text-xs text-slate-500">{user?.email}</p>
                     </div>
                   </div>
+
+                  {/* --- MODIFIKASI MOBILE: Link ke Profile --- */}
+                  <Link
+                    to="/profile"
+                    className="mobile-link w-full text-left flex items-center py-3 px-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors mb-1"
+                  >
+                    <Settings className="w-5 h-5 mr-3 opacity-70" /> Edit
+                    Profile
+                  </Link>
+                  {/* ------------------------------------------ */}
+
                   <button
                     onClick={logout}
                     className="mobile-link w-full text-left flex items-center py-3 px-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
