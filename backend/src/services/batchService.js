@@ -1,186 +1,242 @@
-const csv = require("csv-parser");
+// backend/src/services/batchService.js
 const XLSX = require("xlsx");
-const fs = require("fs");
-const { Readable } = require("stream");
 
 /**
- * Parse CSV file buffer to array of objects
+ * Validate and parse CSV data - Support both structured and AI prompt templates
  */
-async function parseCSV(fileBuffer) {
-  return new Promise((resolve, reject) => {
-    const results = [];
-    const stream = Readable.from(fileBuffer.toString());
+async function validateCSVData(buffer) {
+  try {
+    let csvString = buffer.toString("utf-8").replace(/^\uFEFF/, "");
+    const lines = csvString.split(/\r?\n/).filter((line) => line.trim());
 
-    stream
-      .pipe(csv())
-      .on("data", (data) => results.push(data))
-      .on("end", () => resolve(results))
-      .on("error", (error) => reject(error));
-  });
+    if (lines.length < 2) {
+      throw new Error("CSV file is empty or has no data rows");
+    }
+
+    const headerLine = lines[0].replace(/['"]/g, "");
+    const headers = headerLine
+      .toLowerCase()
+      .split(",")
+      .map((h) => h.trim());
+
+    console.log("CSV Headers:", headers);
+
+    // ✅ CHECK TEMPLATE TYPE
+    const hasStructured = headers.includes("category");
+    const hasCriteria = headers.includes("criteria");
+
+    if (!hasStructured && !hasCriteria) {
+      throw new Error(
+        'CSV must have either "criteria" column (AI template) or "category" column (structured template)'
+      );
+    }
+
+    const items = [];
+
+    // ✅ PARSE STRUCTURED TEMPLATE
+    if (hasStructured) {
+      const indices = {
+        category: headers.indexOf("category"),
+        boiling_point_min: headers.indexOf("boiling_point_min"),
+        boiling_point_max: headers.indexOf("boiling_point_max"),
+        viscosity_min: headers.indexOf("viscosity_min"),
+        viscosity_max: headers.indexOf("viscosity_max"),
+        solubility: headers.indexOf("solubility"),
+        thermal_stability_min: headers.indexOf("thermal_stability_min"),
+        additional_properties: headers.indexOf("additional_properties"),
+        notes: headers.indexOf("notes"),
+      };
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line
+          .split(",")
+          .map((v) => v.trim().replace(/^["']|["']$/g, ""));
+
+        const category = values[indices.category];
+        if (!category) continue;
+
+        // Build structured data
+        const structuredData = {
+          category,
+          boiling_point_min:
+            parseFloat(values[indices.boiling_point_min]) || null,
+          boiling_point_max:
+            parseFloat(values[indices.boiling_point_max]) || null,
+          viscosity_min: parseFloat(values[indices.viscosity_min]) || null,
+          viscosity_max: parseFloat(values[indices.viscosity_max]) || null,
+          solubility: values[indices.solubility] || null,
+          thermal_stability_min:
+            parseFloat(values[indices.thermal_stability_min]) || null,
+          additional_properties: values[indices.additional_properties] || null,
+        };
+
+        // Generate criteria from structured data
+        const criteria = generateCriteriaFromStructured(structuredData);
+
+        items.push({
+          criteria,
+          structuredData,
+        });
+      }
+    }
+    // ✅ PARSE AI PROMPT TEMPLATE
+    else if (hasCriteria) {
+      const criteriaIndex = headers.indexOf("criteria");
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = line
+          .split(",")
+          .map((v) => v.trim().replace(/^["']|["']$/g, ""));
+        const criteria = values[criteriaIndex];
+
+        if (criteria && criteria.length > 0) {
+          items.push({
+            criteria: criteria.trim(),
+            structuredData: null,
+          });
+        }
+      }
+    }
+
+    console.log(`Parsed ${items.length} items from CSV`);
+
+    if (items.length === 0) {
+      throw new Error("No valid data rows found in CSV file");
+    }
+
+    return items;
+  } catch (error) {
+    console.error("CSV parsing error:", error);
+    throw error;
+  }
 }
 
 /**
- * Parse Excel file buffer to array of objects
+ * Validate and parse Excel data - Support both templates
  */
-function parseExcel(fileBuffer) {
-  const workbook = XLSX.read(fileBuffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0]; // First sheet
-  const worksheet = workbook.Sheets[sheetName];
-  const data = XLSX.utils.sheet_to_json(worksheet);
-  return data;
+async function validateExcelData(buffer) {
+  try {
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(sheet);
+
+    console.log("Excel rows:", data.length);
+
+    if (data.length === 0) {
+      throw new Error("Excel file is empty");
+    }
+
+    const items = [];
+    const firstRow = data[0];
+    const hasStructured = "category" in firstRow || "Category" in firstRow;
+    const hasCriteria = "criteria" in firstRow || "Criteria" in firstRow;
+
+    if (!hasStructured && !hasCriteria) {
+      throw new Error('Excel must have either "criteria" or "category" column');
+    }
+
+    for (const row of data) {
+      // ✅ STRUCTURED TEMPLATE
+      if (hasStructured) {
+        const category = row.category || row.Category;
+        if (!category) continue;
+
+        const structuredData = {
+          category: String(category),
+          boiling_point_min: parseFloat(row.boiling_point_min) || null,
+          boiling_point_max: parseFloat(row.boiling_point_max) || null,
+          viscosity_min: parseFloat(row.viscosity_min) || null,
+          viscosity_max: parseFloat(row.viscosity_max) || null,
+          solubility: row.solubility || null,
+          thermal_stability_min: parseFloat(row.thermal_stability_min) || null,
+          additional_properties: row.additional_properties || null,
+        };
+
+        const criteria = generateCriteriaFromStructured(structuredData);
+
+        items.push({
+          criteria,
+          structuredData,
+        });
+      }
+      // ✅ AI PROMPT TEMPLATE
+      else if (hasCriteria) {
+        const criteria = row.criteria || row.Criteria;
+        if (criteria) {
+          items.push({
+            criteria: String(criteria).trim(),
+            structuredData: null,
+          });
+        }
+      }
+    }
+
+    if (items.length === 0) {
+      throw new Error("No valid data found in Excel file");
+    }
+
+    console.log(`Parsed ${items.length} items from Excel`);
+
+    return items;
+  } catch (error) {
+    console.error("Excel parsing error:", error);
+    throw error;
+  }
 }
 
 /**
- * Build criteria string from structured row data
+ * Generate criteria text from structured data
  */
-function buildCriteriaFromRow(row) {
+function generateCriteriaFromStructured(data) {
   const parts = [];
 
-  // Category
-  if (row.category) {
-    parts.push(`${row.category} compound`);
+  parts.push(`${data.category} compound`);
+
+  if (data.boiling_point_min && data.boiling_point_max) {
+    parts.push(
+      `boiling point ${data.boiling_point_min}-${data.boiling_point_max}°C`
+    );
   }
 
-  // Boiling point
-  if (row.boiling_point_min || row.boiling_point_max) {
-    if (row.boiling_point_min && row.boiling_point_max) {
-      parts.push(
-        `boiling point between ${row.boiling_point_min}°C and ${row.boiling_point_max}°C`
-      );
-    } else if (row.boiling_point_min) {
-      parts.push(`boiling point above ${row.boiling_point_min}°C`);
-    } else {
-      parts.push(`boiling point below ${row.boiling_point_max}°C`);
-    }
+  if (data.viscosity_min && data.viscosity_max) {
+    parts.push(`viscosity ${data.viscosity_min}-${data.viscosity_max} cP`);
   }
 
-  // Viscosity
-  if (row.viscosity_min || row.viscosity_max) {
-    if (row.viscosity_min && row.viscosity_max) {
-      parts.push(
-        `viscosity between ${row.viscosity_min} and ${row.viscosity_max} cP`
-      );
-    } else if (row.viscosity_min) {
-      parts.push(`viscosity above ${row.viscosity_min} cP`);
-    } else {
-      parts.push(`viscosity below ${row.viscosity_max} cP`);
-    }
+  if (data.solubility) {
+    parts.push(`${data.solubility}-soluble`);
   }
 
-  // Solubility
-  if (row.solubility) {
-    parts.push(row.solubility);
+  if (data.thermal_stability_min) {
+    parts.push(`thermal stability above ${data.thermal_stability_min}°C`);
   }
 
-  // Thermal stability
-  if (row.thermal_stability_min) {
-    parts.push(`thermal stability above ${row.thermal_stability_min}°C`);
-  }
-
-  // Additional properties
-  if (row.additional_properties) {
-    const props = row.additional_properties.split("|").map((p) => p.trim());
-    parts.push(...props);
-  }
-
-  // Notes
-  if (row.notes) {
-    parts.push(row.notes);
+  if (data.additional_properties) {
+    parts.push(data.additional_properties);
   }
 
   return parts.join(", ");
 }
 
 /**
- * Extract structured data from row
+ * Parse structured row
  */
-function extractStructuredData(row) {
-  // Check if this is AI prompt mode (only has 'criteria' column)
-  if (row.criteria && Object.keys(row).length === 1) {
-    return null; // AI prompt mode, no structured data
-  }
-
-  // Structured mode
+function parseStructuredRow(row) {
   return {
-    category: row.category || "",
-    boilingPointMin: row.boiling_point_min || "",
-    boilingPointMax: row.boiling_point_max || "",
-    viscosityMin: row.viscosity_min || "",
-    viscosityMax: row.viscosity_max || "",
-    solubility: row.solubility || "",
-    thermalStabilityMin: row.thermal_stability_min || "",
-    additionalProperties: row.additional_properties
-      ? row.additional_properties.split("|").map((p) => p.trim())
-      : [],
-    notes: row.notes || "",
+    criteria: row.criteria,
+    structuredData: null,
   };
-}
-
-/**
- * Validate batch file data
- */
-function validateBatchData(rows) {
-  const errors = [];
-
-  if (rows.length === 0) {
-    errors.push("File is empty");
-    return { valid: false, errors };
-  }
-
-  if (rows.length > 100) {
-    errors.push("Maximum 100 rows allowed");
-    return { valid: false, errors };
-  }
-
-  // Check if all rows have criteria (either direct or buildable)
-  rows.forEach((row, index) => {
-    const hasCriteria = row.criteria;
-    const hasStructuredFields =
-      row.category || row.boiling_point_min || row.notes;
-
-    if (!hasCriteria && !hasStructuredFields) {
-      errors.push(`Row ${index + 1}: No criteria or structured fields found`);
-    }
-  });
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
- * Process batch items into standardized format
- */
-function processBatchItems(rows) {
-  return rows.map((row, index) => {
-    let criteria;
-    let structuredData;
-
-    // Check if AI prompt mode (has 'criteria' column)
-    if (row.criteria && !row.category) {
-      criteria = row.criteria.trim();
-      structuredData = null;
-    } else {
-      // Structured mode - build criteria from columns
-      criteria = buildCriteriaFromRow(row);
-      structuredData = extractStructuredData(row);
-    }
-
-    return {
-      rowNumber: index + 1,
-      criteria,
-      structuredData,
-      status: "pending",
-    };
-  });
 }
 
 module.exports = {
-  parseCSV,
-  parseExcel,
-  buildCriteriaFromRow,
-  extractStructuredData,
-  validateBatchData,
-  processBatchItems,
+  validateCSVData,
+  validateExcelData,
+  parseStructuredRow,
+  generateCriteriaFromStructured,
 };

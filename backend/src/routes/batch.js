@@ -5,7 +5,7 @@ const batchController = require("../controllers/batchController");
 const { protect } = require("../middleware/auth");
 
 // Multer configuration for file upload
-const storage = multer.memoryStorage(); // Store in memory as buffer
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -35,8 +35,9 @@ router.post(
   batchController.uploadBatch
 );
 router.get("/", protect, batchController.getBatches);
-router.get("/:id", protect, batchController.getBatch);
-router.get("/:id/progress", protect, batchController.streamProgress);
+router.get("/:id", protect, batchController.getBatchDetails); // ✅ FIXED
+router.get("/:id/progress", protect, batchController.streamBatchProgress); // ✅ FIXED
+router.get("/:id/export", protect, batchController.exportBatchResults); // ✅ ADDED
 router.post("/:id/cancel", protect, batchController.cancelBatch);
 router.delete("/:id", protect, batchController.deleteBatch);
 

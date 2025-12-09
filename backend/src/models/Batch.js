@@ -63,6 +63,27 @@ const batchSchema = new mongoose.Schema(
     fileType: {
       type: String,
       enum: ["csv", "xlsx", "xls"],
+      default: "csv",
+    },
+    status: {
+      type: String,
+      enum: ["pending", "processing", "completed", "failed", "cancelled"],
+      default: "pending",
+    },
+    totalItems: {
+      type: Number,
+      required: true,
+    },
+    // ✅ FIX PROGRESS
+    progress: {
+      completed: { type: Number, default: 0 },
+      failed: { type: Number, default: 0 },
+      total: { type: Number, required: true, default: 0 }, // ✅ ADD DEFAULT
+      percentage: { type: Number, default: 0 },
+    },
+    fileType: {
+      type: String,
+      enum: ["csv", "xlsx", "xls"],
       required: true,
     },
     totalItems: {
