@@ -1,4 +1,4 @@
-const Batch = require("../models/batch");
+const Batch = require("../models/Batch");
 const Discovery = require("../models/Discovery");
 const mlService = require("../services/mlService");
 const batchService = require("../services/batchService");

@@ -55,6 +55,7 @@ app.use("/api/favorites", require("./routes/favorites.routes"));
 app.use("/api/export", require("./routes/export.routes"));
 app.use("/api/chat", chatRoutes);
 app.use("/api", require("./routes/propertyCalculator"));
+app.use("/api/batch", require("./routes/batch"));
 
 app.get("/health", (req, res) => {
   res.json({

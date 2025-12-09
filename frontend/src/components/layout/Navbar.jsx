@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   User,
+  Upload,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -100,6 +101,10 @@ const Navbar = () => {
                 <Link to="/favorites" className={linkClass("/favorites")}>
                   <Star className="w-4 h-4" />
                   <span>Favorites</span>
+                </Link>
+                <Link to="/batch" className="...">
+                  <Upload className="w-5 h-5" />
+                  Batch Discovery
                 </Link>
               </>
             )}
