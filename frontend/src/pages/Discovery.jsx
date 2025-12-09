@@ -4,6 +4,7 @@ import { favoritesService } from "../services/favorites";
 import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
+import CompoundDetailModal from "../components/discovery/CompoundDetailModal"; // ✅ NEW
 import Loading from "../components/common/Loading";
 import {
   showSuccess,
@@ -16,7 +17,7 @@ import ComparisonModal from "../components/discovery/ComparisonModal";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 import TemplatesModal from "../components/discovery/TemplatesModal";
 
-// Import Icons agar senada dengan Dashboard
+// Import Icons
 import {
   FlaskConical,
   Sparkles,
@@ -28,7 +29,10 @@ import {
   AlertCircle,
   LayoutTemplate,
   TestTube,
+  Lightbulb,
+  BookOpen,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured");
@@ -39,6 +43,10 @@ const Discovery = () => {
   const [showComparison, setShowComparison] = useState(false);
   const { comparisonList } = useComparison();
   const [showTemplates, setShowTemplates] = useState(false);
+
+  // ✅ NEW - Detail Modal States
+  const [selectedCompound, setSelectedCompound] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const timeoutRef = useRef(null);
 
@@ -162,10 +170,16 @@ const Discovery = () => {
         tags: ["from-discovery"],
         notes: "Added from discovery",
       });
-      showSuccess("Added to favorites successfully!");
+      showSuccess(`${compound.name} added to favorites!`);
     } catch (err) {
       showError("Failed to add to favorites: " + err.response?.data?.error);
     }
+  };
+
+  // ✅ NEW - View Details Handler
+  const handleViewDetails = (compound) => {
+    setSelectedCompound(compound);
+    setShowDetailModal(true);
   };
 
   const handleExport = async (format) => {
@@ -379,63 +393,101 @@ const Discovery = () => {
           </div>
         )}
 
-        {/* RESULTS SECTION */}
+        {/* ✅ RESULTS SECTION - COMPLETELY UPDATED */}
         {discovery && (
-          <div className="animate-fade-in">
-            <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-6 gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-                  <FlaskConical className="w-6 h-6 mr-2 text-green-500" />
-                  Generated Compounds
+          <div className="space-y-6 animate-fade-in">
+            {/* ✅ ANALYSIS SECTION - NEW */}
+            {discovery.analysis && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  Analysis
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                  Found {discovery.compounds?.length || 0} candidates matching
-                  your criteria.
-                </p>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{discovery.analysis}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ JUSTIFICATION SECTION - NEW */}
+            {discovery.justification && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Lightbulb className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  Justification
+                </h2>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{discovery.justification}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ COMPOUNDS SECTION - UPDATED */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <FlaskConical className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    Generated Compounds
+                  </h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                    Found {discovery.compounds?.length || 0} candidates matching
+                    your criteria
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 uppercase">
+                    Export
+                  </span>
+                  <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                  <button
+                    onClick={() => handleExport("json")}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    title="Export JSON"
+                  >
+                    <FileJson className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleExport("csv")}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    title="Export CSV"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleExport("pdf")}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    title="Export PDF"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 uppercase">
-                  Export
-                </span>
-                <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
-                <button
-                  onClick={() => handleExport("json")}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
-                  title="Export JSON"
-                >
-                  <FileJson className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleExport("csv")}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
-                  title="Export CSV"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleExport("pdf")}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
-                  title="Export PDF"
-                >
-                  <FileText className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {discovery.compounds?.map((compound, idx) => (
-                <CompoundCard
-                  key={idx}
-                  compound={compound}
-                  onAddToFavorites={handleAddToFavorites}
-                />
-              ))}
+              {discovery.compounds && discovery.compounds.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {discovery.compounds.map((compound, idx) => (
+                    <CompoundCard
+                      key={idx}
+                      compound={compound}
+                      onAddToFavorites={handleAddToFavorites}
+                      onViewDetails={handleViewDetails} // ✅ ADDED
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No compounds generated</p>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
 
+      {/* Modals */}
       <ComparisonModal
         isOpen={showComparison}
         onClose={() => setShowComparison(false)}
@@ -446,6 +498,17 @@ const Discovery = () => {
         onClose={() => setShowTemplates(false)}
         onSelectTemplate={handleSelectTemplate}
       />
+
+      {/* ✅ COMPOUND DETAIL MODAL - NEW */}
+      {showDetailModal && selectedCompound && (
+        <CompoundDetailModal
+          compound={selectedCompound}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedCompound(null);
+          }}
+        />
+      )}
     </div>
   );
 };
