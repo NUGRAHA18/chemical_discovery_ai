@@ -14,7 +14,6 @@ import BatchDiscovery from "./pages/BatchDiscovery";
 import BatchDetail from "./pages/BatchDetail";
 import Profile from "./pages/Profile";
 
-// ✅ LAZY LOAD PAGES
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
@@ -27,7 +26,6 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 function App() {
   return (
-    // ✅ ErrorBoundary PALING LUAR - Catch semua errors
     <ErrorBoundary>
       <DarkModeProvider>
         <ComparisonProvider>
@@ -60,6 +58,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route path="/profile" element={<Profile />} />
                       <Route
                         path="/discover"
                         element={
@@ -102,7 +101,6 @@ function App() {
                       />
                       <Route path="/batch" element={<BatchDiscovery />} />
                       <Route path="/batch/:id" element={<BatchDetail />} />
-                      <Route path="/profile" element={<Profile />} />
 
                       {/* 404 Not Found */}
                       <Route path="*" element={<NotFound />} />

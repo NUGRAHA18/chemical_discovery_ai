@@ -10,6 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from dotenv import load_dotenv
+from flask import Flask, send_from_directory
 
 # RDKit for molecular visualization
 try:
@@ -731,7 +732,10 @@ def health_check():
         'gemini_configured': True,
         'agent_version': 'enhanced_llm_v2.0'
     })
-
+@app.route('/images/structures/<path:filename>')
+def serve_structure_image(filename):
+    # Ini memberitahu Flask: "Ambil file dari folder images/structures dan kirim ke browser"
+    return send_from_directory(os.path.join('images', 'structures'), filename)
 @app.route('/api/discover', methods=['POST'])
 def discover_chemicals():
     """Main endpoint for chemical discovery"""

@@ -8,10 +8,15 @@ const connectDB = require("./config/database");
 const path = require("path");
 const chatRoutes = require("./routes/chat.routes");
 const app = express();
+const imageFolderPath = path.join(__dirname, "public/images");
 
 connectDB();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 const allowedOrigins =
   process.env.NODE_ENV === "production"
     ? ["https://your-frontend-domain.com"]
@@ -57,7 +62,6 @@ app.use("/api/chat", chatRoutes);
 app.use("/api", require("./routes/propertyCalculator"));
 app.use("/api/batch", require("./routes/batch"));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
-
 app.get("/health", (req, res) => {
   res.json({
     status: "healthy",
@@ -83,5 +87,18 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
 });
+
+const folderGambar = path.join(__dirname, "../public/images");
+console.log("Server melayani gambar dari folder:", folderGambar);
+app.use(
+  "/api/images",
+  express.static(folderGambar, {
+    setHeaders: function (res, path, stat) {
+      // Header ini wajib agar Frontend (Port 5173) tidak diblokir browser
+      res.set("Cross-Origin-Resource-Policy", "cross-origin");
+      res.set("Access-Control-Allow-Origin", "*");
+    },
+  })
+);
 
 module.exports = app;

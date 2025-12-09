@@ -4,7 +4,7 @@ import { favoritesService } from "../services/favorites";
 import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
-import CompoundDetailModal from "../components/discovery/CompoundDetailModal"; // ✅ NEW
+import CompoundDetailModal from "../components/discovery/CompoundDetailModal";
 import Loading from "../components/common/Loading";
 import {
   showSuccess,
@@ -41,10 +41,13 @@ const Discovery = () => {
   const [discovery, setDiscovery] = useState(null);
   const [error, setError] = useState("");
   const [showComparison, setShowComparison] = useState(false);
-  const { comparisonList } = useComparison();
+
+  // ✅ FIX 2: Get addToComparison from context
+  const { comparisonList, addToComparison } = useComparison();
+
   const [showTemplates, setShowTemplates] = useState(false);
 
-  // ✅ NEW - Detail Modal States
+  // Detail Modal States
   const [selectedCompound, setSelectedCompound] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
@@ -176,7 +179,28 @@ const Discovery = () => {
     }
   };
 
-  // ✅ NEW - View Details Handler
+  // ✅ FIX 2: Add to Compare Handler
+  const handleAddToCompare = (compound) => {
+    if (comparisonList.length >= 3) {
+      showError("You can only compare up to 3 compounds at once.");
+      return;
+    }
+
+    // Check if already in comparison
+    const alreadyAdded = comparisonList.some(
+      (c) => c.smiles === compound.smiles
+    );
+
+    if (alreadyAdded) {
+      showError("This compound is already in comparison!");
+      return;
+    }
+
+    addToComparison(compound);
+    showSuccess(`${compound.name} added to comparison!`);
+  };
+
+  // View Details Handler
   const handleViewDetails = (compound) => {
     setSelectedCompound(compound);
     setShowDetailModal(true);
@@ -393,10 +417,10 @@ const Discovery = () => {
           </div>
         )}
 
-        {/* ✅ RESULTS SECTION - COMPLETELY UPDATED */}
+        {/* ✅ RESULTS SECTION */}
         {discovery && (
           <div className="space-y-6 animate-fade-in">
-            {/* ✅ ANALYSIS SECTION - NEW */}
+            {/* ✅ FIX 3: ANALYSIS SECTION with Markdown */}
             {discovery.analysis && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -406,7 +430,6 @@ const Discovery = () => {
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
                     components={{
-                      // Override elemen paragraph agar warnanya ikut parent (inherit) atau force putih
                       p: ({ node, ...props }) => (
                         <p
                           className="text-gray-800 dark:text-gray-200 mb-2"
@@ -425,7 +448,6 @@ const Discovery = () => {
                           {...props}
                         />
                       ),
-                      // Tambahkan elemen lain jika perlu (h1, h2, dll)
                     }}
                   >
                     {discovery.analysis}
@@ -434,7 +456,7 @@ const Discovery = () => {
               </div>
             )}
 
-            {/* ✅ JUSTIFICATION SECTION - NEW */}
+            {/* ✅ FIX 3: JUSTIFICATION SECTION with Markdown */}
             {discovery.justification && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -444,7 +466,6 @@ const Discovery = () => {
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown
                     components={{
-                      // Override elemen paragraph agar warnanya ikut parent (inherit) atau force putih
                       p: ({ node, ...props }) => (
                         <p
                           className="text-gray-800 dark:text-gray-200 mb-2"
@@ -463,7 +484,6 @@ const Discovery = () => {
                           {...props}
                         />
                       ),
-                      // Tambahkan elemen lain jika perlu (h1, h2, dll)
                     }}
                   >
                     {discovery.justification}
@@ -472,7 +492,7 @@ const Discovery = () => {
               </div>
             )}
 
-            {/* ✅ COMPOUNDS SECTION - UPDATED */}
+            {/* ✅ COMPOUNDS SECTION */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -522,7 +542,8 @@ const Discovery = () => {
                       key={idx}
                       compound={compound}
                       onAddToFavorites={handleAddToFavorites}
-                      onViewDetails={handleViewDetails} // ✅ ADDED
+                      onViewDetails={handleViewDetails}
+                      onAddToCompare={handleAddToCompare}
                     />
                   ))}
                 </div>
@@ -549,7 +570,7 @@ const Discovery = () => {
         onSelectTemplate={handleSelectTemplate}
       />
 
-      {/* ✅ COMPOUND DETAIL MODAL - NEW */}
+      {/* COMPOUND DETAIL MODAL */}
       {showDetailModal && selectedCompound && (
         <CompoundDetailModal
           compound={selectedCompound}
@@ -557,6 +578,8 @@ const Discovery = () => {
             setShowDetailModal(false);
             setSelectedCompound(null);
           }}
+          onAddToFavorites={handleAddToFavorites}
+          onAddToCompare={handleAddToCompare}
         />
       )}
     </div>

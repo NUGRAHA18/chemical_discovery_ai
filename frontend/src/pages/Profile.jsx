@@ -1,288 +1,247 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios"; // Atau pakai instance axios kamu
-import { User, Mail, Camera, Save, Building, FileText } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../contexts/AuthContext"; // Pastikan path ini benar
+import { Camera, User, Mail, Save, X, Loader2 } from "lucide-react"; // Install lucide-react jika belum
 
 const Profile = () => {
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const { user, updateProfile } = useAuth(); // Asumsi ada fungsi updateProfile di context
 
-  // State Form
+  // State untuk Mode Edit
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // State untuk Data Form
   const [formData, setFormData] = useState({
-    username: "",
-    email: "", // Email biasanya read-only
+    name: "",
+    email: "",
     bio: "",
-    institution: "",
-    avatar: null,
   });
 
-  // State untuk Preview Gambar
-  const [avatarPreview, setAvatarPreview] = useState(null);
+  // State untuk Preview Foto
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Ambil data user saat load (Asumsi ada endpoint /api/auth/me)
+  // Ref untuk input file (biar bisa trigger lewat tombol lain)
+  const fileInputRef = useRef(null);
+
+  // Load data user saat komponen di-mount
   useEffect(() => {
-    // Ganti dengan logic fetch user kamu yang sebenarnya
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const user = res.data; // Sesuaikan struktur response backend
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        bio: user.bio || "Pengguna Chemical Discovery AI", // Default bio
+      });
+      setPreviewUrl(user.avatarUrl || null); // Asumsi user punya field avatarUrl
+    }
+  }, [user]);
 
-        setFormData({
-          username: user.username || "",
-          email: user.email || "",
-          bio: user.bio || "",
-          institution: user.institution || "",
-          avatar: user.avatar, // URL dari backend
-        });
-
-        // Set preview jika user sudah punya avatar
-        if (user.avatar) {
-          // Tambahkan base URL jika avatar hanya menyimpan relative path '/uploads/...'
-          setAvatarPreview(`http://localhost:3000${user.avatar}`);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user", err);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  // Handle Input Text
+  // Handle Perubahan Input Teks
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle File Upload (Gambar)
-  const handleImageChange = (e) => {
+  // Handle Pilih Foto
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // 1. Simpan file asli ke state (untuk dikirim ke backend)
-      setFormData({ ...formData, avatar: file });
-
-      // 2. Buat URL sementara untuk preview (agar user lihat apa yang mereka pilih)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      // Buat URL sementara untuk preview gambar
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
     }
   };
 
-  // Submit Form
+  // Trigger klik input file hidden
+  const handleAvatarClick = () => {
+    if (isEditing) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Submit Data
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+    setIsLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-
-      // PENTING: Gunakan FormData untuk mengirim file + text
-      const dataPayload = new FormData();
-      dataPayload.append("username", formData.username);
-      dataPayload.append("bio", formData.bio);
-      dataPayload.append("institution", formData.institution);
-
-      // Hanya append avatar jika user mengupload file baru (object File)
-      // Jika formData.avatar masih berupa string (URL lama), jangan kirim ulang
-      if (formData.avatar instanceof File) {
-        dataPayload.append("avatar", formData.avatar);
+      // Kita gunakan FormData karena ada upload file (gambar)
+      const dataToSend = new FormData();
+      dataToSend.append("name", formData.name);
+      dataToSend.append("bio", formData.bio);
+      if (selectedFile) {
+        dataToSend.append("avatar", selectedFile);
       }
 
-      const res = await axios.put(
-        "http://localhost:3000/api/auth/profile",
-        dataPayload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data", // Header wajib untuk upload file
-          },
-        }
-      );
+      // Panggil fungsi update dari context (atau langsung API call di sini)
+      // Contoh: await api.put('/user/profile', dataToSend);
+      // Disini kita simulasi update lewat context:
+      await updateProfile(dataToSend);
 
-      setMessage({ type: "success", text: "Profile updated successfully!" });
-
-      // Update local storage user data jika perlu
-      // localStorage.setItem('user', JSON.stringify(res.data.user));
-    } catch (err) {
-      console.error(err);
-      setMessage({ type: "error", text: "Failed to update profile." });
+      setIsEditing(false);
+      alert("Profil berhasil diperbarui!"); // Ganti dengan ToastNotification nanti
+    } catch (error) {
+      console.error("Gagal update profil:", error);
+      alert("Terjadi kesalahan saat update profil.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        Researcher Profile
-      </h1>
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        {/* Header Background (Banner) */}
+        <div className="h-32 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* KOLOM KIRI: FOTO PROFIL */}
-        <div className="md:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 flex flex-col items-center">
+        <div className="px-6 pb-8 relative">
+          {/* Avatar Section */}
+          <div className="relative -mt-16 mb-6 flex justify-center sm:justify-start">
             <div className="relative group">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100 dark:border-gray-700 shadow-inner bg-gray-200">
-                {avatarPreview ? (
+              <div
+                className={`w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gray-200 flex items-center justify-center ${
+                  isEditing ? "cursor-pointer" : ""
+                }`}
+                onClick={handleAvatarClick}
+              >
+                {previewUrl ? (
                   <img
-                    src={avatarPreview}
+                    src={previewUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <User size={48} />
+                  <User size={64} className="text-gray-400" />
+                )}
+
+                {/* Overlay Icon Kamera saat Edit Mode */}
+                {isEditing && (
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="text-white" size={24} />
                   </div>
                 )}
               </div>
 
-              {/* Overlay Edit Button */}
-              <label
-                htmlFor="avatar-upload"
-                className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg cursor-pointer transition-colors"
-              >
-                <Camera size={18} />
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-              </label>
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
             </div>
-
-            <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white text-center">
-              {formData.username || "User"}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              {formData.institution || "No Institution"}
-            </p>
           </div>
-        </div>
 
-        {/* KOLOM KANAN: FORM EDIT */}
-        <div className="md:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            {message && (
-              <div
-                className={`mb-4 p-4 rounded-lg text-sm ${
-                  message.type === "success"
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
+          {/* Form Section */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+              {isEditing ? "Edit Profil" : formData.name}
+            </h1>
+            <button
+              onClick={() => {
+                if (isEditing) {
+                  // Cancel action: reset form
+                  setIsEditing(false);
+                  // Reset logic here if needed
+                } else {
+                  setIsEditing(true);
+                }
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                isEditing
+                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              {isEditing ? "Batal" : "Edit Profil"}
+            </button>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Username */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Input Nama */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Full Name
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nama Lengkap
                 </label>
                 <div className="relative">
-                  <User
-                    className="absolute left-3 top-3 text-gray-400"
-                    size={18}
-                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User size={18} className="text-gray-400" />
+                  </div>
                   <input
                     type="text"
-                    name="username"
-                    value={formData.username}
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                    disabled={!isEditing}
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-900"
                   />
                 </div>
               </div>
 
-              {/* Email (Read Only) */}
+              {/* Input Email (Biasanya Read-Only) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email Address
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
                 </label>
-                <div className="relative opacity-60">
-                  <Mail
-                    className="absolute left-3 top-3 text-gray-400"
-                    size={18}
-                  />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail size={18} className="text-gray-400" />
+                  </div>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    disabled
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed"
+                    disabled={true} // Email biasanya tidak boleh diganti sembarangan
+                    className="w-full pl-10 pr-4 py-2 border rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-900 dark:border-gray-600 cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Email cannot be changed directly.
+                  Email tidak dapat diubah.
                 </p>
               </div>
+            </div>
 
-              {/* Institution */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Institution / Company
-                </label>
-                <div className="relative">
-                  <Building
-                    className="absolute left-3 top-3 text-gray-400"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="institution"
-                    value={formData.institution}
-                    onChange={handleChange}
-                    placeholder="e.g. Pertamina Research Lab"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
-                  />
-                </div>
-              </div>
+            {/* Input Bio */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Bio / Deskripsi
+              </label>
+              <textarea
+                name="bio"
+                rows="4"
+                value={formData.bio}
+                onChange={handleChange}
+                disabled={!isEditing}
+                className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 dark:disabled:bg-gray-900"
+                placeholder="Ceritakan sedikit tentang dirimu..."
+              />
+            </div>
 
-              {/* Bio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bio
-                </label>
-                <div className="relative">
-                  <FileText
-                    className="absolute left-3 top-3 text-gray-400"
-                    size={18}
-                  />
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    rows="3"
-                    placeholder="Tell us about your research focus..."
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
-                  ></textarea>
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end">
+            {/* Tombol Simpan (Hanya muncul saat Edit) */}
+            {isEditing && (
+              <div className="flex justify-end pt-4">
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  disabled={isLoading}
+                  className="flex items-center space-x-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                 >
-                  {loading ? (
-                    "Saving..."
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>Menyimpan...</span>
+                    </>
                   ) : (
                     <>
-                      <Save size={18} /> Save Changes
+                      <Save size={20} />
+                      <span>Simpan Perubahan</span>
                     </>
                   )}
                 </button>
               </div>
-            </form>
-          </div>
+            )}
+          </form>
         </div>
       </div>
     </div>
