@@ -38,13 +38,19 @@ const CompoundCard = ({
       return imagePath;
     }
 
+    // ✅ FIX: Remove /api prefix if present
+    let cleanPath = imagePath;
+    if (cleanPath.startsWith("/api/images/")) {
+      cleanPath = cleanPath.replace("/api/images/", "/images/");
+    }
+
     // If path starts with /, use API_BASE_URL
-    if (imagePath.startsWith("/")) {
-      return `${API_BASE_URL}${imagePath}`;
+    if (cleanPath.startsWith("/")) {
+      return `${API_BASE_URL}${cleanPath}`;
     }
 
     // Otherwise assume it's a relative path
-    return `${API_BASE_URL}/${imagePath}`;
+    return `${API_BASE_URL}/${cleanPath}`;
   };
 
   const imageUrl = getImageUrl(compound.structure_image);
