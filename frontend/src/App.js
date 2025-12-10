@@ -11,6 +11,8 @@ import Loading from "./components/common/Loading";
 import ChatAssistant from "./pages/ChatAssistant";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import Profile from "./pages/Profile";
+import PropertyCalculatorPage from "./pages/PropertyCalculatorPage";
+import PropertyCalculator from "./pages/PropertyCalculator";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
@@ -19,7 +21,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Discovery = lazy(() => import("./pages/Discovery"));
 const History = lazy(() => import("./pages/History"));
 const Favorites = lazy(() => import("./pages/Favorites"));
-const PropertyCalculator = lazy(() => import("./pages/PropertyCalculator"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function App() {
@@ -88,19 +89,28 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/property-calculator"
-                        element={
-                          <ProtectedRoute>
-                            <PropertyCalculator />
-                          </ProtectedRoute>
-                        }
-                      />
+
                       <Route
                         path="/chat"
                         element={
                           <ProtectedRoute>
                             <ChatAssistant />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/property-calculator"
+                        element={
+                          <ProtectedRoute>
+                            <PropertyCalculatorPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/property-calculator"
+                        element={
+                          <ProtectedRoute>
+                            <PropertyCalculator />
                           </ProtectedRoute>
                         }
                       />

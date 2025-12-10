@@ -13,11 +13,9 @@ import {
   LogOut,
   Menu,
   X,
-  Upload,
   ChevronDown,
   Layers,
   Archive,
-  User,
   Settings,
 } from "lucide-react";
 
@@ -147,9 +145,13 @@ const Navbar = () => {
                       </Link>
                       <Link
                         to="/property-calculator"
-                        className={dropdownItemClass("/property-calculator")}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                          location.pathname === "/property-calculator"
+                            ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        }`}
                       >
-                        <Calculator className="w-4 h-4 mr-3 text-emerald-500" />
+                        <Calculator className="w-4 h-4" />
                         Calculator
                       </Link>
                     </div>
@@ -352,13 +354,7 @@ const Navbar = () => {
                 <div className="pt-4 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">
                   Tools
                 </div>
-                <Link
-                  to="/batch"
-                  className="mobile-link flex items-center py-2.5 px-4 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg ml-2 border-l-2 border-transparent hover:border-blue-500"
-                >
-                  <Upload className="w-4 h-4 mr-3 text-blue-500" /> Batch
-                  Discovery
-                </Link>
+
                 <Link
                   to="/chat"
                   className="mobile-link flex items-center py-2.5 px-4 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg ml-2 border-l-2 border-transparent hover:border-purple-500"

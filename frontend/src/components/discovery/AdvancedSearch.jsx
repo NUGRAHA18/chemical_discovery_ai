@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Search, Sliders, Sparkles, Target, Loader, X } from "lucide-react";
-import {
-  calculateTanimotoSimilarity,
-  parseFingerprint,
-} from "../utils/CompoundSimilarityCalculator";
+import { calculateTanimotoSimilarity } from "../../utils/CompoundSimilarityCalculator";
 
 const AdvancedSearch = ({ compounds = [], onResultsFound }) => {
   const [searchMode, setSearchMode] = useState("similarity"); // similarity, substructure, smart
