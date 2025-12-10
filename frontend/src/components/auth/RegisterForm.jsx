@@ -1,60 +1,60 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import Input from '../common/Input';
-import Button from '../common/Button';
-import Loading from '../common/Loading';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { authService } from "../../services/auth";
+import Button from "../common/Button";
+import Loading from "../common/Loading";
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const RegisterForm = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState('');
+  const [apiError, setApiError] = useState("");
+
+  // State untuk toggle visibility password (terpisah untuk password & confirm)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    setApiError('');
+    setApiError("");
   };
 
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.name) {
-      newErrors.name = 'Name is required';
-    } else if (formData.name.length < 3) {
-      newErrors.name = 'Name must be at least 3 characters';
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
     }
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = "Password must be at least 8 characters";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Password must contain uppercase, lowercase, and number';
+      newErrors.password =
+        "Password must include uppercase, lowercase, and number";
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     return newErrors;
@@ -62,7 +62,7 @@ const RegisterForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -70,96 +70,160 @@ const RegisterForm = () => {
     }
 
     setLoading(true);
-    setApiError('');
+    setApiError("");
 
     try {
-      await register({
+      await authService.register({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
-      navigate('/login', { 
-        state: { message: 'Registration successful! Please login.' }
+
+      navigate("/login", {
+        state: { message: "Registration successful! Please login." },
       });
     } catch (error) {
-      setApiError(error.response?.data?.error || 'Registration failed. Please try again.');
+      setApiError(
+        error.response?.data?.error || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="card max-w-md mx-auto">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-        Create Your Account
-      </h2>
+  // Helper component untuk styling input agar tidak repetitif
+  const InputField = ({
+    label,
+    name,
+    type,
+    value,
+    placeholder,
+    icon: Icon,
+    isPassword = false,
+    showPassState,
+    setShowPassState,
+  }) => (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
+        {label}
+      </label>
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+          <Icon className="h-5 w-5" />
+        </div>
+        <input
+          type={isPassword ? (showPassState ? "text" : "password") : type}
+          name={name}
+          value={value}
+          onChange={handleChange}
+          disabled={loading}
+          className={`block w-full pl-10 ${
+            isPassword ? "pr-10" : "pr-3"
+          } py-2.5 bg-slate-50 dark:bg-slate-900/50 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-200 ${
+            errors[name]
+              ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+              : "border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-200/50"
+          }`}
+          placeholder={placeholder}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setShowPassState(!showPassState)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
+          >
+            {showPassState ? (
+              <EyeOff className="h-5 w-5" />
+            ) : (
+              <Eye className="h-5 w-5" />
+            )}
+          </button>
+        )}
+      </div>
+      {errors[name] && (
+        <p className="text-xs text-red-500 ml-1 animate-pulse">
+          {errors[name]}
+        </p>
+      )}
+    </div>
+  );
 
+  return (
+    <div className="space-y-6">
+      {/* Error Alert */}
       {apiError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-          {apiError}
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 px-4 py-3 rounded-xl flex items-start gap-3 text-sm animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <span>{apiError}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <Input
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <InputField
           label="Full Name"
-          type="text"
           name="name"
+          type="text"
           value={formData.name}
-          onChange={handleChange}
-          error={errors.name}
           placeholder="John Doe"
-          disabled={loading}
+          icon={User}
         />
 
-        <Input
-          label="Email"
-          type="email"
+        <InputField
+          label="Email Address"
           name="email"
+          type="email"
           value={formData.email}
-          onChange={handleChange}
-          error={errors.email}
           placeholder="researcher@example.com"
-          disabled={loading}
+          icon={Mail}
         />
 
-        <Input
+        <InputField
           label="Password"
-          type="password"
           name="password"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          placeholder="Min 8 chars with uppercase, lowercase, number"
-          disabled={loading}
-        />
-
-        <Input
-          label="Confirm Password"
           type="password"
-          name="confirmPassword"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          error={errors.confirmPassword}
-          placeholder="Re-enter your password"
-          disabled={loading}
+          value={formData.password}
+          placeholder="Min 8 chars, uppercase & number"
+          icon={Lock}
+          isPassword={true}
+          showPassState={showPassword}
+          setShowPassState={setShowPassword}
         />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
-          {loading ? <Loading size="sm" /> : 'Create Account'}
-        </Button>
+        <InputField
+          label="Confirm Password"
+          name="confirmPassword"
+          type="password"
+          value={formData.confirmPassword}
+          placeholder="Re-enter your password"
+          icon={Lock}
+          isPassword={true}
+          showPassState={showConfirmPassword}
+          setShowPassState={setShowConfirmPassword}
+        />
+
+        <div className="pt-2">
+          <Button
+            type="submit"
+            className="w-full py-3 rounded-xl font-semibold shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 transition-all active:scale-[0.98]"
+            disabled={loading}
+          >
+            {loading ? <Loading size="sm" /> : "Create Account"}
+          </Button>
+        </div>
       </form>
 
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Already have an account?{' '}
-        <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+      {/* Footer Link */}
+      <div className="pt-2 text-center text-sm">
+        <span className="text-slate-500 dark:text-slate-400">
+          Already have an account?{" "}
+        </span>
+        <Link
+          to="/login"
+          className="font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+        >
           Login here
         </Link>
-      </p>
+      </div>
     </div>
   );
 };

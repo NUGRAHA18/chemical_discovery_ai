@@ -1,55 +1,60 @@
+import { Link } from "react-router-dom";
 import RegisterForm from "../components/auth/RegisterForm";
-// Import icon untuk dekorasi dan branding
 import { FlaskConical, Atom, Sparkles } from "lucide-react";
 
 const Register = () => {
   return (
-    <div className="min-h-screen bg-slate-900 bg-gradient-to-br from-slate-900 via-slate-800 to-primary-900 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
-      {/* --- DECORATIVE BACKGROUND ELEMENTS (Sama dengan Login) --- */}
-      {/* Circle Top Left */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
-      {/* Circle Bottom Right */}
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary-500/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+    <div className="min-h-screen bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans selection:bg-primary-500/30">
+      {/* --- Decorative Background Effects (Same as Login) --- */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] opacity-40 pointer-events-none animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
 
-      {/* Floating Abstract Icons */}
-      <Atom className="absolute top-1/4 left-10 w-12 h-12 text-white/5 animate-pulse duration-[3000ms]" />
-      <Sparkles className="absolute bottom-1/3 right-12 w-10 h-10 text-white/10 animate-pulse duration-[4000ms]" />
+      {/* Floating Icons */}
+      <Atom className="absolute top-[15%] left-[10%] w-12 h-12 text-white/5 animate-[bounce_8s_infinite]" />
+      <Sparkles className="absolute bottom-[20%] right-[10%] w-8 h-8 text-white/10 animate-pulse duration-[4000ms]" />
 
-      <div className="max-w-md w-full relative z-10">
-        {/* --- BRANDING HEADER (Konsisten dengan Login) --- */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white mb-4 shadow-lg shadow-primary-500/30 ring-4 ring-white/10">
-            <FlaskConical className="w-8 h-8" />
+      <div className="max-w-[440px] w-full relative z-10">
+        {/* Branding Header (Outside Card) */}
+        <div className="text-center mb-8 space-y-3">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center group"
+          >
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:scale-105 transition-transform duration-300">
+              <FlaskConical className="w-7 h-7 text-white" />
+            </div>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              ChemDiscovery
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">
+              Join the future of molecular research
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Chemical AI
-          </h1>
-          <p className="text-slate-400 mt-2 text-sm">
-            Accelerating molecular discovery with Artificial Intelligence
-          </p>
         </div>
 
-        {/* --- REGISTER CARD --- */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
-          {/* Header Card Text */}
-          <div className="px-8 pt-8 pb-0">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Create your account
+        {/* --- Register Card --- */}
+        <div className="bg-white dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 border border-white/10 dark:border-slate-700/50 overflow-hidden">
+          {/* Card Header */}
+          <div className="px-8 pt-8 pb-2 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Create an account
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Join the platform to start generating and analyzing compounds.
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Start generating and analyzing compounds today.
             </p>
           </div>
 
-          {/* Form Component Container */}
+          {/* Form Container */}
           <div className="p-8">
             <RegisterForm />
           </div>
         </div>
 
-        {/* --- FOOTER --- */}
-        <p className="text-center text-slate-500 text-xs mt-8">
-          &copy; {new Date().getFullYear()} Chemical Discovery AI. Enterprise
+        {/* Footer */}
+        <p className="text-center text-slate-500 dark:text-slate-600 text-xs mt-8">
+          &copy; {new Date().getFullYear()} ChemDiscovery AI. Enterprise
           Edition.
         </p>
       </div>
