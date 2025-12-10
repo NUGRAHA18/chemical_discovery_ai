@@ -18,7 +18,7 @@ import {
   Layers,
   Archive,
   User,
-  Settings, // Icon tambahan untuk profile
+  Settings,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -28,9 +28,10 @@ const Navbar = () => {
   // State untuk dropdown desktop
   const [toolsOpen, setToolsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-
-  // State baru untuk dropdown User Profile
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // ✅ State untuk profile photo dengan real-time update
+  const [profilePhoto, setProfilePhoto] = useState(user?.profilePhoto);
 
   const location = useLocation();
 
@@ -38,17 +39,33 @@ const Navbar = () => {
   useEffect(() => {
     setToolsOpen(false);
     setLibraryOpen(false);
-    setUserMenuOpen(false); // Reset user menu
+    setUserMenuOpen(false);
     setMobileMenuOpen(false);
   }, [location]);
 
-  const isActive = (path) => location.pathname === path;
+  // ✅ Listen untuk profile photo updates
+  useEffect(() => {
+    const handleProfilePhotoUpdate = () => {
+      const updatedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      setProfilePhoto(updatedUser.profilePhoto);
+    };
 
-  // Helper untuk menampilkan Avatar
-  const getAvatarUrl = (path) => {
-    if (!path) return null;
-    return path.startsWith("http") ? path : `http://localhost:3000${path}`;
-  };
+    window.addEventListener("profilePhotoUpdated", handleProfilePhotoUpdate);
+
+    return () => {
+      window.removeEventListener(
+        "profilePhotoUpdated",
+        handleProfilePhotoUpdate
+      );
+    };
+  }, []);
+
+  // ✅ Update profilePhoto when user changes
+  useEffect(() => {
+    setProfilePhoto(user?.profilePhoto);
+  }, [user]);
+
+  const isActive = (path) => location.pathname === path;
 
   // Style untuk link menu utama (Top Level)
   const linkClass = (path) =>
@@ -193,7 +210,7 @@ const Navbar = () => {
             <DarkModeToggle />
             {isAuthenticated ? (
               <div className="flex items-center space-x-4 pl-4 border-l border-gray-200 dark:border-slate-700">
-                {/* --- MODIFIKASI: DROPDOWN USER PROFILE --- */}
+                {/* ✅ FIXED: DROPDOWN USER PROFILE WITH PHOTO */}
                 <div className="relative group">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -202,26 +219,35 @@ const Navbar = () => {
                   >
                     <div className="flex flex-col text-right">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
-                        {user?.username || user?.name || "Scientist"}
+                        {user?.name || "Scientist"}
                       </span>
                       <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-0.5">
-                        Researcher
+                        {user?.company || "Researcher"}
                       </span>
                     </div>
-                    {/* Avatar Image */}
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                      {user?.avatar ? (
-                        <img
-                          src={getAvatarUrl(user.avatar)}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-500">
-                          <User className="w-5 h-5" />
-                        </div>
-                      )}
+
+                    {/* ✅ FIXED: Profile Photo Display */}
+                    {profilePhoto ? (
+                      <img
+                        src={profilePhoto}
+                        alt={user?.name}
+                        className="w-9 h-9 rounded-full object-cover border-2 border-primary-200 dark:border-primary-700 hover:border-primary-400 transition-all"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+
+                    {/* ✅ Gradient Fallback (always rendered, hidden if photo exists) */}
+                    <div
+                      className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm hover:from-primary-500 hover:to-primary-700 transition-all"
+                      style={{ display: profilePhoto ? "none" : "flex" }}
+                    >
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </div>
+
                     <ChevronDown
                       className={`w-3 h-3 text-gray-400 transition-transform ${
                         userMenuOpen ? "rotate-180" : ""
@@ -264,7 +290,6 @@ const Navbar = () => {
                     </div>
                   </div>
                 </div>
-                {/* --- END MODIFIKASI --- */}
               </div>
             ) : (
               <div className="flex items-center space-x-3">
@@ -369,28 +394,38 @@ const Navbar = () => {
                   <Star className="w-4 h-4 mr-3 text-yellow-500" /> Favorites
                 </Link>
 
+                {/* ✅ FIXED: MOBILE USER SECTION WITH PHOTO */}
                 <div className="border-t border-gray-200 dark:border-gray-700 my-4 pt-4">
                   <div className="flex items-center px-2 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mr-3 overflow-hidden border border-gray-200 dark:border-gray-600">
-                      {user?.avatar ? (
-                        <img
-                          src={getAvatarUrl(user.avatar)}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-5 h-5 text-gray-500" />
-                      )}
+                    {/* ✅ Profile Photo in Mobile */}
+                    {profilePhoto ? (
+                      <img
+                        src={profilePhoto}
+                        alt={user?.name}
+                        className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-primary-200 dark:border-primary-700"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+
+                    {/* ✅ Gradient Fallback Mobile */}
+                    <div
+                      className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mr-3 text-white font-bold"
+                      style={{ display: profilePhoto ? "none" : "flex" }}
+                    >
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </div>
+
                     <div>
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {user?.username || user?.name}
+                        {user?.name}
                       </p>
                       <p className="text-xs text-slate-500">{user?.email}</p>
                     </div>
                   </div>
 
-                  {/* --- MODIFIKASI MOBILE: Link ke Profile --- */}
                   <Link
                     to="/profile"
                     className="mobile-link w-full text-left flex items-center py-3 px-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors mb-1"
@@ -398,7 +433,6 @@ const Navbar = () => {
                     <Settings className="w-5 h-5 mr-3 opacity-70" /> Edit
                     Profile
                   </Link>
-                  {/* ------------------------------------------ */}
 
                   <button
                     onClick={logout}

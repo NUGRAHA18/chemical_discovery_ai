@@ -20,20 +20,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    lastLogin: {
-      type: Date,
-    },
-    avatar: {
+    // ✅ NEW FIELDS
+    profilePhoto: {
       type: String,
-      default: null, // Nanti akan berisi URL path gambar
+      default: null,
+    },
+    company: {
+      type: String,
+      trim: true,
+      default: "",
     },
     bio: {
       type: String,
-      default: "Researcher at Petrochemical Ind.",
-    },
-    institution: {
-      type: String,
+      trim: true,
+      maxlength: 500,
       default: "",
+    },
+    lastLogin: {
+      type: Date,
     },
   },
   {
