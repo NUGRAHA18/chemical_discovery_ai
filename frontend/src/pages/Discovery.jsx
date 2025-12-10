@@ -264,7 +264,27 @@ const Discovery = () => {
   const handleSelectTemplate = (template) => {
     if (template.inputMode === "structured") {
       setInputMode("structured");
-      setStructuredData(template.structuredData);
+
+      // ✅ AUTO-FILL CATEGORY - Convert to lowercase
+      const categoryMap = {
+        Surfactant: "surfactant",
+        Polymer: "polymer",
+        Catalyst: "catalyst",
+        Solvent: "solvent",
+        Additive: "additive",
+        Coating: "coating",
+        Lubricant: "lubricant",
+        Resin: "resin",
+        Other: "other",
+      };
+
+      const templateCategory =
+        categoryMap[template.category] || template.category.toLowerCase();
+
+      setStructuredData({
+        ...template.structuredData,
+        category: templateCategory, // ✅ AUTO-FILL!
+      });
     } else {
       setInputMode("ai-prompt");
       setCriteria(template.aiPrompt || template.description);

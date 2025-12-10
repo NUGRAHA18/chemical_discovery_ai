@@ -29,12 +29,18 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
   // Sync dengan template
   useEffect(() => {
     if (initialData) {
-      setFormData((prev) => ({
+      console.log("📥 StructuredForm receiving initialData:", initialData);
+      setFormData({
         ...DEFAULT_STATE,
         ...initialData,
-      }));
+        category: initialData.category || "", // ✅ EXPLICIT
+      });
     }
   }, [initialData]);
+
+  useEffect(() => {
+    console.log("📝 Current formData.category:", formData.category);
+  }, [formData.category]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

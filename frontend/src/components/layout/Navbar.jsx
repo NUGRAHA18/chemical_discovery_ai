@@ -143,15 +143,12 @@ const Navbar = () => {
                         <MessageSquare className="w-4 h-4 mr-3 text-purple-500" />
                         AI Chat
                       </Link>
+                      {/* ✅ FIXED: Calculator Style disamakan dengan dropdown lainnya */}
                       <Link
                         to="/property-calculator"
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                          location.pathname === "/property-calculator"
-                            ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
+                        className={dropdownItemClass("/property-calculator")}
                       >
-                        <Calculator className="w-4 h-4" />
+                        <Calculator className="w-4 h-4 mr-3 text-emerald-500" />
                         Calculator
                       </Link>
                     </div>
