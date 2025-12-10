@@ -33,6 +33,18 @@ const CompoundCard = ({
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
 
+    // Tambahkan penanganan untuk string "Image loaded: ..."
+    const prefix = "Image loaded: ";
+    if (imagePath.startsWith(prefix)) {
+      imagePath = imagePath.substring(prefix.length);
+    }
+
+    // Jika sudah base64, kembalikan seperti apa adanya
+    if (imagePath.startsWith("data:image")) {
+      return imagePath;
+    }
+    if (!imagePath) return null;
+
     // If already base64, return as is
     if (imagePath.startsWith("data:image")) {
       return imagePath;
