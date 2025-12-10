@@ -21,7 +21,7 @@ const saveBase64Image = async (base64Data, compoundId) => {
 
     // Generate filename
     const filename = `${compoundId}-${Date.now()}.png`;
-    const filePath = path.join(imageDir, filename); // FIXED: was undefined!
+    const filePath = path.join(imageDir, filename);
 
     console.log("Saving image to:", filePath);
 
@@ -36,7 +36,10 @@ const saveBase64Image = async (base64Data, compoundId) => {
       .toFile(filePath);
 
     console.log("Image saved successfully:", filename);
-    return `/images/structures/${filename}`;
+
+    // ✅ FIX: Return FULL URL instead of relative path
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    return `${baseUrl}/images/structures/${filename}`;
   } catch (error) {
     console.error("Save image error:", error);
     return null;

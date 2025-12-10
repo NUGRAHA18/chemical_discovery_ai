@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Star, Eye, Beaker, GitCompare } from "lucide-react";
-import { API_BASE_URL } from "../../utils/constants";
-import ReactMarkdown from "react-markdown"; // ✅ FIX 3
+import ReactMarkdown from "react-markdown";
 
 const CompoundCard = ({
   compound,
@@ -29,43 +28,8 @@ const CompoundCard = ({
     }
   };
 
-  // ✅ FIX 1: Better image path handling
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-
-    // Tambahkan penanganan untuk string "Image loaded: ..."
-    const prefix = "Image loaded: ";
-    if (imagePath.startsWith(prefix)) {
-      imagePath = imagePath.substring(prefix.length);
-    }
-
-    // Jika sudah base64, kembalikan seperti apa adanya
-    if (imagePath.startsWith("data:image")) {
-      return imagePath;
-    }
-    if (!imagePath) return null;
-
-    // If already base64, return as is
-    if (imagePath.startsWith("data:image")) {
-      return imagePath;
-    }
-
-    // ✅ FIX: Remove /api prefix if present
-    let cleanPath = imagePath;
-    if (cleanPath.startsWith("/api/images/")) {
-      cleanPath = cleanPath.replace("/api/images/", "/images/");
-    }
-
-    // If path starts with /, use API_BASE_URL
-    if (cleanPath.startsWith("/")) {
-      return `${API_BASE_URL}${cleanPath}`;
-    }
-
-    // Otherwise assume it's a relative path
-    return `${API_BASE_URL}/${cleanPath}`;
-  };
-
-  const imageUrl = getImageUrl(compound.structure_image);
+  // ✅ SIMPLIFIED: Just use the URL directly from backend
+  const imageUrl = compound.structure_image;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200">
@@ -90,7 +54,7 @@ const CompoundCard = ({
         </div>
       </div>
 
-      {/* ✅ FIX 1: Structure Image with better error handling */}
+      {/* ✅ SIMPLIFIED: Structure Image - just use URL directly */}
       <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 flex justify-center items-center min-h-[200px]">
         {imageUrl && !imageError ? (
           <img
@@ -108,10 +72,8 @@ const CompoundCard = ({
           <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
             <Beaker className="w-16 h-16 mb-2" />
             <p className="text-sm">Structure image unavailable</p>
-            {process.env.NODE_ENV === "development" && (
-              <p className="text-xs mt-1 text-red-500">
-                Path: {compound.structure_image}
-              </p>
+            {process.env.NODE_ENV === "development" && imageUrl && (
+              <p className="text-xs mt-1 text-red-500">Path: {imageUrl}</p>
             )}
           </div>
         )}
@@ -119,117 +81,91 @@ const CompoundCard = ({
 
       {/* Properties Grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        {/* Molecular Weight */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
             Molecular Weight
           </p>
           <p className="text-lg font-bold text-blue-900 dark:text-blue-300">
-            {compound.molecular_weight ||
-            compound.calculated_properties?.molecular_weight
-              ? `${(
-                  compound.molecular_weight ||
-                  compound.calculated_properties?.molecular_weight
-                ).toFixed(2)} g/mol`
+            {compound.molecular_weight
+              ? `${compound.molecular_weight.toFixed(2)} g/mol`
               : "N/A"}
           </p>
         </div>
-
-        {/* LogP */}
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-          <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">
-            LogP (Lipophilicity)
+          <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+            LogP
           </p>
           <p className="text-lg font-bold text-purple-900 dark:text-purple-300">
-            {(compound.logp !== null && compound.logp !== undefined) ||
-            compound.calculated_properties?.logp !== undefined
-              ? (compound.logp || compound.calculated_properties?.logp).toFixed(
-                  2
-                )
+            {compound.logp !== null && compound.logp !== undefined
+              ? compound.logp.toFixed(2)
               : "N/A"}
           </p>
         </div>
       </div>
 
-      {/* Base Compound */}
-      {compound.base_compound && (
-        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">
-            Base Compound
-          </p>
-          <p className="text-sm text-gray-900 dark:text-white">
-            {compound.base_compound}
-          </p>
-        </div>
-      )}
-
-      {/* Modifications */}
-      {compound.modifications && (
-        <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
-            Modifications
-          </p>
-          <p className="text-sm text-indigo-900 dark:text-indigo-300">
-            {compound.modifications}
-          </p>
-        </div>
-      )}
-
-      {/* SMILES */}
-      {compound.smiles && (
-        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-1">
-            SMILES
-          </p>
-          <p className="text-xs text-gray-900 dark:text-white font-mono break-all">
-            {compound.smiles}
-          </p>
-        </div>
-      )}
-
-      {/* ✅ FIX 3: Feasibility Notes with Markdown */}
+      {/* Feasibility Notes with Markdown */}
       {compound.feasibility_notes && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-          <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-            Feasibility
+        <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+          <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+            Feasibility Notes
           </p>
-          <div className="text-sm text-green-900 dark:text-green-300 prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{compound.feasibility_notes}</ReactMarkdown>
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => (
+                  <p
+                    className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                    {...props}
+                  />
+                ),
+                li: ({ node, ...props }) => (
+                  <li
+                    className="text-sm text-gray-700 dark:text-gray-300"
+                    {...props}
+                  />
+                ),
+                strong: ({ node, ...props }) => (
+                  <strong
+                    className="font-semibold text-gray-900 dark:text-white"
+                    {...props}
+                  />
+                ),
+              }}
+            >
+              {compound.feasibility_notes}
+            </ReactMarkdown>
           </div>
         </div>
       )}
 
-      {/* ✅ FIX 2: Action Buttons (3 buttons now!) */}
+      {/* ✅ FIX 2: Action Buttons - 3 buttons with Compare */}
       <div className="grid grid-cols-3 gap-2 mt-4">
-        {/* Add to Favorites */}
+        {/* Favorite Button */}
         <button
           onClick={handleAddToFavorites}
           disabled={isAddingToFavorites}
-          className="flex items-center justify-center gap-1 px-3 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          title="Add to Favorites"
+          className="flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors disabled:opacity-50"
         >
           <Star className="w-4 h-4" />
-          <span className="hidden sm:inline">Favorite</span>
+          <span className="text-sm font-medium">Favorite</span>
         </button>
 
-        {/* ✅ FIX 2: Add to Compare Button */}
+        {/* Compare Button */}
         <button
           onClick={() => onAddToCompare && onAddToCompare(compound)}
-          className="flex items-center justify-center gap-1 px-3 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors text-sm"
-          title="Add to Compare"
+          className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
         >
           <GitCompare className="w-4 h-4" />
-          <span className="hidden sm:inline">Compare</span>
+          <span className="text-sm font-medium">Compare</span>
         </button>
 
-        {/* View Details */}
+        {/* Details Button */}
         <button
           onClick={() => onViewDetails(compound)}
-          className="flex items-center justify-center gap-1 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors text-sm"
-          title="View Details"
+          className="flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
         >
           <Eye className="w-4 h-4" />
-          <span className="hidden sm:inline">Details</span>
+          <span className="text-sm font-medium">Details</span>
         </button>
       </div>
     </div>
