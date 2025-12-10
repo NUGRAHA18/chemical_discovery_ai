@@ -131,7 +131,7 @@ const Landing = () => {
           >
             {[
               { val: "100M+", label: "Compounds" },
-              { val: "5-15s", label: "Generation Time" },
+              { val: "30-50s", label: "Generation Time" },
               { val: "99.9%", label: "Accuracy" },
             ].map((stat, idx) => (
               <div key={idx} className="text-center group cursor-default">

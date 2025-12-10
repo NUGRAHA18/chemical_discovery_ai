@@ -10,8 +10,6 @@ import { ComparisonProvider } from "./contexts/ComparisonContext";
 import Loading from "./components/common/Loading";
 import ChatAssistant from "./pages/ChatAssistant";
 import ErrorBoundary from "./components/common/ErrorBoundary";
-import BatchDiscovery from "./pages/BatchDiscovery";
-import BatchDetail from "./pages/BatchDetail";
 import Profile from "./pages/Profile";
 
 const Landing = lazy(() => import("./pages/Landing"));
@@ -106,8 +104,6 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route path="/batch" element={<BatchDiscovery />} />
-                      <Route path="/batch/:id" element={<BatchDetail />} />
 
                       {/* 404 Not Found */}
                       <Route path="*" element={<NotFound />} />

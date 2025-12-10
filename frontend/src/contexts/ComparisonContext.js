@@ -6,12 +6,16 @@ export const ComparisonProvider = ({ children }) => {
   const [comparisonList, setComparisonList] = useState([]);
 
   const addToComparison = (compound) => {
-    if (comparisonList.length >= 3) {
-      return { success: false, message: "Maximum 3 compounds for comparison" };
+    // ✅ NEW: Limit to 5 compounds
+    if (comparisonList.length >= 5) {
+      return { success: false, message: "Maximum 5 compounds for comparison" };
     }
+
+    // Check duplicate by SMILES
     if (comparisonList.find((c) => c.smiles === compound.smiles)) {
       return { success: false, message: "Compound already in comparison" };
     }
+
     setComparisonList([...comparisonList, compound]);
     return { success: true, message: "Added to comparison" };
   };
@@ -24,6 +28,11 @@ export const ComparisonProvider = ({ children }) => {
     setComparisonList([]);
   };
 
+  // ✅ NEW: Check if compound is in comparison
+  const isInComparison = (smiles) => {
+    return comparisonList.some((c) => c.smiles === smiles);
+  };
+
   return (
     <ComparisonContext.Provider
       value={{
@@ -31,6 +40,7 @@ export const ComparisonProvider = ({ children }) => {
         addToComparison,
         removeFromComparison,
         clearComparison,
+        isInComparison,
       }}
     >
       {children}

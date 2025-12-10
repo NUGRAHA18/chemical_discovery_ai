@@ -1,13 +1,21 @@
-// FINAL FIX - Scroll chat box only, not the page
-// Box chat scroll ke bawah, halaman tetap di posisi
-
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { chatService } from "../services/chat";
 import { discoveryService } from "../services/discovery";
-import { showError, showSuccess } from "../utils/toast";
+import {
+  showError,
+  showSuccess,
+  showLoading,
+  dismissToast,
+} from "../utils/toast";
 import ChatMessage from "../components/chat/ChatMessage";
 import ChatInput from "../components/chat/ChatInput";
 import Loading from "../components/common/Loading";
+import {
+  exportChatToPDF,
+  exportChatToTXT,
+  exportChatToJSON,
+} from "../utils/chatExport";
 
 import {
   Bot,
@@ -15,21 +23,24 @@ import {
   FlaskConical,
   MessageSquare,
   Sparkles,
-  ArrowRight,
+  Download,
+  FileText,
+  FileJson,
+  ChevronDown,
 } from "lucide-react";
 
 const ChatAssistant = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [discoveries, setDiscoveries] = useState([]);
   const [selectedDiscovery, setSelectedDiscovery] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const chatContainerRef = useRef(null);
   const eventSourceRef = useRef(null);
-
-  // Track if user allows auto-scroll
   const shouldAutoScrollRef = useRef(false);
 
   useEffect(() => {
@@ -43,22 +54,18 @@ const ChatAssistant = () => {
     };
   }, []);
 
-  // ✅ Scroll chat box when messages change (if allowed)
   useEffect(() => {
     if ((isLoading || isStreaming) && shouldAutoScrollRef.current) {
       scrollChatToBottom();
     }
   }, [messages, isLoading, isStreaming]);
 
-  // ✅ Scroll to latest message after history loads
   useEffect(() => {
     if (!loadingHistory && messages.length > 0) {
-      // Scroll to bottom once after initial load
       setTimeout(() => scrollChatToBottom(), 100);
     }
   }, [loadingHistory]);
 
-  // ✅ Track user scroll in chat box
   const handleScroll = (e) => {
     const element = e.target;
     const isAtBottom =
@@ -66,7 +73,6 @@ const ChatAssistant = () => {
     shouldAutoScrollRef.current = isAtBottom;
   };
 
-  // ✅ FIXED: Scroll ONLY the chat container, NOT the page
   const scrollChatToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop =
@@ -97,7 +103,7 @@ const ChatAssistant = () => {
 
   const loadDiscoveries = async () => {
     try {
-      const data = await discoveryService.getHistory({ limit: 10 });
+      const data = await discoveryService.getHistory({ limit: 20 });
       setDiscoveries(data.discoveries || []);
     } catch (error) {
       console.error("Failed to load discoveries:", error);
@@ -107,7 +113,6 @@ const ChatAssistant = () => {
   const handleSendMessage = async (message) => {
     if (!message.trim() || isLoading || isStreaming) return;
 
-    // ✅ Enable auto-scroll when user sends message
     shouldAutoScrollRef.current = true;
 
     const userMessage = {
@@ -183,6 +188,7 @@ const ChatAssistant = () => {
   const handleClearHistory = async () => {
     if (!window.confirm("Clear all chat history? This cannot be undone."))
       return;
+
     try {
       await chatService.clearHistory();
       setMessages([]);
@@ -190,6 +196,52 @@ const ChatAssistant = () => {
     } catch (error) {
       showError("Failed to clear history");
     }
+  };
+
+  const handleExport = async (format) => {
+    if (messages.length === 0) {
+      showError("No messages to export");
+      return;
+    }
+
+    const loadingToast = showLoading(`Exporting to ${format.toUpperCase()}...`);
+
+    try {
+      let result;
+      const selectedDiscoveryData = discoveries.find(
+        (d) => d._id === selectedDiscovery
+      );
+
+      if (format === "pdf") {
+        result = await exportChatToPDF(messages, selectedDiscoveryData);
+      } else if (format === "txt") {
+        result = exportChatToTXT(messages, selectedDiscoveryData);
+      } else if (format === "json") {
+        result = exportChatToJSON(messages, selectedDiscoveryData);
+      }
+
+      dismissToast(loadingToast);
+
+      if (result.success) {
+        showSuccess(`Chat exported to ${format.toUpperCase()}!`);
+      } else {
+        showError("Failed to export chat");
+      }
+    } catch (error) {
+      dismissToast(loadingToast);
+      showError("Export failed");
+      console.error(error);
+    }
+
+    setShowExportMenu(false);
+  };
+
+  const handleSuggestedQuestion = (question) => {
+    handleSendMessage(question);
+  };
+
+  const handleViewDiscovery = (discoveryId) => {
+    navigate(`/history`); // Or navigate to specific discovery detail page
   };
 
   if (loadingHistory) {
@@ -201,95 +253,156 @@ const ChatAssistant = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <Bot className="w-7 h-7 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                AI Chat Assistant
-              </h1>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  AI Chat Assistant
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                  Get insights about chemistry and your discoveries
+                </p>
+              </div>
             </div>
-            <p className="text-gray-500 dark:text-gray-400 ml-1">
-              Get insights about chemical properties, synthesis pathways, and
-              your discoveries
-            </p>
           </div>
-          {messages.length > 0 && (
-            <button
-              onClick={handleClearHistory}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Clear History
-            </button>
-          )}
+
+          <div className="flex items-center gap-2">
+            {/* Export Dropdown */}
+            {messages.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      showExportMenu ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
+                    <button
+                      onClick={() => handleExport("pdf")}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export as PDF
+                    </button>
+                    <button
+                      onClick={() => handleExport("txt")}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Export as TXT
+                    </button>
+                    <button
+                      onClick={() => handleExport("json")}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <FileJson className="w-4 h-4" />
+                      Export as JSON
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Clear History */}
+            {messages.length > 0 && (
+              <button
+                onClick={handleClearHistory}
+                className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg font-medium transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Discovery Context Selector */}
         {discoveries.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <FlaskConical className="w-4 h-4 text-primary-500" />
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Reference Context (Optional)
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <FlaskConical className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <label className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                Reference Discovery (Optional)
               </label>
             </div>
             <select
               value={selectedDiscovery || ""}
               onChange={(e) => setSelectedDiscovery(e.target.value || null)}
-              className="block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white transition-all"
+              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             >
               <option value="">No specific discovery context</option>
               {discoveries.map((discovery) => (
                 <option key={discovery._id} value={discovery._id}>
-                  {discovery.criteria.substring(0, 50)}... (
+                  {discovery.criteria.substring(0, 80)}... (
                   {new Date(discovery.createdAt).toLocaleDateString()})
                 </option>
               ))}
             </select>
+            {selectedDiscovery && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                💡 AI responses will reference this discovery's compounds and
+                properties
+              </p>
+            )}
           </div>
         )}
 
+        {/* Chat Container */}
         <div
           className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6 overflow-hidden flex flex-col"
           style={{ height: "600px" }}
         >
-          {/* ✅ Chat container with scroll handler */}
+          {/* Messages */}
           <div
             ref={chatContainerRef}
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50"
-            style={{ minHeight: 0 }}
           >
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 opacity-80">
-                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mb-6">
-                  <MessageSquare className="w-10 h-10 text-indigo-500 dark:text-indigo-400" />
+              <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-3xl flex items-center justify-center mb-6">
+                  <MessageSquare className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   Start a Conversation
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                  Ask me about chemical properties, analyze your discovery
-                  results, or get guidance on synthesis pathways.
+                <p className="text-gray-500 dark:text-gray-400 max-w-md">
+                  Ask about chemical properties, analyze your discoveries, or
+                  get guidance on synthesis pathways.
                 </p>
               </div>
             ) : (
               messages.map((message) => (
-                <ChatMessage key={message._id} message={message} />
+                <ChatMessage
+                  key={message._id}
+                  message={message}
+                  onViewDiscovery={handleViewDiscovery}
+                />
               ))
             )}
 
             {isLoading && (
-              <div className="flex items-center space-x-3 text-gray-500 dark:text-gray-400 pl-2">
+              <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 pl-2">
                 <div className="relative">
-                  <Bot className="w-6 h-6 text-primary-500" />
+                  <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
                   </span>
                 </div>
                 <span className="text-sm font-medium animate-pulse">
@@ -300,7 +413,7 @@ const ChatAssistant = () => {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+          <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
             <ChatInput
               onSend={handleSendMessage}
               disabled={isLoading || isStreaming}
@@ -310,7 +423,7 @@ const ChatAssistant = () => {
         </div>
 
         {/* Suggested Questions */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />
             Suggested Questions
@@ -321,17 +434,16 @@ const ChatAssistant = () => {
               "What makes a good surfactant?",
               "How can I improve my last discovery?",
               "What's the difference between LogP and molecular weight?",
-            ].map((example, idx) => (
+              "Suggest modifications for better water solubility",
+              "Analyze the thermal stability of my compounds",
+            ].map((question, idx) => (
               <button
                 key={idx}
-                onClick={() => handleSendMessage(example)}
+                onClick={() => handleSuggestedQuestion(question)}
                 disabled={isLoading || isStreaming}
-                className="group flex items-center justify-between p-3.5 bg-gray-50 dark:bg-gray-700/30 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 border border-transparent hover:border-indigo-100 dark:hover:border-indigo-800/50 rounded-xl text-left text-sm text-gray-700 dark:text-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-left px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 border border-indigo-200 dark:border-indigo-800 rounded-lg text-sm text-gray-700 dark:text-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="font-medium group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
-                  {example}
-                </span>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+                💡 {question}
               </button>
             ))}
           </div>

@@ -60,7 +60,6 @@ app.use("/api/favorites", require("./routes/favorites.routes"));
 app.use("/api/export", require("./routes/export.routes"));
 app.use("/api/chat", chatRoutes);
 app.use("/api", require("./routes/propertyCalculator"));
-app.use("/api/batch", require("./routes/batch"));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/api/profile", require("./routes/profile.routes"));
 app.get("/health", (req, res) => {

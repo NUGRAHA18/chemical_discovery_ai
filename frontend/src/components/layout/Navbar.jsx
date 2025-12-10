@@ -141,10 +141,6 @@ const Navbar = () => {
                     }`}
                   >
                     <div className="py-1">
-                      <Link to="/batch" className={dropdownItemClass("/batch")}>
-                        <Upload className="w-4 h-4 mr-3 text-blue-500" />
-                        Batch Discovery
-                      </Link>
                       <Link to="/chat" className={dropdownItemClass("/chat")}>
                         <MessageSquare className="w-4 h-4 mr-3 text-purple-500" />
                         AI Chat
