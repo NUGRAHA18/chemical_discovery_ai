@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Star, Eye, Beaker, GitCompare } from "lucide-react";
+import { favoritesService } from "../../services/favorites";
+import { showError, showSuccess } from "../../utils/toast";
 import ReactMarkdown from "react-markdown";
+import { getImageUrl } from "../../config/env";
 
 const CompoundCard = ({
   compound,
@@ -8,73 +11,77 @@ const CompoundCard = ({
   onViewDetails,
   onAddToCompare,
 }) => {
-  const [imageError, setImageError] = useState(false);
   const [isAddingToFavorites, setIsAddingToFavorites] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const getValidationColor = (score) => {
-    if (score >= 0.8)
-      return "text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400";
-    if (score >= 0.6)
-      return "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400";
-    return "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400";
-  };
+  const imageUrl = getImageUrl(compound.structure_image);
 
   const handleAddToFavorites = async () => {
+    if (isAddingToFavorites) return;
     setIsAddingToFavorites(true);
     try {
-      await onAddToFavorites(compound);
+      await favoritesService.addFavorite({
+        compoundData: compound,
+        tags: ["discovery"],
+        notes: "Added from discovery",
+      });
+      showSuccess("Added to favorites!");
+      if (onAddToFavorites) onAddToFavorites(compound);
+    } catch (error) {
+      if (error.response?.status === 400) {
+        showError("Compound already in favorites");
+      } else {
+        showError("Failed to add to favorites");
+      }
     } finally {
       setIsAddingToFavorites(false);
     }
   };
 
-  // ✅ SIMPLIFIED: Just use the URL directly from backend
-  const imageUrl = compound.structure_image;
+  const getValidationColor = (score) => {
+    if (score >= 0.8)
+      return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
+    if (score >= 0.6)
+      return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300";
+    return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300";
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all p-5 flex flex-col h-full min-h-[500px]">
       {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+      <div className="mb-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white pr-2 line-clamp-2">
             {compound.name}
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-            {compound.formula}
-          </p>
+          {compound.validation_score !== undefined && (
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${getValidationColor(
+                compound.validation_score
+              )}`}
+            >
+              {(compound.validation_score * 100).toFixed(0)}%
+            </span>
+          )}
         </div>
-
-        {/* Validation Score Badge */}
-        <div
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${getValidationColor(
-            compound.validation_score || 0.5
-          )}`}
-        >
-          Score: {((compound.validation_score || 0.5) * 100).toFixed(0)}%
-        </div>
+        <p className="text-sm font-mono text-gray-600 dark:text-gray-400">
+          {compound.formula}
+        </p>
       </div>
 
-      {/* ✅ SIMPLIFIED: Structure Image - just use URL directly */}
-      <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4 flex justify-center items-center min-h-[200px]">
+      {/* Structure Image */}
+      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-4 flex items-center justify-center min-h-[200px]">
         {imageUrl && !imageError ? (
           <img
             src={imageUrl}
             alt={compound.name}
             className="max-w-full max-h-[200px] object-contain"
-            onLoad={() => console.log("✅ Image loaded:", imageUrl)}
-            onError={(e) => {
-              console.error("❌ Image load failed:", imageUrl);
-              console.error("Error event:", e);
-              setImageError(true);
-            }}
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
             <Beaker className="w-16 h-16 mb-2" />
-            <p className="text-sm">Structure image unavailable</p>
-            {process.env.NODE_ENV === "development" && imageUrl && (
-              <p className="text-xs mt-1 text-red-500">Path: {imageUrl}</p>
-            )}
+            <p className="text-sm">Structure unavailable</p>
           </div>
         )}
       </div>
@@ -103,9 +110,9 @@ const CompoundCard = ({
         </div>
       </div>
 
-      {/* Feasibility Notes with Markdown */}
+      {/* Feasibility Notes */}
       {compound.feasibility_notes && (
-        <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
+        <div className="mb-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-3 flex-grow">
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
             Feasibility Notes
           </p>
@@ -138,9 +145,8 @@ const CompoundCard = ({
         </div>
       )}
 
-      {/* ✅ FIX 2: Action Buttons - 3 buttons with Compare */}
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        {/* Favorite Button */}
+      {/* Action Buttons */}
+      <div className="grid grid-cols-3 gap-2 mt-auto">
         <button
           onClick={handleAddToFavorites}
           disabled={isAddingToFavorites}
@@ -150,7 +156,6 @@ const CompoundCard = ({
           <span className="text-sm font-medium">Favorite</span>
         </button>
 
-        {/* Compare Button */}
         <button
           onClick={() => onAddToCompare && onAddToCompare(compound)}
           className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
@@ -159,7 +164,6 @@ const CompoundCard = ({
           <span className="text-sm font-medium">Compare</span>
         </button>
 
-        {/* Details Button */}
         <button
           onClick={() => onViewDetails(compound)}
           className="flex items-center justify-center gap-2 px-3 py-2 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
