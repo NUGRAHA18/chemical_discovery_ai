@@ -18,19 +18,19 @@ try:
     from io import BytesIO
     import base64
     RDKIT_AVAILABLE = True
-    print("✓ RDKit loaded successfully")
+    print("âœ“ RDKit loaded successfully")
 except ImportError:
     RDKIT_AVAILABLE = False
-    print("⚠ RDKit not available. Molecular visualization disabled.")
+    print("âš  RDKit not available. Molecular visualization disabled.")
 
 # PubChem integration
 try:
     import pubchempy as pcp
     PUBCHEM_AVAILABLE = True
-    print("✓ PubChem loaded successfully")
+    print("âœ“ PubChem loaded successfully")
 except Exception as e:
     PUBCHEM_AVAILABLE = False
-    print(f"⚠ PubChem not available: {e}")
+    print(f"âš  PubChem not available: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -51,12 +51,12 @@ if not api_key:
     raise RuntimeError("GEMINI_API_KEY not found in .env file. Please set it before running.")
 
 # Configure Gemini
-genai.configure(api_key=api_key)  # ✅ FIXED: was 'gemini_key'
+genai.configure(api_key=api_key)  # âœ… FIXED: was 'gemini_key'
 
 # Initialize model GLOBALLY
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-print("✓ Gemini AI configured successfully")
+print("âœ“ Gemini AI configured successfully")
 
 
 # === DATA CLASSES ===
@@ -113,7 +113,7 @@ class ChemicalDatabase:
                     query_results = future.result()
                     if query_results:
                         results.extend(query_results)
-                        logger.info(f"✅ Found {len(query_results)} results for: {query}")
+                        logger.info(f"âœ… Found {len(query_results)} results for: {query}")
                 except Exception as e:
                     logger.error(f"Search failed for {query}: {e}")
         
@@ -145,7 +145,7 @@ class ChemicalDatabase:
                         'cid': compound.cid,
                         'name': compound.iupac_name or (compound.synonyms[0] if compound.synonyms else "Unknown"),
                         'formula': compound.molecular_formula,
-                        'smiles': compound.canonical_smiles,
+                        'smiles': compound.isomeric_smiles or compound.canonical_smiles,
                         'molecular_weight': compound.molecular_weight,
                         'search_query': query
                     }
@@ -211,6 +211,25 @@ class ChemicalDatabase:
             logger.error(f"Image generation error for {smiles}: {e}")
         
         return None
+
+
+    
+    def validate_smiles(self, smiles: str) -> bool:
+        """Validate SMILES before accepting"""
+        if not RDKIT_AVAILABLE or not smiles:
+            return False
+        
+        try:
+            smiles = smiles.strip().replace(" ", "")
+            mol = Chem.MolFromSmiles(smiles)
+            if mol:
+                Chem.SanitizeMol(mol)
+                return True
+        except Exception as e:
+            logger.warning(f"SMILES validation failed for '{smiles}': {e}")
+            return False
+        
+        return False
 
 
 # === ENHANCED CHEMICAL DISCOVERY AGENT ===
@@ -329,7 +348,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
 """
         
         try:
-            response = self.model.generate_content(prompt)  # ✅ FIXED: use self.model
+            response = self.model.generate_content(prompt)  # âœ… FIXED: use self.model
             json_str = self._extract_json(response.text)
             concepts = json.loads(json_str)
             
@@ -338,7 +357,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
             concepts['specific_compounds'] = validated_compounds
             
             concepts['extraction_success'] = True
-            logger.info(f"✓ Extracted {len(validated_compounds)} valid compounds")
+            logger.info(f"âœ“ Extracted {len(validated_compounds)} valid compounds")
             return concepts
             
         except Exception as e:
@@ -407,7 +426,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
         if not fallback_compounds:
             fallback_compounds = ['ethanol', 'water', 'acetone']
         
-        logger.info(f"🔍 Using fallback compounds: {fallback_compounds}")
+        logger.info(f"ðŸ” Using fallback compounds: {fallback_compounds}")
         return fallback_compounds[:6]
     
     def _generate_search_terms_from_llm(self, concepts: Dict) -> List[str]:
@@ -415,7 +434,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
         specific_compounds = concepts.get('specific_compounds', [])
         
         if specific_compounds:
-            logger.info(f"🔍 Using LLM-extracted compounds: {specific_compounds}")
+            logger.info(f"ðŸ” Using LLM-extracted compounds: {specific_compounds}")
             return specific_compounds
         
         return []
@@ -505,10 +524,15 @@ RESEARCH INSIGHTS: {research}
 TASK: Generate EXACTLY 3 novel chemical compounds that meet the criteria.
 
 REQUIREMENTS:
-1. Each compound must be chemically valid
-2. Provide VALID SMILES notation
+1. Each compound must be chemically valid and parseable by RDKit
+2. CRITICAL SMILES RULES:
+   - Respect atom valence: C=4, N=3, O=2, S=2/4/6
+   - Use proper charge notation: [N+] for quaternary nitrogen, [O-] for negative oxygen
+   - Example valid SMILES: "CCO", "c1ccccc1", "CC[N+](C)(C)C"
+   - NEVER generate SMILES with impossible valences
 3. Base on existing compounds but with strategic modifications
 4. Ensure diversity in structures
+5. Test your SMILES mentally before outputting
 
 OUTPUT FORMAT (JSON):
 {{
@@ -539,11 +563,17 @@ Generate EXACTLY 3 compounds in valid JSON format.
                     if len(compounds) >= 3:
                         break
                     
+                    # Validate SMILES first
+                    smiles = item.get('smiles', '')
+                    if not self.db.validate_smiles(smiles):
+                        logger.warning(f"Invalid SMILES for {item.get('name')}, skipping")
+                        continue
+                    
                     # Calculate properties
-                    calc_props = self.db.get_compound_properties(item.get('smiles', ''))
+                    calc_props = self.db.get_compound_properties(smiles)
                     
                     # Generate image
-                    structure_image = self.db.generate_molecule_image(item.get('smiles', ''))
+                    structure_image = self.db.generate_molecule_image(smiles)
                     
                     compound_obj = CompoundRecommendation(
                         name=item.get('name', 'Unknown'),
@@ -559,7 +589,7 @@ Generate EXACTLY 3 compounds in valid JSON format.
                     compounds.append(compound_obj)
                 
                 if len(compounds) >= 3:
-                    logger.info(f"✓ Generated {len(compounds)} compounds")
+                    logger.info(f"âœ“ Generated {len(compounds)} compounds")
                     return compounds
                 
             except Exception as e:
@@ -818,7 +848,7 @@ def discover_chemicals():
             }
         }
         
-        logger.info(f"✓ Successfully generated {len(compounds)} compounds")
+        logger.info(f"âœ“ Successfully generated {len(compounds)} compounds")
         return jsonify(result)
         
     except Exception as e:
@@ -967,12 +997,12 @@ Generated Compounds:
 # === RUN SERVER ===
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("🧪 CHEMICAL DISCOVERY ML SERVICE")
+    print("ðŸ§ª CHEMICAL DISCOVERY ML SERVICE")
     print("="*60)
-    print(f"✓ Flask initialized")
-    print(f"✓ RDKit: {'Available' if RDKIT_AVAILABLE else 'Not Available'}")
-    print(f"✓ PubChem: {'Available' if PUBCHEM_AVAILABLE else 'Not Available'}")
-    print(f"✓ Gemini AI: Configured")
+    print(f"âœ“ Flask initialized")
+    print(f"âœ“ RDKit: {'Available' if RDKIT_AVAILABLE else 'Not Available'}")
+    print(f"âœ“ PubChem: {'Available' if PUBCHEM_AVAILABLE else 'Not Available'}")
+    print(f"âœ“ Gemini AI: Configured")
     print("="*60 + "\n")
     
     app.run(debug=True, host='0.0.0.0', port=5000)

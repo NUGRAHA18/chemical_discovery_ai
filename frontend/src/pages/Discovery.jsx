@@ -118,6 +118,17 @@ const Discovery = () => {
     checkStaleSession();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      const controller = new AbortController();
+      controller.abort();
+    };
+  }, []);
+
   const handleStructuredSubmit = async (structuredData) => {
     setLoading(true);
     setProgress(10);
