@@ -343,13 +343,19 @@ const ChatAssistant = () => {
             <select
               value={selectedDiscovery || ""}
               onChange={(e) => setSelectedDiscovery(e.target.value || null)}
-              className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
             >
-              <option value="">No specific discovery context</option>
-              {discoveries.map((discovery) => (
-                <option key={discovery._id} value={discovery._id}>
-                  {discovery.criteria.substring(0, 80)}... (
-                  {new Date(discovery.createdAt).toLocaleDateString()})
+              <option value="" className="dark:bg-gray-900 dark:text-gray-300">
+                None (General Questions)
+              </option>
+              {discoveries.map((disc) => (
+                <option
+                  key={disc._id}
+                  value={disc._id}
+                  className="dark:bg-gray-900 dark:text-gray-300"
+                >
+                  {disc.criteria?.substring(0, 50) || "Discovery"} (
+                  {disc.compounds?.length || 0} compounds)
                 </option>
               ))}
             </select>

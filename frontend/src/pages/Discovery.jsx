@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
+const DISCOVERY_STATE_KEY = "discovery_in_progress";
+
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured");
   const [loading, setLoading] = useState(false);
@@ -67,11 +69,53 @@ const Discovery = () => {
   });
 
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+    // Restore discovery state on mount
+    const savedState = sessionStorage.getItem(DISCOVERY_STATE_KEY);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        setLoading(parsed.loading);
+        setProgress(parsed.progress);
+        if (parsed.discovery) {
+          setDiscovery(parsed.discovery);
+        }
+      } catch (e) {
+        console.error("Failed to restore state:", e);
+      }
+    }
+  }, []);
+
+  // Save state whenever it changes
+  useEffect(() => {
+    if (loading || discovery) {
+      sessionStorage.setItem(
+        DISCOVERY_STATE_KEY,
+        JSON.stringify({
+          loading,
+          progress,
+          discovery,
+          timestamp: Date.now(),
+        })
+      );
+    } else {
+      sessionStorage.removeItem(DISCOVERY_STATE_KEY);
+    }
+  }, [loading, progress, discovery]);
+
+  // Cleanup stale sessions (optional)
+  useEffect(() => {
+    const checkStaleSession = () => {
+      const saved = sessionStorage.getItem(DISCOVERY_STATE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const age = Date.now() - parsed.timestamp;
+        if (age > 300000) {
+          // 5 minutes
+          sessionStorage.removeItem(DISCOVERY_STATE_KEY);
+        }
       }
     };
+    checkStaleSession();
   }, []);
 
   const handleStructuredSubmit = async (structuredData) => {

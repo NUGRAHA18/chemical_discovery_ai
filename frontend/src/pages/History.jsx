@@ -91,23 +91,100 @@ const History = () => {
   }, [loadHistory]);
 
   // WORD-BASED SEARCH (not character-based)
-  const filterDiscoveriesByWords = (discoveries) => {
-    if (!filters.search.trim()) return discoveries;
+  const filterDiscoveriesByWords = (discoveriesList) => {
+    return discoveriesList.filter((discovery) => {
+      // 1. Word-based search
+      if (filters.search) {
+        const searchWords = filters.search.toLowerCase().trim().split(/\s+/);
+        const searchableText = `
+        ${discovery.criteria || ""} 
+        ${discovery.compounds?.map((c) => c.name).join(" ") || ""}
+      `.toLowerCase();
 
-    const searchWords = filters.search.toLowerCase().trim().split(/\s+/);
+        const matchesSearch = searchWords.every((word) =>
+          searchableText.includes(word)
+        );
+        if (!matchesSearch) return false;
+      }
 
-    return discoveries.filter((discovery) => {
-      const searchableText = [
-        discovery.criteria || "",
-        ...(discovery.compounds || []).map(
-          (c) => `${c.name} ${c.formula} ${c.smiles || ""}`
-        ),
-      ]
-        .join(" ")
-        .toLowerCase();
+      // 2. Date FROM filter
+      if (filters.dateFrom) {
+        const discoveryDate = new Date(discovery.createdAt);
+        const fromDate = new Date(filters.dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        if (discoveryDate < fromDate) return false;
+      }
 
-      // Check if ALL search words exist in text
-      return searchWords.every((word) => searchableText.includes(word));
+      // 3. Date TO filter
+      if (filters.dateTo) {
+        const discoveryDate = new Date(discovery.createdAt);
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        if (discoveryDate > toDate) return false;
+      }
+
+      // 4. Molecular Weight filter
+      if (filters.minMW) {
+        const avgMW =
+          discovery.compounds?.reduce(
+            (sum, c) => sum + (c.molecular_weight || 0),
+            0
+          ) / (discovery.compounds?.length || 1);
+        if (avgMW < parseFloat(filters.minMW)) return false;
+      }
+
+      if (filters.maxMW) {
+        const avgMW =
+          discovery.compounds?.reduce(
+            (sum, c) => sum + (c.molecular_weight || 0),
+            0
+          ) / (discovery.compounds?.length || 1);
+        if (avgMW > parseFloat(filters.maxMW)) return false;
+      }
+
+      // 5. LogP filter
+      if (filters.minLogP) {
+        const avgLogP =
+          discovery.compounds?.reduce((sum, c) => sum + (c.logp || 0), 0) /
+          (discovery.compounds?.length || 1);
+        if (avgLogP < parseFloat(filters.minLogP)) return false;
+      }
+
+      if (filters.maxLogP) {
+        const avgLogP =
+          discovery.compounds?.reduce((sum, c) => sum + (c.logp || 0), 0) /
+          (discovery.compounds?.length || 1);
+        if (avgLogP > parseFloat(filters.maxLogP)) return false;
+      }
+
+      // 6. Validation Score filter
+      if (filters.minValidation) {
+        const avgValidation =
+          discovery.compounds?.reduce(
+            (sum, c) => sum + (c.validation_score || 0),
+            0
+          ) / (discovery.compounds?.length || 1);
+        if (avgValidation < parseFloat(filters.minValidation)) return false;
+      }
+
+      // 7. Input Mode filter ✅ FIX
+      if (filters.inputMode && filters.inputMode !== "all") {
+        const discoveryMode = discovery.inputMode || "";
+        if (
+          filters.inputMode === "structured" &&
+          discoveryMode !== "structured"
+        ) {
+          return false;
+        }
+        if (
+          filters.inputMode === "ai-prompt" &&
+          discoveryMode !== "ai-prompt"
+        ) {
+          return false;
+        }
+      }
+
+      return true;
     });
   };
 

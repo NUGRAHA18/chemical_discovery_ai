@@ -8,6 +8,7 @@ import AddTemplateModal from "./AddTemplateModal";
 import { customTemplateService } from "../../services/customTemplates";
 import { Plus, Filter, Sparkles, ClipboardList, X } from "lucide-react";
 import ConfirmDialog from "../common/ConfirmDialog";
+import { showSuccess, showError } from "../../utils/toast";
 
 const TemplatesModal = ({ isOpen, onClose, onSelectTemplate }) => {
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -72,9 +73,17 @@ const TemplatesModal = ({ isOpen, onClose, onSelectTemplate }) => {
       templateName: template.name,
     });
   };
+
   const confirmDelete = () => {
-    customTemplateService.delete(deleteConfirm.templateId);
-    loadCustomTemplates();
+    if (deleteConfirm.templateId) {
+      const success = customTemplateService.delete(deleteConfirm.templateId);
+      if (success) {
+        loadCustomTemplates();
+        showSuccess("Template deleted successfully!");
+      } else {
+        showError("Failed to delete template");
+      }
+    }
     setDeleteConfirm({ isOpen: false, templateId: null, templateName: "" });
   };
 
@@ -192,7 +201,7 @@ const TemplatesModal = ({ isOpen, onClose, onSelectTemplate }) => {
                   onSelect={handleSelectTemplate}
                   onDelete={
                     template.custom
-                      ? () => handleDeleteTemplate(template.id)
+                      ? () => handleDeleteTemplate(template)
                       : null
                   }
                 />

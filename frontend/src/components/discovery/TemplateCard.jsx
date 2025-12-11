@@ -31,7 +31,9 @@ const TemplateCard = ({ template, onSelect, onDelete }) => {
 
   const handleDelete = (e) => {
     e.stopPropagation();
-    onDelete(template);
+    if (onDelete) {
+      onDelete(); // Call directly, already wrapped in TemplatesModal
+    }
   };
 
   return (

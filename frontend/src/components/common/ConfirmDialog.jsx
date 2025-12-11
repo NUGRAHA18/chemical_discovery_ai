@@ -1,3 +1,8 @@
+// ============================================
+// NEW FILE: ConfirmDialog.jsx
+// ============================================
+// Path: frontend/src/components/common/ConfirmDialog.jsx
+
 import { AlertTriangle, X } from "lucide-react";
 
 const ConfirmDialog = ({
@@ -27,7 +32,6 @@ const ConfirmDialog = ({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-        {/* Header */}
         <div className="px-6 pt-6 pb-4">
           <div className="flex items-start gap-4">
             <div className={`p-3 rounded-full ${styles.icon}`}>
@@ -50,7 +54,6 @@ const ConfirmDialog = ({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="px-6 pb-6 flex gap-3 justify-end">
           <button
             onClick={onClose}

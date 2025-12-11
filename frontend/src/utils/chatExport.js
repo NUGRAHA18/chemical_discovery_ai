@@ -49,48 +49,56 @@ export const exportChatToPDF = async (messages, selectedDiscovery = null) => {
 
     currentY += 15;
 
+    const stripMarkdown = (text) => {
+      return text
+        .replace(/#{1,6}\s/g, "") // Headers
+        .replace(/\*\*(.+?)\*\*/g, "$1") // Bold
+        .replace(/\*(.+?)\*/g, "$1") // Italic
+        .replace(/`(.+?)`/g, "$1") // Inline code
+        .replace(/```[\s\S]*?```/g, "") // Code blocks
+        .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Links
+        .replace(/!\[.*?\]\(.+?\)/g, "") // Images
+        .replace(/>\s/g, "") // Blockquotes
+        .replace(/^\s*[-*+]\s/gm, "• ") // Lists
+        .replace(/^\s*\d+\.\s/gm, "") // Numbered lists
+        .trim();
+    };
+
     // Messages
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
 
     messages.forEach((message, idx) => {
-      // Check if need new page
       if (currentY > pageHeight - 40) {
         doc.addPage();
         currentY = 20;
       }
 
-      // Role label
       const isUser = message.role === "user";
+
+      // Role label
       doc.setFont(undefined, "bold");
       doc.setFontSize(11);
       doc.setTextColor(isUser ? 79 : 34, isUser ? 70 : 197, isUser ? 229 : 94);
-      doc.text(isUser ? "You:" : "AI Assistant:", 20, currentY);
-
+      doc.text(isUser ? "You:" : "Assistant:", 20, currentY);
       currentY += 7;
 
-      // Message content
+      // Message content - STRIP MARKDOWN
       doc.setFont(undefined, "normal");
       doc.setFontSize(10);
-      doc.setTextColor(50, 50, 50);
+      doc.setTextColor(40, 40, 40);
 
-      const messageText = doc.splitTextToSize(message.message, pageWidth - 40);
-      doc.text(messageText, 20, currentY);
-      currentY += messageText.length * 5;
+      const cleanContent = stripMarkdown(message.content);
+      const contentLines = doc.splitTextToSize(cleanContent, pageWidth - 40);
 
-      // Timestamp
-      currentY += 2;
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(new Date(message.createdAt).toLocaleString(), 20, currentY);
+      doc.text(contentLines, 20, currentY);
+      currentY += contentLines.length * 5 + 10;
 
-      currentY += 10;
-
-      // Separator line
+      // Divider
       if (idx < messages.length - 1) {
         doc.setDrawColor(220, 220, 220);
         doc.line(20, currentY, pageWidth - 20, currentY);
-        currentY += 10;
+        currentY += 8;
       }
     });
 
