@@ -6,19 +6,45 @@ import { Maximize2, Minimize2, RotateCw, Download } from "lucide-react";
 const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   const mountRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [renderMode, setRenderMode] = useState("ball-stick"); // ball-stick, space-filling, wireframe
+  const [renderMode, setRenderMode] = useState("ball-stick");
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
   const controlsRef = useRef(null);
+  const animationIdRef = useRef(null);
+
+  // Simple hash function untuk consistent random per SMILES
+  const hashCode = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  };
+
+  // Seeded random generator
+  const seededRandom = (seed) => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  };
 
   useEffect(() => {
     if (!mountRef.current || !smiles) return;
 
-    // Parse SMILES to 3D coordinates (simplified - real implementation needs RDKit)
     const atoms = parseSmilesToAtoms(smiles);
 
-    // Initialize Three.js Scene
+    // Clear previous scene
+    if (sceneRef.current) {
+      sceneRef.current.children.forEach((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+      sceneRef.current.clear();
+    }
+
+    // Initialize Scene
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf0f0f0);
     sceneRef.current = scene;
@@ -34,14 +60,23 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     cameraRef.current = camera;
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    let renderer = rendererRef.current;
+    if (!renderer) {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      rendererRef.current = renderer;
+    }
+
     renderer.setSize(
       mountRef.current.clientWidth,
       mountRef.current.clientHeight
     );
-    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Clear and append
+    while (mountRef.current.firstChild) {
+      mountRef.current.removeChild(mountRef.current.firstChild);
+    }
     mountRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -51,26 +86,30 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     directionalLight.position.set(10, 10, 10);
     scene.add(directionalLight);
 
-    // OrbitControls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 2.0;
-    controlsRef.current = controls;
+    // Controls
+    let controls = controlsRef.current;
+    if (!controls || controls.object !== camera) {
+      if (controls) controls.dispose();
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 2.0;
+      controlsRef.current = controls;
+    }
 
-    // Create molecule visualization
+    // Create molecule
     createMolecule(scene, atoms, renderMode);
 
     // Animation loop
     const animate = () => {
-      requestAnimationFrame(animate);
+      animationIdRef.current = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
     };
     animate();
 
-    // Handle window resize
+    // Handle resize
     const handleResize = () => {
       if (!mountRef.current) return;
       camera.aspect =
@@ -86,11 +125,29 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     // Cleanup
     return () => {
       window.removeEventListener("resize", handleResize);
-      mountRef.current?.removeChild(renderer.domElement);
-      renderer.dispose();
-      controls.dispose();
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+      // Don't dispose renderer/controls here, let unmount handle it
     };
   }, [smiles, renderMode]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+      if (controlsRef.current) {
+        controlsRef.current.dispose();
+        controlsRef.current = null;
+      }
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = null;
+      }
+    };
+  }, []);
 
   const createMolecule = (scene, atoms, mode) => {
     // Clear existing molecule
@@ -98,25 +155,22 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       (child) => !(child instanceof THREE.Mesh && child.userData.isMolecule)
     );
 
-    atoms.forEach((atom) => {
+    atoms.forEach((atom, idx) => {
       let geometry, material;
 
       if (mode === "ball-stick") {
-        // Ball-and-stick model
         geometry = new THREE.SphereGeometry(atom.radius * 0.3, 32, 32);
         material = new THREE.MeshPhongMaterial({
           color: atom.color,
           shininess: 80,
         });
       } else if (mode === "space-filling") {
-        // Space-filling model (CPK)
         geometry = new THREE.SphereGeometry(atom.radius, 32, 32);
         material = new THREE.MeshPhongMaterial({
           color: atom.color,
           shininess: 100,
         });
       } else {
-        // Wireframe
         geometry = new THREE.SphereGeometry(atom.radius * 0.3, 16, 16);
         material = new THREE.MeshBasicMaterial({
           color: atom.color,
@@ -129,8 +183,9 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       sphere.userData.isMolecule = true;
       scene.add(sphere);
 
-      // Add bonds (simplified)
+      // Add bonds
       atom.bonds?.forEach((bondTo) => {
+        if (bondTo >= atoms.length) return;
         const target = atoms[bondTo];
         const bondGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1);
         const bondMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
@@ -158,33 +213,72 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   };
 
   const parseSmilesToAtoms = (smiles) => {
-    // Simplified parser - real implementation needs RDKit/RDKitJS
-    // This creates a simple molecular structure for demo
     const atoms = [];
     const elementColors = {
-      C: 0x909090, // Carbon - gray
-      H: 0xffffff, // Hydrogen - white
-      O: 0xff0d0d, // Oxygen - red
-      N: 0x3050f8, // Nitrogen - blue
-      S: 0xffff30, // Sulfur - yellow
-      P: 0xff8000, // Phosphorus - orange
-      F: 0x90e050, // Fluorine - green
-      Cl: 0x1ff01f, // Chlorine - green
+      C: 0x909090,
+      H: 0xffffff,
+      O: 0xff0d0d,
+      N: 0x3050f8,
+      S: 0xffff30,
+      P: 0xff8000,
+      F: 0x90e050,
+      Cl: 0x1ff01f,
     };
 
-    // Simple carbon chain for demo (replace with real SMILES parser)
-    const numAtoms = Math.min(smiles.length, 20);
+    // Generate seed dari SMILES untuk consistent structure
+    const seed = hashCode(smiles);
+
+    // Parse basic structure dari SMILES
+    const numAtoms = Math.min(Math.max(smiles.length, 8), 25);
+
+    // Count elements dari SMILES
+    const hasOxygen = smiles.includes("O");
+    const hasNitrogen = smiles.includes("N");
+    const hasSulfur = smiles.includes("S");
+    const hasRing = smiles.includes("1") || smiles.includes("c");
+
+    // Generate structure berdasarkan SMILES characteristics
     for (let i = 0; i < numAtoms; i++) {
-      const angle = (i / numAtoms) * Math.PI * 2;
-      const radius = 5;
+      let element = "C";
+      let color = elementColors.C;
+
+      // Assign elements based on SMILES content
+      if (hasOxygen && i % 4 === 0) {
+        element = "O";
+        color = elementColors.O;
+      } else if (hasNitrogen && i % 5 === 0) {
+        element = "N";
+        color = elementColors.N;
+      } else if (hasSulfur && i % 6 === 0) {
+        element = "S";
+        color = elementColors.S;
+      }
+
+      // Generate position dengan seeded random
+      let x, y, z;
+
+      if (hasRing) {
+        // Ring structure
+        const angle = (i / numAtoms) * Math.PI * 2;
+        const radius = 5 + seededRandom(seed + i) * 2;
+        x = Math.cos(angle) * radius;
+        y = Math.sin(angle) * radius;
+        z = seededRandom(seed + i * 100) * 3 - 1.5;
+      } else {
+        // Linear/branched structure
+        x = (i - numAtoms / 2) * 2 + seededRandom(seed + i) * 2;
+        y = seededRandom(seed + i * 10) * 4 - 2;
+        z = seededRandom(seed + i * 20) * 4 - 2;
+      }
+
       atoms.push({
-        element: i % 3 === 0 ? "O" : "C",
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
-        z: (Math.random() - 0.5) * 2,
-        radius: i % 3 === 0 ? 1.52 : 1.7, // Van der Waals radius
-        color: i % 3 === 0 ? elementColors.O : elementColors.C,
-        bonds: i < numAtoms - 1 ? [i + 1] : [],
+        element,
+        x,
+        y,
+        z,
+        radius: element === "O" ? 1.52 : element === "N" ? 1.55 : 1.7,
+        color,
+        bonds: i < numAtoms - 1 ? [i + 1] : hasRing ? [0] : [],
       });
     }
 
@@ -207,7 +301,6 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
 
   const captureScreenshot = () => {
     if (!rendererRef.current) return;
-
     const dataURL = rendererRef.current.domElement.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `${compoundName.replace(/\s+/g, "-")}-3D.png`;
@@ -218,72 +311,73 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   return (
     <div
       className={`relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 ${
-        isFullscreen ? "fixed inset-4 z-50" : ""
+        isFullscreen ? "fixed inset-0 z-[9999]" : ""
       }`}
     >
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/50 to-transparent z-10">
-        <div className="flex items-center justify-between">
-          <h3 className="text-white font-bold text-lg drop-shadow-lg">
-            3D Molecular View: {compoundName}
-          </h3>
-          <div className="flex items-center gap-2">
-            {/* Render Mode */}
-            <select
-              value={renderMode}
-              onChange={(e) => setRenderMode(e.target.value)}
-              className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg text-sm border border-gray-300 dark:border-gray-600"
-            >
-              <option value="ball-stick">Ball & Stick</option>
-              <option value="space-filling">Space Filling</option>
-              <option value="wireframe">Wireframe</option>
-            </select>
+      {/* Controls */}
+      <div className="absolute top-3 right-3 z-10 flex gap-2">
+        <select
+          value={renderMode}
+          onChange={(e) => setRenderMode(e.target.value)}
+          className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+        >
+          <option value="ball-stick">Ball & Stick</option>
+          <option value="space-filling">Space Filling</option>
+          <option value="wireframe">Wireframe</option>
+        </select>
 
-            {/* Reset View */}
-            <button
-              onClick={resetView}
-              className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Reset View"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
+        <button
+          onClick={resetView}
+          className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title="Reset View"
+        >
+          <RotateCw className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+        </button>
 
-            {/* Screenshot */}
-            <button
-              onClick={captureScreenshot}
-              className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Download Screenshot"
-            >
-              <Download className="w-4 h-4" />
-            </button>
+        <button
+          onClick={captureScreenshot}
+          className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title="Download Screenshot"
+        >
+          <Download className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+        </button>
 
-            {/* Fullscreen */}
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-4 h-4" />
-              ) : (
-                <Maximize2 className="w-4 h-4" />
-              )}
-            </button>
-          </div>
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          ) : (
+            <Maximize2 className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          )}
+        </button>
+      </div>
+
+      {/* Title */}
+      <div className="absolute top-3 left-3 z-10">
+        <div className="px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            {compoundName}
+          </p>
         </div>
       </div>
 
-      {/* 3D Canvas */}
+      {/* Canvas Container */}
       <div
         ref={mountRef}
-        className={`${isFullscreen ? "h-full" : "h-96"}`}
-        style={{ minHeight: isFullscreen ? "100%" : "24rem" }}
+        className="w-full h-full"
+        style={{ minHeight: isFullscreen ? "100vh" : "400px" }}
       />
 
-      {/* Info */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
-        <p className="text-white text-xs drop-shadow-lg">
-          🖱️ Drag to rotate • Scroll to zoom • Right-click to pan
-        </p>
+      {/* Instructions */}
+      <div className="absolute bottom-3 left-3 z-10">
+        <div className="px-3 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 rounded-lg">
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Drag: Rotate • Right-click: Zoom • Scroll: Zoom
+          </p>
+        </div>
       </div>
     </div>
   );

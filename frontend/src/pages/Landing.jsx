@@ -298,7 +298,30 @@ const Landing = () => {
             Meet The <span className="text-purple-400">Minds</span>
           </h2>
           <div className="flex flex-wrap justify-center gap-8">
-            {["Cleo", "Afif", "Eska", "Agung", "Faris"].map((name, idx) => (
+            {/* Kita ubah datanya menjadi Array of Objects agar lebih rapi */}
+            {[
+              {
+                name: "Cleo",
+                role: "Machine Learning",
+                uni: "Universitas Negeri Surabaya",
+              },
+              {
+                name: "Afif",
+                role: "Machine Learning",
+                uni: "Universitas Negeri Surabaya",
+              },
+              { name: "Eska", role: "Backend", uni: "Institut Teknologi Del" },
+              {
+                name: "Agung",
+                role: "Full Stack",
+                uni: "UIN Sunan Kalijaga",
+              },
+              {
+                name: "Faris",
+                role: "Frontend",
+                uni: "UIN Sunan Kalijagar",
+              },
+            ].map((member, idx) => (
               <motion.div
                 key={idx}
                 whileHover={{ y: -10, scale: 1.02 }}
@@ -307,27 +330,29 @@ const Landing = () => {
                 <div className="w-24 h-24 mx-auto mb-4 relative">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary-500 to-purple-500 rounded-full opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-300"></div>
                   <div className="relative w-full h-full bg-slate-800 rounded-full flex items-center justify-center text-3xl font-bold text-slate-400 group-hover:text-white border-2 border-slate-700 group-hover:border-purple-400 transition-all">
-                    {name[0]}
+                    {member.name[0]}
                   </div>
                 </div>
+
+                {/* Nama */}
                 <h3 className="font-bold text-white mb-1 font-mono tracking-wide">
-                  {name}
+                  {member.name}
                 </h3>
-                <p className="text-xs font-medium text-purple-400 uppercase tracking-wider">
-                  {idx <= 1
-                    ? "ML Engineer"
-                    : idx === 2
-                    ? "Backend"
-                    : idx === 3
-                    ? "Full Stack"
-                    : "Backend"}
+
+                {/* Role */}
+                <p className="text-xs font-medium text-purple-400 uppercase tracking-wider mb-1">
+                  {member.role}
+                </p>
+
+                {/* Universitas (Baru Ditambahkan) */}
+                <p className="text-[10px] text-slate-500 font-light">
+                  {member.uni}
                 </p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
-
       {/* --- CTA SECTION --- */}
       <section className="relative py-32 overflow-hidden">
         {/* Animated Background Mesh */}

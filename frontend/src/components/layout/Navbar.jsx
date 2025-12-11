@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import DarkModeToggle from "../common/DarkModeToggle";
+import { useAuth } from "../../contexts/AuthContext"; // Pastikan path ini sesuai
+import DarkModeToggle from "../common/DarkModeToggle"; // Pastikan path ini sesuai
 import {
   Home,
   LayoutDashboard,
@@ -17,23 +17,26 @@ import {
   Layers,
   Archive,
   Settings,
+  User,
+  Shield,
 } from "lucide-react";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
-  // State untuk dropdown desktop
+  // --- STATE ---
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  // ✅ State untuk profile photo dengan real-time update
+  // State khusus untuk Foto Profil agar bisa update real-time
   const [profilePhoto, setProfilePhoto] = useState(user?.profilePhoto);
 
-  const location = useLocation();
+  // --- EFFECTS ---
 
-  // Reset semua menu saat navigasi berpindah
+  // 1. Reset menu saat pindah halaman
   useEffect(() => {
     setToolsOpen(false);
     setLibraryOpen(false);
@@ -41,15 +44,25 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   }, [location]);
 
-  // ✅ Listen untuk profile photo updates
+  // 2. Update foto saat user login/logout (dari Context)
+  useEffect(() => {
+    setProfilePhoto(user?.profilePhoto);
+  }, [user]);
+
+  // 3. LISTEN EVENT: Update foto saat diganti di halaman Profile
   useEffect(() => {
     const handleProfilePhotoUpdate = () => {
-      const updatedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      setProfilePhoto(updatedUser.profilePhoto);
+      // Ambil data terbaru langsung dari LocalStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setProfilePhoto(parsedUser.profilePhoto);
+      }
     };
 
     window.addEventListener("profilePhotoUpdated", handleProfilePhotoUpdate);
 
+    // Cleanup listener saat component unmount
     return () => {
       window.removeEventListener(
         "profilePhotoUpdated",
@@ -58,14 +71,9 @@ const Navbar = () => {
     };
   }, []);
 
-  // ✅ Update profilePhoto when user changes
-  useEffect(() => {
-    setProfilePhoto(user?.profilePhoto);
-  }, [user]);
-
+  // --- HELPERS ---
   const isActive = (path) => location.pathname === path;
 
-  // Style untuk link menu utama (Top Level)
   const linkClass = (path) =>
     `flex items-center space-x-2 text-sm font-medium transition-all duration-200 px-3 py-2 rounded-md ${
       isActive(path)
@@ -73,13 +81,37 @@ const Navbar = () => {
         : "text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
     }`;
 
-  // Style untuk item di dalam Dropdown
   const dropdownItemClass = (path) =>
     `flex items-center px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left transition-colors ${
       isActive(path)
         ? "bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-semibold"
         : ""
     }`;
+
+  // Helper component untuk Avatar agar kode tidak berulang
+  const UserAvatar = ({ className, fallbackClassName }) => (
+    <>
+      {profilePhoto ? (
+        <img
+          src={profilePhoto}
+          alt="Profile"
+          className={`${className} object-cover border-2 border-primary-200 dark:border-primary-700`}
+          onError={(e) => {
+            e.target.style.display = "none";
+            e.target.nextSibling.style.display = "flex";
+          }}
+        />
+      ) : null}
+
+      {/* Fallback Initials (Muncul jika tidak ada foto atau foto error) */}
+      <div
+        className={`${className} ${fallbackClassName} bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold`}
+        style={{ display: profilePhoto ? "none" : "flex" }}
+      >
+        {user?.name?.charAt(0)?.toUpperCase() || "U"}
+      </div>
+    </>
+  );
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md transition-colors">
@@ -130,7 +162,6 @@ const Navbar = () => {
                     />
                   </button>
 
-                  {/* Dropdown Menu Content */}
                   <div
                     className={`absolute top-full left-0 mt-1 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-200 origin-top-left ${
                       toolsOpen
@@ -140,15 +171,14 @@ const Navbar = () => {
                   >
                     <div className="py-1">
                       <Link to="/chat" className={dropdownItemClass("/chat")}>
-                        <MessageSquare className="w-4 h-4 mr-3 text-purple-500" />
+                        <MessageSquare className="w-4 h-4 mr-3 text-purple-500" />{" "}
                         AI Chat
                       </Link>
-                      {/* ✅ FIXED: Calculator Style disamakan dengan dropdown lainnya */}
                       <Link
                         to="/property-calculator"
                         className={dropdownItemClass("/property-calculator")}
                       >
-                        <Calculator className="w-4 h-4 mr-3 text-emerald-500" />
+                        <Calculator className="w-4 h-4 mr-3 text-emerald-500" />{" "}
                         Calculator
                       </Link>
                     </div>
@@ -183,14 +213,14 @@ const Navbar = () => {
                         to="/history"
                         className={dropdownItemClass("/history")}
                       >
-                        <History className="w-4 h-4 mr-3 text-orange-500" />
+                        <History className="w-4 h-4 mr-3 text-orange-500" />{" "}
                         History
                       </Link>
                       <Link
                         to="/favorites"
                         className={dropdownItemClass("/favorites")}
                       >
-                        <Star className="w-4 h-4 mr-3 text-yellow-500" />
+                        <Star className="w-4 h-4 mr-3 text-yellow-500" />{" "}
                         Favorites
                       </Link>
                     </div>
@@ -205,7 +235,7 @@ const Navbar = () => {
             <DarkModeToggle />
             {isAuthenticated ? (
               <div className="flex items-center space-x-4 pl-4 border-l border-gray-200 dark:border-slate-700">
-                {/* ✅ FIXED: DROPDOWN USER PROFILE WITH PHOTO */}
+                {/* USER MENU DROPDOWN */}
                 <div className="relative group">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -221,26 +251,11 @@ const Navbar = () => {
                       </span>
                     </div>
 
-                    {/* ✅ FIXED: Profile Photo Display */}
-                    {profilePhoto ? (
-                      <img
-                        src={profilePhoto}
-                        alt={user?.name}
-                        className="w-9 h-9 rounded-full object-cover border-2 border-primary-200 dark:border-primary-700 hover:border-primary-400 transition-all"
-                        onError={(e) => {
-                          // Fallback if image fails to load
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
+                    <div className="relative">
+                      <UserAvatar
+                        className="w-9 h-9 rounded-full"
+                        fallbackClassName="text-sm"
                       />
-                    ) : null}
-
-                    {/* ✅ Gradient Fallback (always rendered, hidden if photo exists) */}
-                    <div
-                      className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm hover:from-primary-500 hover:to-primary-700 transition-all"
-                      style={{ display: profilePhoto ? "none" : "flex" }}
-                    >
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </div>
 
                     <ChevronDown
@@ -250,9 +265,8 @@ const Navbar = () => {
                     />
                   </button>
 
-                  {/* Dropdown Content User */}
                   <div
-                    className={`absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-200 origin-top-right z-50 ${
+                    className={`absolute top-full right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-200 origin-top-right z-50 ${
                       userMenuOpen
                         ? "opacity-100 scale-100 translate-y-0"
                         : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
@@ -271,16 +285,14 @@ const Navbar = () => {
                         to="/profile"
                         className={dropdownItemClass("/profile")}
                       >
-                        <Settings className="w-4 h-4 mr-3 text-slate-500" />
-                        My Profile
+                        <User className="w-4 h-4 mr-3 text-blue-500" /> My
+                        Profile
                       </Link>
-
                       <button
                         onClick={logout}
                         className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
                       >
-                        <LogOut className="w-4 h-4 mr-3" />
-                        Sign Out
+                        <LogOut className="w-4 h-4 mr-3" /> Sign Out
                       </button>
                     </div>
                   </div>
@@ -351,7 +363,6 @@ const Navbar = () => {
                 <div className="pt-4 pb-2 text-xs font-bold text-gray-400 uppercase tracking-wider pl-2">
                   Tools
                 </div>
-
                 <Link
                   to="/chat"
                   className="mobile-link flex items-center py-2.5 px-4 text-slate-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg ml-2 border-l-2 border-transparent hover:border-purple-500"
@@ -383,29 +394,13 @@ const Navbar = () => {
                   <Star className="w-4 h-4 mr-3 text-yellow-500" /> Favorites
                 </Link>
 
-                {/* ✅ FIXED: MOBILE USER SECTION WITH PHOTO */}
+                {/* MOBILE USER SECTION */}
                 <div className="border-t border-gray-200 dark:border-gray-700 my-4 pt-4">
                   <div className="flex items-center px-2 mb-4">
-                    {/* ✅ Profile Photo in Mobile */}
-                    {profilePhoto ? (
-                      <img
-                        src={profilePhoto}
-                        alt={user?.name}
-                        className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-primary-200 dark:border-primary-700"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
-                      />
-                    ) : null}
-
-                    {/* ✅ Gradient Fallback Mobile */}
-                    <div
-                      className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center mr-3 text-white font-bold"
-                      style={{ display: profilePhoto ? "none" : "flex" }}
-                    >
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                    </div>
+                    <UserAvatar
+                      className="w-10 h-10 rounded-full mr-3"
+                      fallbackClassName="mr-3 text-base"
+                    />
 
                     <div>
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
