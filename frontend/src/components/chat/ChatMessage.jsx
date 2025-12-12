@@ -12,9 +12,7 @@ const ChatMessage = ({ message, onViewDiscovery }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Parse message for compound mentions and create links
   const renderMessageWithLinks = (text) => {
-    // Detect patterns like "Compound 1:", "benzene", chemical formulas, etc.
     const compoundPattern =
       /(compound \d+|[A-Z][a-z]*(?:-\d+-[a-z]+)?(?:\s+[A-Z][a-z]*)*|C\d+H\d+(?:O\d+)?(?:N\d+)?)/gi;
 

@@ -12,7 +12,7 @@ import {
 const ComparisonModal = ({ isOpen, onClose }) => {
   const { comparisonList, removeFromComparison, clearComparison } =
     useComparison();
-  const [viewMode, setViewMode] = useState("table"); // "table" or "charts"
+  const [viewMode, setViewMode] = useState("table");
 
   if (!isOpen) return null;
 
@@ -35,7 +35,6 @@ const ComparisonModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Extract all unique properties for table headers
   const getAllProperties = () => {
     const props = new Set([
       "molecular_weight",
@@ -52,7 +51,6 @@ const ComparisonModal = ({ isOpen, onClose }) => {
     return Array.from(props);
   };
 
-  // Property labels
   const propertyLabels = {
     molecular_weight: "MW (g/mol)",
     logp: "LogP",
@@ -64,13 +62,12 @@ const ComparisonModal = ({ isOpen, onClose }) => {
   };
 
   const getPropertyValue = (compound, property) => {
-    // Direct properties
     if (compound[property] !== undefined && compound[property] !== null) {
       return typeof compound[property] === "number"
         ? compound[property].toFixed(2)
         : compound[property];
     }
-    // Nested in properties object
+
     if (compound.properties && compound.properties[property] !== undefined) {
       const val = compound.properties[property];
       return typeof val === "number" ? val.toFixed(2) : val;
@@ -78,7 +75,6 @@ const ComparisonModal = ({ isOpen, onClose }) => {
     return "N/A";
   };
 
-  // Get max value for chart scaling
   const getMaxValue = (property) => {
     const values = comparisonList
       .map((c) => parseFloat(getPropertyValue(c, property)))
@@ -188,7 +184,6 @@ const ComparisonModal = ({ isOpen, onClose }) => {
   );
 };
 
-// TABLE VIEW COMPONENT
 const TableView = ({
   compounds,
   properties,
@@ -345,7 +340,6 @@ const TableView = ({
   );
 };
 
-// CHARTS VIEW COMPONENT
 const ChartsView = ({
   compounds,
   properties,
@@ -353,7 +347,6 @@ const ChartsView = ({
   getPropertyValue,
   getMaxValue,
 }) => {
-  // Filter properties that have numeric values
   const numericProperties = properties.filter((prop) => {
     return compounds.some((c) => {
       const val = getPropertyValue(c, prop);

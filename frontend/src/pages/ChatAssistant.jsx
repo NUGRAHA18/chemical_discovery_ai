@@ -38,13 +38,9 @@ const ChatAssistant = () => {
   const [selectedDiscovery, setSelectedDiscovery] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
-
-  // ✅ FIX 1: Ref khusus untuk scrolling (best practice)
   const messagesEndRef = useRef(null);
-
   const chatContainerRef = useRef(null);
   const eventSourceRef = useRef(null);
-  // const shouldAutoScrollRef = useRef(false); // Tidak diperlukan lagi
 
   useEffect(() => {
     loadChatHistory();
@@ -57,25 +53,19 @@ const ChatAssistant = () => {
     };
   }, []);
 
-  // ✅ FIX 2: Logic Auto-Scroll Sederhana & Handal
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       const { scrollHeight, clientHeight } = chatContainerRef.current;
-      // Scroll container chat ke posisi paling bawah
       chatContainerRef.current.scrollTo({
         top: scrollHeight - clientHeight,
-        behavior: "smooth", // Tetap smooth
+        behavior: "smooth",
       });
     }
   };
 
-  // Scroll setiap kali pesan bertambah (termasuk streaming)
   useEffect(() => {
     scrollToBottom();
   }, [messages, isStreaming]);
-
-  // Hapus useEffect scroll manual yang lama agar tidak konflik
-  // ...
 
   const loadChatHistory = async () => {
     try {
@@ -109,9 +99,6 @@ const ChatAssistant = () => {
 
   const handleSendMessage = async (message) => {
     if (!message.trim() || isLoading || isStreaming) return;
-
-    // shouldAutoScrollRef.current = true; // Tidak perlu
-
     const userMessage = {
       role: "user",
       message: message.trim(),
@@ -238,7 +225,7 @@ const ChatAssistant = () => {
   };
 
   const handleViewDiscovery = (discoveryId) => {
-    navigate(`/history`); // Or navigate to specific discovery detail page
+    navigate(`/history`);
   };
 
   if (loadingHistory) {
@@ -372,7 +359,7 @@ const ChatAssistant = () => {
         >
           {/* Messages */}
           <div
-            ref={chatContainerRef} // Ref lama untuk container
+            ref={chatContainerRef}
             className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth"
           >
             {messages.length === 0 ? (
@@ -393,7 +380,7 @@ const ChatAssistant = () => {
                 {messages.map((msg, idx) => (
                   <ChatMessage key={idx} message={msg} />
                 ))}
-                {/* ✅ FIX 3: Dummy div untuk target auto-scroll */}
+
                 <div ref={messagesEndRef} />
               </>
             )}

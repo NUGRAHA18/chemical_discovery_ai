@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { emitProgress, emitLog } = require("../config/socket");
 
-// Internal endpoint for ML service to emit progress
 router.post("/progress", (req, res) => {
   try {
     const { userId, step, progress, message, agent } = req.body;
@@ -18,7 +17,6 @@ router.post("/progress", (req, res) => {
   }
 });
 
-// Internal endpoint for ML service to emit logs
 router.post("/log", (req, res) => {
   try {
     const { userId, type, message, agent } = req.body;

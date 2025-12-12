@@ -20,7 +20,6 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
 
     let filtered = compounds;
 
-    // 1. Name search (word-based)
     if (searchCriteria.name.trim()) {
       const nameWords = searchCriteria.name.toLowerCase().trim().split(/\s+/);
       filtered = filtered.filter((compound) => {
@@ -29,7 +28,6 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
       });
     }
 
-    // 2. Formula search (exact or contains)
     if (searchCriteria.formula.trim()) {
       const formulaSearch = searchCriteria.formula.toLowerCase();
       filtered = filtered.filter((compound) =>
@@ -37,7 +35,6 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
       );
     }
 
-    // 3. SMILES search (contains)
     if (searchCriteria.smiles.trim()) {
       const smilesSearch = searchCriteria.smiles.toLowerCase();
       filtered = filtered.filter((compound) =>
@@ -45,7 +42,6 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
       );
     }
 
-    // 4. Molecular Weight range
     if (searchCriteria.minMW) {
       filtered = filtered.filter(
         (compound) =>
@@ -61,7 +57,6 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
       );
     }
 
-    // 5. LogP range
     if (searchCriteria.minLogP) {
       filtered = filtered.filter(
         (compound) =>
@@ -91,7 +86,7 @@ const AdvancedSearch = ({ compounds, onResultsFound }) => {
       maxLogP: "",
     });
     setResults([]);
-    onResultsFound(compounds); // Reset to all compounds
+    onResultsFound(compounds);
   };
 
   const handleChange = (field, value) => {

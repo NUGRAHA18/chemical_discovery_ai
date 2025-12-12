@@ -64,7 +64,6 @@ const LineChart = ({ data }) => {
     },
   };
 
-  // PERBAIKAN DISINI: Gunakan className Tailwind agar konsisten
   return (
     <div className="relative h-64 w-full">
       <Line data={data} options={options} />

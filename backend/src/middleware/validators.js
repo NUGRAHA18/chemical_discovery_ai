@@ -38,20 +38,17 @@ const discoveryValidation = [
     .isIn(["structured", "ai-prompt"])
     .withMessage('Input mode must be either "structured" or "ai-prompt"'),
 
-  // Criteria required for ai-prompt mode
   body("criteria")
     .if(body("inputMode").equals("ai-prompt"))
     .trim()
     .isLength({ min: 10 })
     .withMessage("Criteria must be at least 10 characters for AI prompt mode"),
 
-  // Structured data required for structured mode
   body("structuredData")
     .if(body("inputMode").equals("structured"))
     .isObject()
     .withMessage("Structured data must be an object"),
 
-  // Optional: validate structured data fields
   body("structuredData.category")
     .optional()
     .isIn(["surfactant", "polymer", "solvent", "catalyst", "additive", "other"])

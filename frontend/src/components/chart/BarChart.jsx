@@ -24,7 +24,7 @@ const BarChart = ({ data }) => {
 
   const options = {
     responsive: true,
-    maintainAspectRatio: false, // Ini butuh parent container dengan tinggi fix
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
@@ -60,7 +60,6 @@ const BarChart = ({ data }) => {
     },
   };
 
-  // PERBAIKAN DISINI: Bungkus dengan div relative dan tinggi pasti
   return (
     <div className="relative h-64 w-full">
       <Bar data={data} options={options} />

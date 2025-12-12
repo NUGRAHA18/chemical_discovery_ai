@@ -37,16 +37,13 @@ const TemplatesModal = ({ isOpen, onClose, onSelectTemplate }) => {
 
   if (!isOpen) return null;
 
-  // Combine default + custom templates
   const allTemplates = [...discoveryTemplates, ...customTemplates];
 
-  // Filter by category
   let filteredTemplates =
     selectedCategory === "All"
       ? allTemplates
       : allTemplates.filter((t) => t.category === selectedCategory);
 
-  // Filter by inputMode
   if (selectedInputMode !== "All") {
     const modeFilter =
       selectedInputMode === "Structured Form" ? "structured" : "ai-prompt";
@@ -91,8 +88,6 @@ const TemplatesModal = ({ isOpen, onClose, onSelectTemplate }) => {
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col my-8 shadow-2xl">
-          {/* Header */}
-
           {/* Header */}
           <div className="relative bg-primary-600 dark:bg-primary-700 px-8 py-6 border-b-2 border-primary-700 dark:border-primary-900">
             <div className="flex justify-between items-start">

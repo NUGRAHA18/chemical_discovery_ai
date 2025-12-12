@@ -2,7 +2,6 @@ const ChatMessage = require("../models/ChatMessage");
 const Discovery = require("../models/Discovery");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
-
 const chatController = {
   sendMessage: async (req, res) => {
     try {
@@ -174,7 +173,6 @@ const chatController = {
         .populate("context.discoveryId", "criteria compounds");
 
       const total = await ChatMessage.countDocuments({ userId });
-
       const groupedBySession = messages.reduce((acc, msg) => {
         if (!acc[msg.sessionId]) {
           acc[msg.sessionId] = [];
@@ -233,7 +231,6 @@ const chatController = {
     try {
       const { sessionId } = req.params;
       const userId = req.user.id;
-
       const result = await ChatMessage.deleteMany({ sessionId, userId });
 
       if (result.deletedCount === 0) {

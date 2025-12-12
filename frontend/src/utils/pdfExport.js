@@ -3,7 +3,7 @@ import jsPDF from "jspdf";
 export const exportDiscoveryToPDF = async (discovery) => {
   try {
     const doc = new jsPDF();
-    const pageWidth = 210; // A4 width in mm
+    const pageWidth = 210;
     const margin = 20;
     const contentWidth = pageWidth - margin * 2;
     let yPos = 20;
@@ -65,7 +65,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       return y + 5;
     };
 
-    // === PAGE 1: COVER ===
     doc.setFontSize(24);
     doc.setTextColor(37, 99, 235);
     doc.text("Chemical Discovery Report", pageWidth / 2, yPos, {
@@ -119,7 +118,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
     );
     yPos += 15;
 
-    // === PAGE 2: ANALYSIS ===
     doc.addPage();
     yPos = 20;
 
@@ -155,7 +153,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       [60, 60, 60]
     );
 
-    // === PAGE 3+: COMPOUNDS ===
     doc.addPage();
     yPos = 20;
 
@@ -168,7 +165,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
     );
     yPos += 15;
 
-    // Process each compound
     for (let i = 0; i < discovery.compounds?.length; i++) {
       const compound = discovery.compounds[i];
 
@@ -209,7 +205,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       ];
       yPos = drawTable(basicHeaders, basicRows, yPos);
 
-      // SMILES
       yPos += 3;
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
@@ -250,7 +245,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
         yPos = drawTable(propsHeaders, propsRows, yPos);
       }
 
-      // Base compound & modifications
       if (compound.base_compound) {
         yPos += 3;
         doc.setFontSize(9);
@@ -271,13 +265,11 @@ export const exportDiscoveryToPDF = async (discovery) => {
         yPos += 5;
       }
 
-      // Separator
       doc.setDrawColor(200, 200, 200);
       doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 10;
     }
 
-    // === METADATA PAGE ===
     doc.addPage();
     yPos = 20;
 
@@ -314,7 +306,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       yPos += 7;
     });
 
-    // === FOOTER ON ALL PAGES ===
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -328,7 +319,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       );
     }
 
-    // Save
     const filename = `discovery-${discovery._id}-${Date.now()}.pdf`;
     doc.save(filename);
 

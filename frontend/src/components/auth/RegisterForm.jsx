@@ -17,8 +17,6 @@ const RegisterForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-
-  // State untuk toggle visibility password (terpisah untuk password & confirm)
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -91,7 +89,6 @@ const RegisterForm = () => {
     }
   };
 
-  // Helper component untuk styling input agar tidak repetitif
   const InputField = ({
     label,
     name,

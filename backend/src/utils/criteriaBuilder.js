@@ -1,12 +1,6 @@
-/**
- * Convert structured form data to natural language criteria string
- * untuk dikirim ke ML service
- */
-
 const buildCriteriaFromStructured = (structuredData) => {
   const parts = [];
 
-  // 1. Category/Material Type
   if (structuredData.category && structuredData.category !== "other") {
     const categoryMap = {
       surfactant: "surfactant compound",
@@ -18,7 +12,6 @@ const buildCriteriaFromStructured = (structuredData) => {
     parts.push(categoryMap[structuredData.category] || structuredData.category);
   }
 
-  // 2. Boiling Point Range
   if (structuredData.boilingPoint) {
     const { min, max } = structuredData.boilingPoint;
     if (min && max) {
@@ -30,7 +23,6 @@ const buildCriteriaFromStructured = (structuredData) => {
     }
   }
 
-  // 3. Viscosity Range
   if (structuredData.viscosity) {
     const { min, max } = structuredData.viscosity;
     if (min && max) {
@@ -42,7 +34,6 @@ const buildCriteriaFromStructured = (structuredData) => {
     }
   }
 
-  // 4. Solubility
   if (structuredData.solubility && structuredData.solubility !== "any") {
     const solubilityMap = {
       "water-soluble": "water-soluble",
@@ -55,14 +46,12 @@ const buildCriteriaFromStructured = (structuredData) => {
     );
   }
 
-  // 5. Thermal Stability
   if (structuredData.thermalStability?.min) {
     parts.push(
       `thermal stability above ${structuredData.thermalStability.min}°C`
     );
   }
 
-  // 6. Additional Properties
   if (structuredData.additionalProperties?.length > 0) {
     const propsMap = {
       biodegradable: "biodegradable",
@@ -79,32 +68,24 @@ const buildCriteriaFromStructured = (structuredData) => {
     parts.push(mappedProps);
   }
 
-  // 7. Additional Notes
   if (structuredData.notes?.trim()) {
     parts.push(structuredData.notes.trim());
   }
 
-  // Join all parts into natural sentence
   if (parts.length === 0) {
     return "chemical compound with general properties";
   }
 
-  // Build sentence: "A [category] with [property1], [property2], and [property3]"
   const criteria = parts.join(", ");
 
-  // Capitalize first letter
   return criteria.charAt(0).toUpperCase() + criteria.slice(1);
 };
 
-/**
- * Validate structured data before processing
- */
 const validateStructuredData = (structuredData) => {
   if (!structuredData || typeof structuredData !== "object") {
     return { valid: false, error: "Structured data must be an object" };
   }
 
-  // At least one field must be filled
   const hasBoilingPoint =
     structuredData.boilingPoint?.min || structuredData.boilingPoint?.max;
   const hasViscosity =
@@ -132,7 +113,6 @@ const validateStructuredData = (structuredData) => {
     };
   }
 
-  // Validate number ranges
   if (hasBoilingPoint) {
     const { min, max } = structuredData.boilingPoint;
     if (min && max && min >= max) {

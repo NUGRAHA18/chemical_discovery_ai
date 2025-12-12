@@ -8,9 +8,8 @@ export const exportChatToPDF = async (messages, selectedDiscovery = null) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 20;
 
-    // Title
     doc.setFontSize(24);
-    doc.setTextColor(79, 70, 229); // Indigo
+    doc.setTextColor(79, 70, 229);
     doc.text("AI Chat Conversation", pageWidth / 2, currentY, {
       align: "center",
     });
@@ -30,7 +29,6 @@ export const exportChatToPDF = async (messages, selectedDiscovery = null) => {
       align: "center",
     });
 
-    // Discovery context if available
     if (selectedDiscovery) {
       currentY += 10;
       doc.setFontSize(11);
@@ -51,16 +49,16 @@ export const exportChatToPDF = async (messages, selectedDiscovery = null) => {
 
     const stripMarkdown = (text) => {
       return text
-        .replace(/#{1,6}\s/g, "") // Headers
-        .replace(/\*\*(.+?)\*\*/g, "$1") // Bold
-        .replace(/\*(.+?)\*/g, "$1") // Italic
-        .replace(/`(.+?)`/g, "$1") // Inline code
-        .replace(/```[\s\S]*?```/g, "") // Code blocks
-        .replace(/\[(.+?)\]\(.+?\)/g, "$1") // Links
-        .replace(/!\[.*?\]\(.+?\)/g, "") // Images
-        .replace(/>\s/g, "") // Blockquotes
-        .replace(/^\s*[-*+]\s/gm, "• ") // Lists
-        .replace(/^\s*\d+\.\s/gm, "") // Numbered lists
+        .replace(/#{1,6}\s/g, "")
+        .replace(/\*\*(.+?)\*\*/g, "$1")
+        .replace(/\*(.+?)\*/g, "$1")
+        .replace(/`(.+?)`/g, "$1")
+        .replace(/```[\s\S]*?```/g, "")
+        .replace(/\[(.+?)\]\(.+?\)/g, "$1")
+        .replace(/!\[.*?\]\(.+?\)/g, "")
+        .replace(/>\s/g, "")
+        .replace(/^\s*[-*+]\s/gm, "• ")
+        .replace(/^\s*\d+\.\s/gm, "")
         .trim();
     };
 

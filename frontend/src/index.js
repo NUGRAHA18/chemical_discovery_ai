@@ -7,6 +7,13 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SocketProvider } from "./contexts/SocketContext";
 
+if (process.env.NODE_ENV === "production") {
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+  console.debug = () => {};
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>

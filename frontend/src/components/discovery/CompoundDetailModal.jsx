@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Atom, Beaker, Download, X } from "lucide-react";
-import { API_BASE_URL } from "../../utils/constants";
 import MoleculeViewer3D from "./MoleculeViewer3D";
 
 const CompoundDetailModal = ({ compound, onClose }) => {
@@ -10,25 +9,22 @@ const CompoundDetailModal = ({ compound, onClose }) => {
     if (!compound.structure_image) return;
 
     try {
-      // Fetch gambar sebagai blob
       const response = await fetch(compound.structure_image);
       const blob = await response.blob();
 
-      // Buat object URL
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      // Nama file yang rapi
+
       link.download = `${compound.name.replace(/\s+/g, "-")}-2D.png`;
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
-      // Fallback jika fetch gagal (misal jika gambar base64)
+
       const link = document.createElement("a");
       link.href = compound.structure_image;
       link.download = `${compound.name}-2D.png`;
@@ -54,7 +50,7 @@ const CompoundDetailModal = ({ compound, onClose }) => {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-3xl leading-none w-8 h-8 flex items-center justify-center"
           >
-            <X className="w-6 h-6" /> {/* Ganti karakter 'x' dengan icon X */}
+            <X className="w-6 h-6" />
           </button>
         </div>
 
@@ -107,7 +103,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
               style={{ minHeight: "400px" }}
             >
               {showImage ? (
-                /* 2D Image */
                 <div className="flex justify-center items-center h-full">
                   {compound.structure_image && !imageError ? (
                     <img
@@ -115,7 +110,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
                       alt={compound.name}
                       className="max-w-full max-h-[400px] object-contain"
                       onError={() => setImageError(true)}
-                      // Penting untuk mengizinkan export canvas jika diperlukan di masa depan
                       crossOrigin="anonymous"
                     />
                   ) : (
@@ -126,7 +120,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
                   )}
                 </div>
               ) : (
-                /* 3D Viewer */
                 <div style={{ height: "400px" }}>
                   {compound.smiles ? (
                     <MoleculeViewer3D
@@ -146,13 +139,12 @@ const CompoundDetailModal = ({ compound, onClose }) => {
               )}
             </div>
 
-            {/* Properties Grid (Sama seperti sebelumnya) */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Atom className="w-5 h-5" />
                 Molecular Properties
               </h3>
-              {/* ... Sisa kode Properties sama ... */}
+
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Molecular Weight */}
                 <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
@@ -204,7 +196,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
               </div>
             </div>
 
-            {/* SMILES & Info Lainnya (Sama seperti sebelumnya) */}
             {compound.smiles && (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">
@@ -215,9 +206,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
                 </p>
               </div>
             )}
-
-            {/* Feasibility Notes dan info lainnya tetap sama */}
-            {/* ... */}
           </div>
         </div>
 

@@ -20,12 +20,7 @@ const FilterPresets = ({ currentFilters, onApplyPreset }) => {
     }
   }, []);
 
-  // Cek apakah filters berubah manual (jika ya, hilangkan status active)
-  // Optional: Fitur ini agar label "Active" hilang jika user menggeser slider setelah apply preset
-  useEffect(() => {
-    // Logic sederhana: jika ada preset aktif, kita asumsikan user masih memakainya
-    // sampai mereka memilih preset lain atau menyimpannya.
-  }, [currentFilters]);
+  useEffect(() => {}, [currentFilters]);
 
   const handleSavePreset = () => {
     if (!newPresetName.trim()) {
@@ -49,12 +44,12 @@ const FilterPresets = ({ currentFilters, onApplyPreset }) => {
 
     setNewPresetName("");
     setShowSaveInput(false);
-    setActivePresetId(newPreset.id); // Otomatis set aktif setelah save
+    setActivePresetId(newPreset.id);
     showSuccess("Filter saved!");
   };
 
   const handleDeletePreset = (e, id) => {
-    e.stopPropagation(); // Mencegah trigger apply saat delete
+    e.stopPropagation();
     if (!window.confirm("Delete this preset?")) return;
 
     const updated = presets.filter((p) => p.id !== id);

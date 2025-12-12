@@ -12,17 +12,14 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
-    // Check localStorage
     const saved = localStorage.getItem("theme");
     if (saved) {
       return saved === "dark";
     }
-    // Check system preference
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   useEffect(() => {
-    // Apply theme to document
     if (isDark) {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");

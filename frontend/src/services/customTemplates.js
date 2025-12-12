@@ -1,7 +1,6 @@
 const STORAGE_KEY = "custom_discovery_templates";
 
 export const customTemplateService = {
-  // Get all custom templates
   getAll: () => {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -12,7 +11,6 @@ export const customTemplateService = {
     }
   },
 
-  // Save a new template
   save: (template) => {
     try {
       const templates = customTemplateService.getAll();
@@ -25,7 +23,6 @@ export const customTemplateService = {
     }
   },
 
-  // Delete a template by ID
   delete: (id) => {
     try {
       const templates = customTemplateService.getAll();
@@ -38,13 +35,11 @@ export const customTemplateService = {
     }
   },
 
-  // Get template by ID
   getById: (id) => {
     const templates = customTemplateService.getAll();
     return templates.find((t) => t.id === id);
   },
 
-  // Update a template
   update: (id, updatedData) => {
     try {
       const templates = customTemplateService.getAll();
@@ -61,7 +56,6 @@ export const customTemplateService = {
     }
   },
 
-  // Clear all custom templates
   clearAll: () => {
     try {
       localStorage.removeItem(STORAGE_KEY);

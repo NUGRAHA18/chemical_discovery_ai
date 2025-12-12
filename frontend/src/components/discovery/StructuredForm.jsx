@@ -6,10 +6,8 @@ import {
   FlaskConical,
   Plus,
   X,
-  CheckCircle2,
 } from "lucide-react";
 
-// Default state form
 const DEFAULT_STATE = {
   category: "",
   boilingPointMin: "",
@@ -26,21 +24,17 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
   const [formData, setFormData] = useState(initialData || DEFAULT_STATE);
   const [newProperty, setNewProperty] = useState("");
 
-  // Sync dengan template
   useEffect(() => {
     if (initialData) {
-      console.log("📥 StructuredForm receiving initialData:", initialData);
       setFormData({
         ...DEFAULT_STATE,
         ...initialData,
-        category: initialData.category || "", // ✅ EXPLICIT
+        category: initialData.category || "",
       });
     }
   }, [initialData]);
 
-  useEffect(() => {
-    console.log("📝 Current formData.category:", formData.category);
-  }, [formData.category]);
+  useEffect(() => {}, [formData.category]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,8 +65,6 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // PERBAIKAN: Pastikan angka dikonversi dengan benar dan undefined jika kosong
     const parseNum = (val) =>
       val === "" || val === null || val === undefined
         ? undefined
@@ -80,8 +72,6 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
     const payload = {
       category: formData.category,
-
-      // Kirim objek boilingPoint hanya jika ada isinya
       boilingPoint:
         formData.boilingPointMin || formData.boilingPointMax
           ? {
@@ -89,8 +79,6 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
               max: parseNum(formData.boilingPointMax),
             }
           : undefined,
-
-      // Kirim objek viscosity hanya jika ada isinya
       viscosity:
         formData.viscosityMin || formData.viscosityMax
           ? {
@@ -98,24 +86,19 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
               max: parseNum(formData.viscosityMax),
             }
           : undefined,
-
       solubility: formData.solubility || undefined,
-
       thermalStability: formData.thermalStabilityMin
         ? {
             min: parseNum(formData.thermalStabilityMin),
           }
         : undefined,
-
       additionalProperties:
         formData.additionalProperties.length > 0
           ? formData.additionalProperties
           : undefined,
-
       notes: formData.notes ? formData.notes.trim() : undefined,
     };
 
-    console.log("📤 Sending Payload:", payload); // Debugging di Console Browser
     onSubmit(payload);
   };
 
@@ -130,9 +113,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FlaskConical className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
           </div>
-          {/* PERBAIKAN VALUE: Mengembalikan value ke lowercase/format lama 
-             agar sesuai validasi Backend (Enum).
-          */}
+
           <select
             name="category"
             value={formData.category}
@@ -224,7 +205,6 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Solubility Preference
           </label>
-          {/* PERBAIKAN VALUE: Mengembalikan value ke format lama (lowercase/dash) */}
           <select
             name="solubility"
             value={formData.solubility}

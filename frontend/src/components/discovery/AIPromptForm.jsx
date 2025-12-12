@@ -4,7 +4,6 @@ import { Sparkles, Send, Quote, Eraser } from "lucide-react";
 const AIPromptForm = ({ onSubmit, loading, initialValue, onChange }) => {
   const [prompt, setPrompt] = useState(initialValue || "");
 
-  // ✅ PERBAIKAN UTAMA: Sync state lokal saat parent (template) mengirim data baru
   useEffect(() => {
     setPrompt(initialValue || "");
   }, [initialValue]);

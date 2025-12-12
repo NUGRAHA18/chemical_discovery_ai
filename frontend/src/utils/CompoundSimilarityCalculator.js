@@ -1,10 +1,3 @@
-// Compound Similarity Calculator
-// Implements Tanimoto coefficient for molecular similarity
-
-/**
- * Convert SMILES or Formula to molecular fingerprint
- * Simplified implementation - real version should use RDKit
- */
 export const parseFingerprint = (smiles) => {
   if (!smiles) return new Set();
 
@@ -43,11 +36,6 @@ export const parseFingerprint = (smiles) => {
   return fingerprint;
 };
 
-/**
- * Calculate Tanimoto similarity coefficient between two compounds
- * Formula: Tc = (A ∩ B) / (A ∪ B)
- * Range: 0 (no similarity) to 1 (identical)
- */
 export const calculateTanimotoSimilarity = (smiles1, smiles2) => {
   if (!smiles1 || !smiles2) return 0;
 
@@ -65,10 +53,6 @@ export const calculateTanimotoSimilarity = (smiles1, smiles2) => {
   return intersection.size / union.size;
 };
 
-/**
- * Calculate Dice similarity coefficient
- * Formula: Dice = 2 * (A ∩ B) / (|A| + |B|)
- */
 export const calculateDiceSimilarity = (smiles1, smiles2) => {
   if (!smiles1 || !smiles2) return 0;
 
@@ -81,10 +65,6 @@ export const calculateDiceSimilarity = (smiles1, smiles2) => {
   return (2 * intersection.size) / (fp1.size + fp2.size);
 };
 
-/**
- * Calculate Cosine similarity
- * Formula: Cosine = (A · B) / (||A|| * ||B||)
- */
 export const calculateCosineSimilarity = (smiles1, smiles2) => {
   if (!smiles1 || !smiles2) return 0;
 
@@ -100,9 +80,6 @@ export const calculateCosineSimilarity = (smiles1, smiles2) => {
   return intersection.size / (magnitude1 * magnitude2);
 };
 
-/**
- * Find N most similar compounds to a reference compound
- */
 export const findSimilarCompounds = (reference, compounds, options = {}) => {
   const { method = "tanimoto", threshold = 0.5, limit = 10 } = options;
 
@@ -127,10 +104,6 @@ export const findSimilarCompounds = (reference, compounds, options = {}) => {
     .slice(0, limit);
 };
 
-/**
- * Calculate molecular diversity of a compound set
- * Returns average pairwise dissimilarity
- */
 export const calculateDiversity = (compounds) => {
   if (compounds.length < 2) return 0;
 
@@ -151,10 +124,6 @@ export const calculateDiversity = (compounds) => {
   return count > 0 ? totalDissimilarity / count : 0;
 };
 
-/**
- * Group compounds by similarity (clustering)
- * Returns array of clusters
- */
 export const clusterBySimilarity = (compounds, threshold = 0.7) => {
   const clusters = [];
   const assigned = new Set();
@@ -185,10 +154,6 @@ export const clusterBySimilarity = (compounds, threshold = 0.7) => {
   return clusters.sort((a, b) => b.length - a.length);
 };
 
-/**
- * Calculate scaffold similarity (core structure)
- * Simplified - looks for common atom patterns
- */
 export const calculateScaffoldSimilarity = (smiles1, smiles2) => {
   if (!smiles1 || !smiles2) return 0;
 
@@ -204,9 +169,6 @@ export const calculateScaffoldSimilarity = (smiles1, smiles2) => {
   return 1 - distance / maxLength;
 };
 
-/**
- * Levenshtein distance (string similarity)
- */
 function levenshteinDistance(str1, str2) {
   const matrix = [];
 
@@ -235,10 +197,6 @@ function levenshteinDistance(str1, str2) {
   return matrix[str2.length][str1.length];
 }
 
-/**
- * Calculate property-based similarity
- * Compares molecular properties (MW, LogP, etc.)
- */
 export const calculatePropertySimilarity = (compound1, compound2) => {
   const properties = [
     { key: "molecular_weight", weight: 0.3, normalize: (val) => val / 500 },
@@ -268,9 +226,6 @@ export const calculatePropertySimilarity = (compound1, compound2) => {
   return totalWeight > 0 ? totalSimilarity / totalWeight : 0;
 };
 
-/**
- * Combined similarity score (structure + properties)
- */
 export const calculateCombinedSimilarity = (
   compound1,
   compound2,

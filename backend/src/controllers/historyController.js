@@ -18,12 +18,10 @@ exports.getHistory = async (req, res) => {
       sortOrder = "desc",
     } = req.query;
 
-    console.log("🔍 History Query - User ID:", req.user._id); // Debug log
+    console.log("🔍 History Query - User ID:", req.user._id);
 
-    // ✅ FIX: Use userId (not user)
     const query = { userId: req.user._id };
 
-    // 1. TEXT SEARCH - WORD BASED
     if (search) {
       const searchWords = search.trim().split(/\s+/);
       const searchRegex = searchWords.map(
@@ -35,7 +33,6 @@ exports.getHistory = async (req, res) => {
       }));
     }
 
-    // 2. DATE RANGE
     if (dateFrom || dateTo) {
       query.createdAt = {};
       if (dateFrom) {
@@ -48,19 +45,16 @@ exports.getHistory = async (req, res) => {
       }
     }
 
-    // 3. INPUT MODE
     if (inputMode && inputMode !== "all") {
       query.inputMode = inputMode;
     }
 
-    // 4. VALIDATION SCORE
     if (minValidation) {
       query["metadata.overall_confidence"] = {
         $gte: parseFloat(minValidation) / 100,
       };
     }
 
-    // 5. MW & LOGP FILTERS
     let useAggregation = false;
     const matchStages = [];
 
@@ -148,7 +142,7 @@ exports.getHistory = async (req, res) => {
         .lean();
     }
 
-    console.log("✅ Found discoveries:", discoveries.length); // Debug log
+    console.log("✅ Found discoveries:", discoveries.length);
 
     const totalPages = Math.ceil(total / parseInt(limit));
 
@@ -176,10 +170,10 @@ exports.getHistory = async (req, res) => {
 
 exports.getStats = async (req, res) => {
   try {
-    const userId = req.user._id; // ✅ FIX: Use _id
+    const userId = req.user._id;
 
     const stats = await Discovery.aggregate([
-      { $match: { userId: userId } }, // ✅ FIX: Use userId
+      { $match: { userId: userId } },
       {
         $group: {
           _id: null,

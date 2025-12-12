@@ -186,7 +186,6 @@ const Profile = () => {
   };
 
   const handleDeletePhoto = async () => {
-    // FIX: Menggunakan window.confirm untuk menghindari error linter
     if (!window.confirm("Are you sure you want to delete your profile photo?"))
       return;
 
@@ -302,7 +301,6 @@ const Profile = () => {
     "inline-flex items-center justify-center px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors";
 
   return (
-    // FIX DARK MODE: Wrapper utama harus full width dan memiliki warna background halaman
     <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Container Konten tetap dibatasi lebarnya */}
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -327,7 +325,7 @@ const Profile = () => {
                   {profile.profilePhoto ? (
                     <img
                       src={
-                        getImageUrl(profile.profilePhoto) || // FIXED
+                        getImageUrl(profile.profilePhoto) ||
                         "/default-avatar.png"
                       }
                       alt="Profile"

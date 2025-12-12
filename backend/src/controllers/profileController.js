@@ -3,11 +3,9 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 
-// Get current user profile
 exports.getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
-
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -22,19 +20,14 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// Update user profile
 exports.updateProfile = async (req, res) => {
   try {
     const { name, company, bio } = req.body;
     const userId = req.user._id;
-
-    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Update fields
     if (name !== undefined) user.name = name;
     if (company !== undefined) user.company = company;
     if (bio !== undefined) user.bio = bio;
@@ -62,27 +55,23 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-// Upload profile photo
 exports.uploadProfilePhoto = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No photo uploaded" });
     }
-
     const userId = req.user._id;
     const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
-    // Create directory if not exists
     const uploadDir = path.join(__dirname, "../../public/images/profiles");
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Delete old profile photo if exists
     if (user.profilePhoto) {
       const oldPhotoPath = path.join(
         __dirname,
@@ -94,11 +83,9 @@ exports.uploadProfilePhoto = async (req, res) => {
       }
     }
 
-    // Generate filename
     const filename = `profile-${userId}-${Date.now()}.jpg`;
     const filepath = path.join(uploadDir, filename);
 
-    // Process and save image (resize to 200x200)
     await sharp(req.file.buffer)
       .resize(200, 200, {
         fit: "cover",
@@ -107,7 +94,6 @@ exports.uploadProfilePhoto = async (req, res) => {
       .jpeg({ quality: 90 })
       .toFile(filepath);
 
-    // Update user profile photo path
     user.profilePhoto = `/images/profiles/${filename}`;
     await user.save();
 
@@ -122,7 +108,6 @@ exports.uploadProfilePhoto = async (req, res) => {
   }
 };
 
-// Delete profile photo
 exports.deleteProfilePhoto = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -136,13 +121,11 @@ exports.deleteProfilePhoto = async (req, res) => {
       return res.status(400).json({ error: "No profile photo to delete" });
     }
 
-    // Delete photo file
     const photoPath = path.join(__dirname, "../../public", user.profilePhoto);
     if (fs.existsSync(photoPath)) {
       fs.unlinkSync(photoPath);
     }
 
-    // Update user
     user.profilePhoto = null;
     await user.save();
 
@@ -156,13 +139,10 @@ exports.deleteProfilePhoto = async (req, res) => {
   }
 };
 
-// Change password
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user._id;
-
-    // Validate input
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         error: "Current password and new password are required",
@@ -175,19 +155,16 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Verify current password
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return res.status(400).json({ error: "Current password is incorrect" });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 

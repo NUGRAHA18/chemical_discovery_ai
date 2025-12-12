@@ -16,12 +16,7 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const [discoveryProgress, setDiscoveryProgress] = useState(null);
   const [discoveryLogs, setDiscoveryLogs] = useState([]);
-
-  // ✅ FIX: Ref untuk melacak apakah komponen masih ter-mount
-  // Ini mencegah error "update state on unmounted component"
   const isComponentMounted = useRef(false);
-
-  // useEffect khusus untuk lifecycle tracking
   useEffect(() => {
     isComponentMounted.current = true;
     return () => {
@@ -37,7 +32,6 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    // Initialize socket
     const newSocket = io(
       process.env.REACT_APP_BACKEND_URL || "http://localhost:3000",
       {
@@ -49,12 +43,8 @@ export const SocketProvider = ({ children }) => {
       }
     );
 
-    // ✅ FIX: Membungkus semua state update dengan pengecekan isComponentMounted
-
-    // Connection events
     newSocket.on("connect", () => {
       if (isComponentMounted.current) {
-        console.log("✅ Socket connected:", newSocket.id);
         setConnected(true);
       }
     });
@@ -73,24 +63,20 @@ export const SocketProvider = ({ children }) => {
       }
     });
 
-    // Discovery events
     newSocket.on("discovery:progress", (data) => {
       if (isComponentMounted.current) {
-        console.log("📊 Progress:", data);
         setDiscoveryProgress(data);
       }
     });
 
     newSocket.on("discovery:log", (data) => {
       if (isComponentMounted.current) {
-        console.log("📝 Log:", data);
         setDiscoveryLogs((prev) => [...prev, data]);
       }
     });
 
     newSocket.on("discovery:complete", (data) => {
       if (isComponentMounted.current) {
-        console.log("✅ Discovery complete:", data);
         setDiscoveryProgress({
           step: "complete",
           progress: 100,
@@ -114,10 +100,7 @@ export const SocketProvider = ({ children }) => {
 
     setSocket(newSocket);
 
-    // Cleanup function
     return () => {
-      console.log("🔌 Cleaning up socket connection");
-      // Memutuskan koneksi saat komponen unmount
       if (newSocket) newSocket.disconnect();
     };
   }, []);

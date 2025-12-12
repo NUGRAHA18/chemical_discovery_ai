@@ -3,7 +3,7 @@ import { SlidersHorizontal, X, Filter } from "lucide-react";
 
 const AdvancedFilters = ({ compounds, onFilterChange }) => {
   const [filters, setFilters] = useState({
-    hasValidation: null, // null = all, true = only with validation, false = without
+    hasValidation: null,
     hasProperties: null,
     isAromatic: null,
     minHBondDonors: "",
@@ -19,7 +19,6 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
   const applyFilters = () => {
     let filtered = compounds;
 
-    // 1. Has Validation Score
     if (filters.hasValidation !== null) {
       filtered = filtered.filter((compound) => {
         const hasScore =
@@ -29,7 +28,6 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
       });
     }
 
-    // 2. Has Properties
     if (filters.hasProperties !== null) {
       filtered = filtered.filter((compound) => {
         const hasProps =
@@ -48,7 +46,6 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
       });
     }
 
-    // 4. H-Bond Donors
     if (filters.minHBondDonors) {
       filtered = filtered.filter((compound) => {
         const donors = compound.properties?.h_bond_donors || 0;
@@ -62,7 +59,6 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
       });
     }
 
-    // 5. H-Bond Acceptors
     if (filters.minHBondAcceptors) {
       filtered = filtered.filter((compound) => {
         const acceptors = compound.properties?.h_bond_acceptors || 0;
@@ -76,7 +72,6 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
       });
     }
 
-    // 6. TPSA (Topological Polar Surface Area)
     if (filters.minTPSA) {
       filtered = filtered.filter((compound) => {
         const tpsa = compound.properties?.tpsa || 0;
@@ -107,7 +102,7 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
       maxTPSA: "",
     });
     setResults([]);
-    onFilterChange(compounds); // Reset to all
+    onFilterChange(compounds);
   };
 
   const handleChange = (field, value) => {
@@ -115,7 +110,7 @@ const AdvancedFilters = ({ compounds, onFilterChange }) => {
   };
 
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
-    if (typeof value === "boolean") return true; // Boolean filters always count if set
+    if (typeof value === "boolean") return true;
     return value !== null && value !== "";
   }).length;
 

@@ -43,16 +43,10 @@ const Discovery = () => {
   const [error, setError] = useState("");
   const [showComparison, setShowComparison] = useState(false);
   const { discoveryProgress, discoveryLogs, clearProgress } = useSocket();
-
-  // ✅ FIX 2: Get addToComparison from context
   const { comparisonList, addToComparison } = useComparison();
-
   const [showTemplates, setShowTemplates] = useState(false);
-
-  // Detail Modal States
   const [selectedCompound, setSelectedCompound] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-
   const [criteria, setCriteria] = useState("");
   const [structuredData, setStructuredData] = useState({
     category: "",
@@ -97,7 +91,6 @@ const Discovery = () => {
     }
   }, [loading, discovery]);
 
-  // Cleanup stale sessions (optional)
   useEffect(() => {
     const checkStaleSession = () => {
       const saved = sessionStorage.getItem(DISCOVERY_STATE_KEY);
@@ -105,7 +98,6 @@ const Discovery = () => {
         const parsed = JSON.parse(saved);
         const age = Date.now() - parsed.timestamp;
         if (age > 300000) {
-          // 5 minutes
           sessionStorage.removeItem(DISCOVERY_STATE_KEY);
         }
       }
@@ -117,13 +109,9 @@ const Discovery = () => {
       setLoading(true);
       setError("");
       setDiscovery(null);
-      clearProgress(); // Clear previous progress
+      clearProgress();
 
-      // ✅ FIX 2: Panggil API dan inisialisasi proses
       await discoveryService.createDiscovery(formData);
-
-      // Sukses ditangani oleh WebSocket / ProgressTracker
-      // Jangan tampilkan toast di sini, tunggu event complete dari socket
     } catch (error) {
       setLoading(false);
       setError(
@@ -182,14 +170,12 @@ const Discovery = () => {
     }
   };
 
-  // ✅ FIX 2: Add to Compare Handler
   const handleAddToCompare = (compound) => {
     if (comparisonList.length >= 3) {
       showError("You can only compare up to 3 compounds at once.");
       return;
     }
 
-    // Check if already in comparison
     const alreadyAdded = comparisonList.some(
       (c) => c.smiles === compound.smiles
     );
@@ -203,7 +189,6 @@ const Discovery = () => {
     showSuccess(`${compound.name} added to comparison!`);
   };
 
-  // View Details Handler
   const handleViewDetails = (compound) => {
     setSelectedCompound(compound);
     setShowDetailModal(true);
@@ -268,7 +253,6 @@ const Discovery = () => {
     if (template.inputMode === "structured") {
       setInputMode("structured");
 
-      // ✅ AUTO-FILL CATEGORY - Convert to lowercase
       const categoryMap = {
         Surfactant: "surfactant",
         Polymer: "polymer",
@@ -286,7 +270,7 @@ const Discovery = () => {
 
       setStructuredData({
         ...template.structuredData,
-        category: templateCategory, // ✅ AUTO-FILL!
+        category: templateCategory,
       });
     } else {
       setInputMode("ai-prompt");
@@ -299,14 +283,12 @@ const Discovery = () => {
     setLoading(false);
     clearProgress();
 
-    // Data dari WebSocket hanya berisi discoveryId dan compounds.length
     if (data.discoveryId) {
       showSuccess("Discovery complete! Fetching final results...");
       try {
-        // ✅ FIX 3: Fetch data lengkap dari backend menggunakan ID
         const response = await discoveryService.getDiscovery(data.discoveryId);
 
-        setDiscovery(response.discovery); // <--- Update state langsung
+        setDiscovery(response.discovery);
         sessionStorage.removeItem(DISCOVERY_STATE_KEY);
         dismissToast();
         showSuccess("Discovery results loaded!");
@@ -428,10 +410,8 @@ const Discovery = () => {
           </div>
         )}
 
-        {/* ✅ RESULTS SECTION */}
         {discovery && (
           <div className="space-y-6 animate-fade-in">
-            {/* ✅ FIX 3: ANALYSIS SECTION with Markdown */}
             {discovery.analysis && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -467,7 +447,6 @@ const Discovery = () => {
               </div>
             )}
 
-            {/* ✅ FIX 3: JUSTIFICATION SECTION with Markdown */}
             {discovery.justification && (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -503,7 +482,7 @@ const Discovery = () => {
               </div>
             )}
 
-            {/* ✅ COMPOUNDS SECTION */}
+            {/* COMPOUNDS SECTION */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -593,7 +572,7 @@ const Discovery = () => {
           onAddToCompare={handleAddToCompare}
         />
       )}
-      {/* ✅ ADD: Progress Tracker with WebSocket */}
+      {/*  ADD: Progress Tracker with WebSocket */}
       {(discoveryProgress || loading) && (
         <ProgressTracker
           progress={discoveryProgress}

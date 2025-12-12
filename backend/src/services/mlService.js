@@ -7,7 +7,6 @@ exports.discover = async (requestData, userId = null) => {
   try {
     console.log("📡 Calling ML service:", ML_SERVICE_URL);
 
-    // Emit initial progress
     if (userId) {
       emitLog(userId, {
         type: "info",
@@ -20,7 +19,7 @@ exports.discover = async (requestData, userId = null) => {
       `${ML_SERVICE_URL}/api/discover`,
       requestData,
       {
-        timeout: 300000, // 5 minutes
+        timeout: 300000,
         headers: {
           "Content-Type": "application/json",
           "X-User-Id": userId || "anonymous",

@@ -9,17 +9,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans selection:bg-primary-500/30">
-      {/* --- Decorative Background Effects --- */}
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] opacity-40 pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
 
-      {/* Floating Icons (Animated) */}
       <Atom className="absolute top-[15%] left-[10%] w-12 h-12 text-white/5 animate-[bounce_8s_infinite]" />
       <Sparkles className="absolute bottom-[20%] right-[10%] w-8 h-8 text-white/10 animate-pulse duration-[4000ms]" />
 
-      {/* --- Main Content Wrapper --- */}
       <div className="max-w-[440px] w-full relative z-10">
-        {/* Branding Header (Outside Card) */}
         <div className="text-center mb-8 space-y-3">
           <Link
             to="/"
@@ -39,7 +35,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* --- Login Card --- */}
         <div className="bg-white dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 border border-white/10 dark:border-slate-700/50 overflow-hidden">
           {/* Card Header */}
           <div className="px-8 pt-8 pb-2 text-center">
@@ -51,7 +46,6 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Success Message Alert (Jika ada redirect dari Register) */}
           {message && (
             <div className="mx-8 mt-6 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 px-4 py-3 rounded-xl flex items-start gap-3 text-sm">
               <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -59,13 +53,11 @@ const Login = () => {
             </div>
           )}
 
-          {/* Form Container */}
           <div className="p-8">
             <LoginForm />
           </div>
         </div>
 
-        {/* Footer Copyright */}
         <p className="text-center text-slate-500 dark:text-slate-600 text-xs mt-8">
           &copy; {new Date().getFullYear()} ChemDiscovery AI. Secure Access.
         </p>

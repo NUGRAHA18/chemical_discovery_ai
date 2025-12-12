@@ -34,11 +34,11 @@ export const discoveryTemplates = [
     inputMode: "structured",
     structuredData: {
       category: "Polymer",
-      boilingPointMin: "", // ✅ ADD empty fields
-      boilingPointMax: "", // ✅ ADD
-      viscosityMin: "", // ✅ ADD
-      viscosityMax: "", // ✅ ADD
-      solubility: "", // ✅ ADD
+      boilingPointMin: "",
+      boilingPointMax: "",
+      viscosityMin: "",
+      viscosityMax: "",
+      solubility: "",
       thermalStabilityMin: 100,
       additionalProperties: ["Biodegradable", "Food-safe"],
       notes:

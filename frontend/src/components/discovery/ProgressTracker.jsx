@@ -11,14 +11,12 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
   const [showLogs, setShowLogs] = useState(true);
   const logsEndRef = useRef(null);
 
-  // Auto-scroll logs to bottom
   useEffect(() => {
     if (logsEndRef.current) {
       logsEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [logs]);
 
-  // Handle completion
   useEffect(() => {
     if (progress?.step === "complete" && onComplete) {
       setTimeout(() => {
@@ -33,7 +31,6 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
   const isComplete = progress.step === "complete";
   const isError = progress.error || progress.step === "error";
 
-  // Agent status mapping
   const agentSteps = [
     { name: "Preprocessor", step: "preprocessing", range: [0, 15] },
     { name: "Analyzer", step: "analyzing", range: [15, 25] },
@@ -267,7 +264,7 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
             {/* Tombol Action */}
             <div className="flex gap-3 w-full">
               <button
-                onClick={() => window.location.reload()} // Atau ganti dengan fungsi close/reset jika ada
+                onClick={() => window.location.reload()}
                 className="flex-1 py-2.5 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition-all"
               >
                 Close

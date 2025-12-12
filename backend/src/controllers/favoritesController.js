@@ -1,4 +1,4 @@
-const Favorite = require('../models/Favorite');
+const Favorite = require("../models/Favorite");
 
 exports.addFavorite = async (req, res) => {
   try {
@@ -8,12 +8,12 @@ exports.addFavorite = async (req, res) => {
       userId: req.user._id,
       compoundData,
       tags: tags || [],
-      notes
+      notes,
     });
 
     res.status(201).json({
       success: true,
-      favorite
+      favorite,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -26,7 +26,7 @@ exports.getFavorites = async (req, res) => {
     const query = { userId: req.user._id };
 
     if (tags) {
-      const tagArray = tags.split(',').map(t => t.trim());
+      const tagArray = tags.split(",").map((t) => t.trim());
       query.tags = { $in: tagArray };
     }
 
@@ -37,7 +37,7 @@ exports.getFavorites = async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
-      Favorite.countDocuments(query)
+      Favorite.countDocuments(query),
     ]);
 
     res.json({
@@ -47,8 +47,8 @@ exports.getFavorites = async (req, res) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -59,18 +59,18 @@ exports.deleteFavorite = async (req, res) => {
   try {
     const favorite = await Favorite.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!favorite) {
-      return res.status(404).json({ error: 'Favorite not found' });
+      return res.status(404).json({ error: "Favorite not found" });
     }
 
     await favorite.deleteOne();
 
     res.json({
       success: true,
-      message: 'Favorite deleted'
+      message: "Favorite deleted",
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -88,12 +88,12 @@ exports.updateFavorite = async (req, res) => {
     );
 
     if (!favorite) {
-      return res.status(404).json({ error: 'Favorite not found' });
+      return res.status(404).json({ error: "Favorite not found" });
     }
 
     res.json({
       success: true,
-      favorite
+      favorite,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

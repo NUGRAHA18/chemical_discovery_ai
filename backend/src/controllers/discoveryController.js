@@ -11,7 +11,6 @@ exports.createDiscovery = async (req, res) => {
   try {
     const userId = req.user._id;
     const { criteria, inputMode, structuredData } = req.body;
-
     let finalCriteria = criteria;
     let processedStructuredData = null;
     let actualInputMode = inputMode || "ai-prompt";
@@ -29,7 +28,6 @@ exports.createDiscovery = async (req, res) => {
       agent: "System",
     });
 
-    // Validate input
     if (!inputMode || !["structured", "ai-prompt"].includes(inputMode)) {
       emitLog(userId, {
         type: "error",
@@ -39,9 +37,7 @@ exports.createDiscovery = async (req, res) => {
       return res.status(400).json({ error: "Invalid input mode" });
     }
 
-    // === HYBRID INPUT HANDLING ===
     if (actualInputMode === "structured") {
-      // Validate structured data
       const validation = validateStructuredData(structuredData);
       if (!validation.valid) {
         return res.status(400).json({
@@ -50,13 +46,10 @@ exports.createDiscovery = async (req, res) => {
         });
       }
 
-      // Convert structured data to criteria string
       finalCriteria = buildCriteriaFromStructured(structuredData);
       processedStructuredData = structuredData;
-
       console.log("Structured mode - Generated criteria:", finalCriteria);
     } else {
-      // AI Prompt mode - validate criteria
       if (!criteria || criteria.trim().length < 10) {
         return res.status(400).json({
           error: "Criteria must be at least 10 characters",
@@ -79,13 +72,12 @@ exports.createDiscovery = async (req, res) => {
       agent: "ML Service",
     });
 
-    // === SEND TO ML SERVICE ===
     console.log("Sending to ML service...");
     const mlResponse = await mlService.discover(
       {
         inputMode,
         structuredData,
-        // ✅ FIX 1: Menggunakan finalCriteria (bukan criteria mentah)
+
         criteria: finalCriteria,
       },
       userId
@@ -111,12 +103,10 @@ exports.createDiscovery = async (req, res) => {
       });
     }
 
-    // ✅ FIX 2: Menggunakan mlResponse (sebelumnya mlResult yang menyebabkan crash)
     console.log(
       `ML service returned ${mlResponse.compounds?.length || 0} compounds`
     );
 
-    // === CREATE DISCOVERY FIRST (to get _id) ===
     const discovery = new Discovery({
       userId: req.user._id,
       inputMode: actualInputMode,
@@ -138,15 +128,13 @@ exports.createDiscovery = async (req, res) => {
       justification: mlResponse.justification || "Justification not available",
       metadata: mlResponse.metadata || {},
     });
-    // SAVE to get _id
+
     await discovery.save();
     console.log("Discovery saved with ID:", discovery._id);
 
-    // === PROCESS COMPOUNDS WITH IMAGES ===
     const processedCompounds = await Promise.all(
       (mlResponse.compounds || []).map(async (compound, index) => {
         try {
-          // Save structure image if available
           let structureImage = null;
           if (compound.structure_image) {
             structureImage = await saveBase64Image(
@@ -174,7 +162,7 @@ exports.createDiscovery = async (req, res) => {
           };
         } catch (compoundError) {
           console.error(`Error processing compound ${index}:`, compoundError);
-          // Return compound without image if processing fails
+
           return {
             name: compound.name || "Unknown Compound",
             formula: compound.formula || "N/A",
@@ -192,7 +180,6 @@ exports.createDiscovery = async (req, res) => {
       })
     );
 
-    // === UPDATE DISCOVERY WITH COMPOUNDS ===
     discovery.compounds = processedCompounds;
     await discovery.save();
 
@@ -200,7 +187,6 @@ exports.createDiscovery = async (req, res) => {
       `Discovery complete with ${processedCompounds.length} compounds`
     );
 
-    // ✅ Emit completion logs
     emitLog(userId, {
       type: "success",
       message: `✅ Discovery saved! Generated ${processedCompounds.length} compounds`,
@@ -215,7 +201,6 @@ exports.createDiscovery = async (req, res) => {
       discoveryId: discovery._id,
     });
 
-    // ✅ Emit completion event
     const { emitToUser } = require("../config/socket");
     emitToUser(userId, "discovery:complete", {
       discoveryId: discovery._id,
@@ -223,7 +208,6 @@ exports.createDiscovery = async (req, res) => {
       success: true,
     });
 
-    // === RETURN RESPONSE ===
     res.status(201).json({
       success: true,
       discovery: {
@@ -268,17 +252,14 @@ exports.createDiscovery = async (req, res) => {
   }
 };
 
-// ✅ FIX 3: Get Discovery Lebih Robust (Pisah query ID dan User)
 exports.getDiscovery = async (req, res) => {
   try {
-    // 1. Cari berdasarkan ID saja dulu
     const discovery = await Discovery.findById(req.params.id);
 
     if (!discovery) {
       return res.status(404).json({ error: "Discovery not found" });
     }
 
-    // 2. Validasi User ID
     if (discovery.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: "Access denied" });
     }
@@ -304,7 +285,6 @@ exports.deleteDiscovery = async (req, res) => {
       return res.status(404).json({ error: "Discovery not found" });
     }
 
-    // Delete associated images
     const fs = require("fs");
     const path = require("path");
 

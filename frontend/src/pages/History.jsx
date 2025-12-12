@@ -473,7 +473,6 @@ const History = () => {
           )}
         </div>
 
-        {/* 🌟 NEW RESULTS GRID - "Summary Card Style" 🌟 */}
         {displayedDiscoveries.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
             <HistoryIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
@@ -531,12 +530,10 @@ const History = () => {
                     {discovery.compounds.slice(0, 3).map((compound, idx) => (
                       <div
                         key={idx}
-                        // ✅ FIX 1: Tambahkan onClick spesifik dengan stopPropagation
                         onClick={(e) => {
-                          e.stopPropagation(); // Mencegah klik tembus ke parent card
-                          setSelectedCompound(compound); // Set data senyawa YANG DIKLIK
+                          e.stopPropagation();
+                          setSelectedCompound(compound);
                         }}
-                        // ✅ FIX 2: Tambahkan cursor-pointer dan hover effect yang lebih jelas
                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700 cursor-pointer group/item"
                       >
                         <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 group-hover/item:bg-white dark:group-hover/item:bg-gray-800 transition-colors">
@@ -623,7 +620,6 @@ const History = () => {
           </div>
         )}
 
-        {/* Pagination - ✅ FIX: Text Color for Dark Mode */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 mt-8">
             <button

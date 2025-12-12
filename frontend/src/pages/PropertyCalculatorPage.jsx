@@ -7,7 +7,6 @@ import {
 } from "../utils/toast";
 import Loading from "../components/common/Loading";
 
-// Import Icons
 import {
   Calculator,
   FlaskConical,
@@ -44,15 +43,13 @@ const PropertyCalculator = () => {
 
     setLoading(true);
     const loadingToast = showLoading("Calculating properties...");
-
-    // ✅ ADD TIMEOUT
     const timeout = setTimeout(() => {
       setLoading(false);
       dismissToast(loadingToast);
       showError(
         "Request timeout. Please check if backend and ML service are running."
       );
-    }, 30000); // 30 seconds for property calculation
+    }, 30000);
 
     try {
       const response = await fetch(
@@ -68,7 +65,7 @@ const PropertyCalculator = () => {
       );
 
       const data = await response.json();
-      clearTimeout(timeout); // ✅ Clear timeout
+      clearTimeout(timeout);
       dismissToast(loadingToast);
 
       if (data.success) {
@@ -88,7 +85,7 @@ const PropertyCalculator = () => {
         showError(data.error || "Failed to calculate properties");
       }
     } catch (error) {
-      clearTimeout(timeout); // ✅ Clear timeout
+      clearTimeout(timeout);
       dismissToast(loadingToast);
       showError("Invalid SMILES or calculation error");
       console.error(error);
@@ -108,7 +105,6 @@ const PropertyCalculator = () => {
   };
 
   const getPropertyColor = (property, value) => {
-    // Color coding based on property ranges
     if (property === "molecular_weight") {
       if (value < 200) return "text-green-600 dark:text-green-400";
       if (value < 500) return "text-blue-600 dark:text-blue-400";

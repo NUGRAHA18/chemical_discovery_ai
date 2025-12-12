@@ -36,9 +36,6 @@ const Navbar = () => {
   // State khusus untuk Foto Profil agar bisa update real-time
   const [profilePhoto, setProfilePhoto] = useState(user?.profilePhoto);
 
-  // --- EFFECTS ---
-
-  // 1. Reset menu saat pindah halaman
   useEffect(() => {
     setToolsOpen(false);
     setLibraryOpen(false);
@@ -46,15 +43,12 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   }, [location]);
 
-  // 2. Update foto saat user login/logout (dari Context)
   useEffect(() => {
     setProfilePhoto(user?.profilePhoto);
   }, [user]);
 
-  // 3. LISTEN EVENT: Update foto saat diganti di halaman Profile
   useEffect(() => {
     const handleProfilePhotoUpdate = () => {
-      // Ambil data terbaru langsung dari LocalStorage
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
@@ -64,7 +58,6 @@ const Navbar = () => {
 
     window.addEventListener("profilePhotoUpdated", handleProfilePhotoUpdate);
 
-    // Cleanup listener saat component unmount
     return () => {
       window.removeEventListener(
         "profilePhotoUpdated",
@@ -90,15 +83,12 @@ const Navbar = () => {
         : ""
     }`;
 
-  // Helper component untuk Avatar agar kode tidak berulang
-
   const getImageUrl = (path) => {
     if (!path) return null;
-    // Jika path sudah mengandung http (misal login pake Google/URL eksternal), biarkan
+
     if (path.startsWith("http") || path.startsWith("https")) {
       return path;
     }
-    // Jika path relatif, gabungkan dengan URL Backend
     return `${API_BASE_URL}${path}`;
   };
 
@@ -112,9 +102,8 @@ const Navbar = () => {
           alt="Profile"
           className={`${className} object-cover border-2 border-primary-200 dark:border-primary-700`}
           onError={(e) => {
-            // Fallback jika gambar gagal dimuat (misal file terhapus di server)
             e.target.style.display = "none";
-            // Pastikan sibling (div inisial) dimunculkan
+
             if (e.target.nextSibling) {
               e.target.nextSibling.style.display = "flex";
             }
@@ -125,7 +114,6 @@ const Navbar = () => {
       {/* Fallback Initials */}
       <div
         className={`${className} ${fallbackClassName} bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold`}
-        // ✅ 3. Logic display diperbaiki sedikit agar lebih aman
         style={{ display: profilePhoto ? "none" : "flex" }}
       >
         {user?.name?.charAt(0)?.toUpperCase() || "U"}
@@ -355,7 +343,7 @@ const Navbar = () => {
 
       {/* --- MOBILE MENU --- */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl absolute w-full left-0 shadow-xl max-h-[85vh] overflow-y-auto">
+        <div className="lg:hidden border-t border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 absolute w-full left-0 shadow-xl max-h-[85vh] overflow-y-auto">
           <div className="px-4 py-4 space-y-1">
             <Link
               to="/"

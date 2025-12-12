@@ -12,14 +12,10 @@ import os
 from dotenv import load_dotenv
 import requests
 from datetime import datetime
-
-# --- INTEGRASI BARU: Import Manager yang sudah dibuat ---
 from gemini_manager import gemini_client 
 
-# Konstanta Model Name (Bisa diubah sesuai kebutuhan, misal: gemini-1.5-flash atau gemini-2.0-flash-exp)
 MODEL_NAME = 'gemini-2.5-flash' 
 
-# RDKit for molecular visualization
 try:
     from rdkit import Chem
     from rdkit.Chem import Draw, Descriptors, Crippen
@@ -31,7 +27,6 @@ except ImportError:
     RDKIT_AVAILABLE = False
     print("⚠️ RDKit not available. Molecular visualization disabled.")
 
-# PubChem integration
 try:
     import pubchempy as pcp
     PUBCHEM_AVAILABLE = True
@@ -43,19 +38,13 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app)
 
-# Configure logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# === CONFIGURE GEMINI (UPDATED) ===
 load_dotenv()
-
-# CATATAN:
-# Kita tidak lagi inisialisasi single key di sini.
-# gemini_client dari gemini_manager.py yang akan handle load .env dan rotasi key.
 print("✓ Gemini AI configured successfully (via GeminiManager)")
 
 
@@ -237,9 +226,6 @@ class EnhancedChemicalDiscoveryAgent:
     def __init__(self):
         self.db = ChemicalDatabase()
         self.max_retries = 3
-        # self.model dihapus, kita pakai gemini_client langsung
-        
-        # Enhanced agent definitions
         self.agents = {
             "preprocessor": """Kamu adalah preprocessing specialist untuk input kimia. 
 Tugasmu menganalisis input user dan mengekstrak konsep kimia utama dan SENYAWA SPESIFIK yang relevan.""",
@@ -276,7 +262,6 @@ Tugasmu menganalisis input user dan mengekstrak konsep kimia utama dan SENYAWA S
 - Memberikan roadmap implementasi praktis"""
         }
         
-        # Translation map untuk istilah bahasa Indonesia
         self.translation_map = {
             'indonesia': {
                 'polimer': 'polymer', 'surfaktan': 'surfactant',
@@ -348,15 +333,12 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
 """
         
         try:
-            # --- MODIFICATION: Use gemini_client ---
             response_text = gemini_client.generate_content_safe(
                 model_name=MODEL_NAME, 
                 prompt=prompt
             )
-            json_str = self._extract_json(response_text) # response_text sudah string
+            json_str = self._extract_json(response_text) 
             concepts = json.loads(json_str)
-            
-            # Validate compounds
             validated_compounds = self._validate_compounds_list(concepts.get('specific_compounds', []))
             concepts['specific_compounds'] = validated_compounds
             
@@ -366,7 +348,6 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
             
         except Exception as e:
             logger.error(f"LLM concept extraction failed: {e}")
-            # Fallback
             return {
                 "primary_application": "chemical_application",
                 "target_properties": [],
@@ -382,7 +363,6 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
         valid_compounds = []
         
         for compound in compounds:
-            # Hapus deskripsi yang terlalu panjang
             if len(compound) > 50:
                 continue
                 
@@ -647,7 +627,6 @@ OUTPUT FORMAT (JSON):
 """
         
         try:
-            # --- MODIFICATION: Use gemini_client ---
             response_text = gemini_client.generate_content_safe(
                 model_name=MODEL_NAME, 
                 prompt=prompt
@@ -655,7 +634,6 @@ OUTPUT FORMAT (JSON):
             json_str = self._extract_json(response_text)
             validation = json.loads(json_str)
             
-            # Update compound validation scores
             for i, score_data in enumerate(validation.get('individual_scores', [])):
                 if i < len(compounds):
                     compounds[i].validation_score = score_data.get('validity', 0.5)
@@ -715,14 +693,13 @@ Keep under 300 words. Be clear and structured.
     
     def _extract_json(self, text: str) -> str:
         """Extract JSON dari response LLM"""
-        # Try parse directly
+   
         try:
             json.loads(text)
             return text
         except Exception:
             pass
 
-        # Try extract from code fence
         fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
         if fence_match:
             candidate = fence_match.group(1).strip()
@@ -732,10 +709,9 @@ Keep under 300 words. Be clear and structured.
             except Exception:
                 pass
 
-        # Try find JSON object/array
         strategies = [
-            r'\{[\s\S]*?\}',  # JSON object
-            r'\[[\s\S]*?\]',  # JSON array
+            r'\{[\s\S]*?\}',  
+            r'\[[\s\S]*?\]',  
         ]
         for pattern in strategies:
             json_match = re.search(pattern, text)
@@ -748,7 +724,6 @@ Keep under 300 words. Be clear and structured.
             except Exception:
                 continue
 
-        # Fallback: clean code fence
         cleaned = text.strip()
         if cleaned.startswith('```json'):
             cleaned = cleaned[7:]
@@ -758,7 +733,7 @@ Keep under 300 words. Be clear and structured.
         return cleaned.strip()
 
 
-# Initialize agent
+
 enhanced_agent = EnhancedChemicalDiscoveryAgent()
 
 def emit_progress(user_id, step, progress, message, agent):
@@ -827,7 +802,7 @@ def discover_chemicals():
     """Main endpoint for chemical discovery with real-time progress"""
     user_id = None
     try:
-        # ✅ GET USER ID from header
+        #  GET USER ID from header
         user_id = request.headers.get('X-User-Id', 'anonymous')
         
         data = request.get_json()
@@ -856,7 +831,7 @@ def discover_chemicals():
         
         logger.info(f"Processing discovery request: {user_input}")
         
-        # ✅ STEP 1: PREPROCESSING (0-15%)
+        # STEP 1: PREPROCESSING (0-15%)
         emit_log(user_id, 'info', '🔬 ML Service started processing', 'ML Service')
         emit_progress(user_id, 'preprocessing', 5, 'Initializing preprocessing...', 'Preprocessor')
         emit_log(user_id, 'info', '📋 Running advanced preprocessor agent', 'Preprocessor')
@@ -866,7 +841,7 @@ def discover_chemicals():
         emit_log(user_id, 'success', f'✅ Preprocessing complete (confidence: {processed_input.confidence_score:.2f})', 'Preprocessor')
         emit_log(user_id, 'info', f'📝 Search terms: {", ".join(processed_input.search_terms[:3])}...', 'Preprocessor')
         
-        # ✅ STEP 2: ANALYZING (15-25%)
+        # STEP 2: ANALYZING (15-25%)
         emit_progress(user_id, 'analyzing', 15, 'Analyzing chemical requirements...', 'Analyzer')
         emit_log(user_id, 'info', '🔍 Running analyzer agent', 'Analyzer')
         
@@ -875,7 +850,7 @@ def discover_chemicals():
         emit_log(user_id, 'success', '✅ Analysis complete', 'Analyzer')
         emit_log(user_id, 'info', f'🎯 Key properties identified', 'Analyzer')
         
-        # ✅ STEP 3: RESEARCHING (25-40%)
+        # STEP 3: RESEARCHING (25-40%)
         emit_progress(user_id, 'researching', 25, 'Researching existing compounds...', 'Researcher')
         emit_log(user_id, 'info', '📚 Searching PubChem database', 'Researcher')
         
@@ -886,7 +861,7 @@ def discover_chemicals():
         emit_log(user_id, 'success', f'✅ Research complete - Found {base_count} base compounds', 'Researcher')
         emit_progress(user_id, 'researching', 40, f'Research complete ({base_count} base compounds found)', 'Researcher')
         
-        # ✅ STEP 4: GENERATING (40-70%)
+        # STEP 4: GENERATING (40-70%)
         emit_progress(user_id, 'generating', 40, 'Generating novel compounds...', 'Generator')
         emit_log(user_id, 'info', '🧪 Generating compound 1/3...', 'Generator')
         
@@ -901,13 +876,13 @@ def discover_chemicals():
         
         # Log each compound generation
         for idx, compound in enumerate(compounds, 1):
-            progress_pct = 40 + (idx * 10)  # 40, 50, 60%
+            progress_pct = 40 + (idx * 10)  
             emit_log(user_id, 'info', f'✨ Generated compound {idx}/3: {compound.name}', 'Generator')
             emit_progress(user_id, 'generating', progress_pct, f'Generated {idx}/3 compounds', 'Generator')
         
         emit_log(user_id, 'success', f'✅ Successfully generated {len(compounds)} compounds', 'Generator')
         
-        # ✅ STEP 5: VALIDATING (70-85%)
+        # STEP 5: VALIDATING (70-85%)
         emit_progress(user_id, 'validating', 70, 'Validating compound structures...', 'Validator')
         emit_log(user_id, 'info', '✔️  Running structure validation', 'Validator')
         
@@ -917,7 +892,7 @@ def discover_chemicals():
         emit_log(user_id, 'success', f'✅ Validation complete (confidence: {overall_conf:.1%})', 'Validator')
         emit_progress(user_id, 'validating', 85, f'Validation complete ({overall_conf:.0%} confidence)', 'Validator')
         
-        # ✅ STEP 6: JUSTIFYING (85-95%)
+        # STEP 6: JUSTIFYING (85-95%)
         emit_progress(user_id, 'justifying', 85, 'Generating scientific justification...', 'Justifier')
         emit_log(user_id, 'info', '📝 Creating scientific justification', 'Justifier')
         
@@ -925,7 +900,7 @@ def discover_chemicals():
         
         emit_log(user_id, 'success', '✅ Justification complete', 'Justifier')
         
-        # ✅ STEP 7: FINALIZING (95-100%)
+        # STEP 7: FINALIZING (95-100%)
         emit_progress(user_id, 'finalizing', 95, 'Finalizing results...', 'System')
         emit_log(user_id, 'info', '📦 Packaging results', 'System')
         
@@ -971,7 +946,7 @@ def discover_chemicals():
             }
         }
         
-        # ✅ COMPLETION
+        #  COMPLETION
         emit_progress(user_id, 'complete', 100, 'Discovery complete!', 'System')
         emit_log(user_id, 'success', f'🎉 Successfully generated {len(compounds)} compounds!', 'System')
         
@@ -981,7 +956,7 @@ def discover_chemicals():
     except Exception as e:
         logger.exception(f"Unexpected error: {e}")
         
-        # ✅ ERROR HANDLING
+        # ERROR HANDLING
         if user_id:
             emit_log(user_id, 'error', f'❌ Error: {str(e)}', 'System')
             emit_progress(user_id, 'error', 0, f'Error: {str(e)}', 'System')
@@ -1045,20 +1020,10 @@ def chat_stream():
         
         def generate():
             try:
-                # Build prompt with context
                 prompt = build_chat_prompt(user_message, context)
-                
-                logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")
-                
-                # --- LOGIC STREAMING DENGAN ROTASI KEY ---
-                # 1. Pastikan config menggunakan key yang sedang aktif di manager
+                logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")       
                 gemini_client.configure_current_key() 
-                
-                # 2. Inisialisasi model lokal (bukan global variable 'model' lagi)
-                # Gunakan model name yang sama dengan konstanta di atas
                 streaming_model = genai.GenerativeModel(MODEL_NAME) 
-                
-                # 3. Stream
                 response = streaming_model.generate_content(
                     prompt,
                     stream=True,
@@ -1068,17 +1033,14 @@ def chat_stream():
                     )
                 )
                 
-                # Yield chunks as SSE
                 for chunk in response:
                     if chunk.text:
                         yield f"data: {chunk.text}\n\n"
                 
-                # Signal completion
                 yield f"data: [DONE]\n\n"
                 logger.info(f"Chat response completed for user {user_id}")
                 
             except Exception as e:
-                # Jika error quota saat streaming, kita paksa switch key untuk request berikutnya
                 if "429" in str(e) or "ResourceExhausted" in str(e):
                      print(f"⚠️ Streaming kena limit ({e}), switching key untuk next request...")
                      gemini_client.switch_key()
@@ -1114,7 +1076,6 @@ Guidelines:
 
 """
     
-    # Add discovery context if available
     if context and context.get('discoveryData'):
         discovery_data = context['discoveryData']
         criteria = discovery_data.get('criteria', '')
@@ -1134,7 +1095,6 @@ Generated Compounds:
 """
         
         base_prompt += context_section
-    
     base_prompt += f"\nUser Question: {message}\n\nAssistant:"
     
     return base_prompt

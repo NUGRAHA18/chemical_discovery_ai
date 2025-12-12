@@ -8,12 +8,9 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
   const calculateProperties = async () => {
     setCalculating(true);
 
-    // Simulate calculation delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Enhanced property calculations
     const enhanced = {
-      // Basic properties (existing)
       molecularWeight:
         compound.molecular_weight || calculateMW(compound.formula),
       logP: compound.logp || calculateLogP(compound.smiles),
@@ -21,30 +18,24 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
       hBondAcceptors: compound.properties?.h_bond_acceptors || 0,
       tpsa: compound.properties?.tpsa || 0,
 
-      // NEW: Advanced properties
       boilingPoint: estimateBoilingPoint(compound),
       meltingPoint: estimateMeltingPoint(compound),
       solubility: estimateSolubility(compound),
       density: estimateDensity(compound),
 
-      // NEW: Drug-likeness
       lipinskiRuleOfFive: checkLipinskiRule(compound),
       bioavailability: estimateBioavailability(compound),
 
-      // NEW: Safety & Toxicity
       toxicityScore: estimateToxicity(compound),
       mutagenicRisk: assessMutagenicRisk(compound),
 
-      // NEW: Stability
       thermalStability: estimateThermalStability(compound),
       shelfLife: estimateShelfLife(compound),
 
-      // NEW: Chemical properties
       polarSurfaceArea: calculatePSA(compound),
       rotableBonds: countRotatableBonds(compound),
       aromaticRings: countAromaticRings(compound),
 
-      // Descriptors
       complexity: calculateComplexity(compound),
       flexibility: calculateFlexibility(compound),
     };
@@ -53,7 +44,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     setCalculating(false);
   };
 
-  // Basic MW calculation from formula
   const calculateMW = (formula) => {
     if (!formula) return 0;
     const atomicWeights = {
@@ -74,7 +64,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     return mw.toFixed(2);
   };
 
-  // Estimate LogP (simplified - real: use RDKit)
   const calculateLogP = (smiles) => {
     if (!smiles) return 0;
     const carbons = (smiles.match(/C/g) || []).length;
@@ -83,11 +72,10 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     return (carbons * 0.5 - oxygens * 1.0 - nitrogens * 0.8).toFixed(2);
   };
 
-  // NEW: Boiling point estimation (Joback method simplified)
   const estimateBoilingPoint = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
     const logP = parseFloat(compound.logp || 0);
-    // Simplified: BP correlates with MW and hydrophobicity
+
     const bp = 100 + mw * 0.5 + logP * 10;
     return {
       value: bp.toFixed(1),
@@ -96,7 +84,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Melting point estimation
   const estimateMeltingPoint = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
     const symmetry = estimateSymmetry(compound);
@@ -108,11 +95,10 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Water solubility estimation (log S)
   const estimateSolubility = (compound) => {
     const logP = parseFloat(compound.logp || 0);
     const tpsa = parseFloat(compound.properties?.tpsa || 50);
-    // Higher LogP = less soluble, higher TPSA = more soluble
+
     const logS = -logP + tpsa / 100;
 
     let category;
@@ -128,10 +114,9 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Density estimation
   const estimateDensity = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
-    // Organic compounds typically 0.8-1.2 g/cm³
+
     const density = 0.9 + mw / 1000;
     return {
       value: density.toFixed(3),
@@ -139,7 +124,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Lipinski's Rule of Five
   const checkLipinskiRule = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
     const logP = parseFloat(compound.logp || 0);
@@ -155,11 +139,10 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     return {
       passed: violations.length === 0,
       violations,
-      drugLike: violations.length <= 1, // Max 1 violation allowed
+      drugLike: violations.length <= 1,
     };
   };
 
-  // NEW: Bioavailability score
   const estimateBioavailability = (compound) => {
     const lipinski = checkLipinskiRule(compound);
     const tpsa = parseFloat(compound.properties?.tpsa || 0);
@@ -174,12 +157,10 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Toxicity estimation (very simplified)
   const estimateToxicity = (compound) => {
     const logP = parseFloat(compound.logp || 0);
     const mw = parseFloat(compound.molecular_weight || 0);
 
-    // High LogP and high MW correlate with toxicity concerns
     let risk = 0;
     if (logP > 5) risk += 30;
     if (mw > 600) risk += 20;
@@ -194,9 +175,7 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Mutagenic risk assessment
   const assessMutagenicRisk = (compound) => {
-    // Check for alert structures (simplified)
     const smiles = compound.smiles || "";
     const alerts = [];
 
@@ -210,12 +189,10 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Thermal stability
   const estimateThermalStability = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
     const aromaticity = countAromaticRings(compound);
 
-    // Higher MW and aromaticity = more stable
     const stability = 50 + mw / 10 + aromaticity.count * 15;
 
     return {
@@ -225,7 +202,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // NEW: Shelf life estimation
   const estimateShelfLife = (compound) => {
     const stability = estimateThermalStability(compound);
     const months = Math.floor(stability.score / 5);
@@ -237,15 +213,13 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // Helper: Calculate polar surface area
   const calculatePSA = (compound) => {
     return compound.properties?.tpsa || 0;
   };
 
-  // Helper: Count rotatable bonds
   const countRotatableBonds = (compound) => {
     const smiles = compound.smiles || "";
-    // Simplified: count single bonds between non-terminal heavy atoms
+
     const count = (smiles.match(/-/g) || []).length;
     return {
       count,
@@ -253,14 +227,12 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // Helper: Count aromatic rings
   const countAromaticRings = (compound) => {
     const smiles = compound.smiles || "";
-    const count = (smiles.match(/c/g) || []).length / 6; // Simplified
+    const count = (smiles.match(/c/g) || []).length / 6;
     return { count: Math.floor(count), note: "Benzene-like rings" };
   };
 
-  // Helper: Molecular complexity
   const calculateComplexity = (compound) => {
     const mw = parseFloat(compound.molecular_weight || 0);
     const atoms = compound.formula?.replace(/[^A-Z]/g, "").length || 0;
@@ -271,16 +243,14 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     };
   };
 
-  // Helper: Molecular flexibility
   const calculateFlexibility = (compound) => {
     const rotatable = countRotatableBonds(compound);
     return rotatable.flexibility;
   };
 
-  // Helper: Estimate molecular symmetry
   const estimateSymmetry = (compound) => {
     const formula = compound.formula || "";
-    // Very simplified: check if formula has repeated elements
+
     const uniqueElements = new Set(formula.match(/[A-Z][a-z]?/g) || []);
     return uniqueElements.size < 3 ? 1 : 0;
   };

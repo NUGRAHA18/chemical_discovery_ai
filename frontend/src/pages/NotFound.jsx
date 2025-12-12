@@ -1,22 +1,16 @@
 import { Link } from "react-router-dom";
-// Import Icons
 import { Home, Search, FlaskConical, FileQuestion, Atom } from "lucide-react";
 
 const NotFound = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center px-4 relative overflow-hidden font-sans">
-      {/* --- DECORATIVE BACKGROUND --- */}
-      {/* Atom raksasa di background (samar) */}
       <Atom className="absolute -top-20 -right-20 w-96 h-96 text-gray-200 dark:text-gray-800/50 opacity-50 animate-[spin_60s_linear_infinite] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100 dark:bg-primary-900/20 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
       <div className="text-center relative z-10 max-w-lg">
-        {/* --- MAIN VISUAL --- */}
         <div className="mx-auto w-32 h-32 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center mb-8 shadow-lg border border-gray-100 dark:border-gray-700 relative">
-          {/* Ikon Labu Erlenmeyer */}
           <FlaskConical className="w-16 h-16 text-gray-300 dark:text-gray-600" />
 
-          {/* Badge Tanda Tanya Merah */}
           <div className="absolute -bottom-2 -right-2 bg-white dark:bg-gray-800 rounded-full p-1.5 shadow-sm border border-gray-100 dark:border-gray-700">
             <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
               <FileQuestion className="w-8 h-8 text-red-500 dark:text-red-400" />
@@ -24,7 +18,6 @@ const NotFound = () => {
           </div>
         </div>
 
-        {/* --- TYPOGRAPHY --- */}
         <h1 className="text-8xl font-black text-gray-900 dark:text-white mb-2 tracking-tighter">
           404
         </h1>
