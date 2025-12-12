@@ -31,6 +31,7 @@ const History = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCompound, setSelectedCompound] = useState(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [filteredDiscoveries, setFilteredDiscoveries] = useState([]);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -174,6 +175,7 @@ const History = () => {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
+    setFilteredDiscoveries([]);
   };
 
   const clearFilters = () => {
@@ -191,6 +193,7 @@ const History = () => {
       sortOrder: "desc",
     });
     setPage(1);
+    setFilteredDiscoveries([]);
   };
 
   // RENDER: Loading State
@@ -257,23 +260,66 @@ const History = () => {
           <div className="grid lg:grid-cols-2 gap-6 mb-6">
             <AdvancedSearch
               compounds={allCompounds}
-              onResultsFound={(results) => {
-                // Filter discoveries that contain these compounds
-                const compoundIds = results.map((r) => r._id);
-                const filtered = discoveries.filter((d) =>
-                  d.compounds.some((c) => compoundIds.includes(c._id))
+              onResultsFound={(filteredCompounds) => {
+                console.log(
+                  "🔍 Advanced Search Results:",
+                  filteredCompounds.length,
+                  filteredCompounds
                 );
-                setDiscoveries(filtered);
+
+                // ✅ FIX: Find discoveries that contain these compounds
+                const compoundIds = filteredCompounds.map(
+                  (c) => c._id || c.id || c.name
+                );
+
+                const filtered = discoveries.filter((discovery) =>
+                  discovery.compounds?.some(
+                    (compound) =>
+                      compoundIds.includes(compound._id) ||
+                      compoundIds.includes(compound.id) ||
+                      compoundIds.includes(compound.name)
+                  )
+                );
+
+                console.log(
+                  "📦 Filtered Discoveries:",
+                  filtered.length,
+                  "Compound IDs:",
+                  compoundIds
+                );
+                setFilteredDiscoveries(filtered);
               }}
             />
             <AdvancedFilters
               compounds={allCompounds}
-              onFilterChange={(filtered) => {
-                const compoundIds = filtered.map((r) => r._id);
-                const filteredDiscoveries = discoveries.filter((d) =>
-                  d.compounds.some((c) => compoundIds.includes(c._id))
+              onFilterChange={(filteredCompounds) => {
+                console.log(
+                  "🔧 Advanced Filter Results:",
+                  filteredCompounds.length,
+                  filteredCompounds
                 );
-                setDiscoveries(filteredDiscoveries);
+
+                // ✅ FIX: Find discoveries that contain these compounds
+                const compoundIds = filteredCompounds.map(
+                  (c) => c._id || c.id || c.name
+                );
+
+                const filtered = discoveries.filter((discovery) =>
+                  discovery.compounds?.some(
+                    (compound) =>
+                      compoundIds.includes(compound._id) ||
+                      compoundIds.includes(compound.id) ||
+                      compoundIds.includes(compound.name)
+                  )
+                );
+
+                console.log(
+                  "📦 Filtered Discoveries:",
+                  filtered.length,
+                  "Compound IDs:",
+                  compoundIds
+                );
+                setFilteredDiscoveries(filtered);
               }}
             />
           </div>
@@ -284,30 +330,37 @@ const History = () => {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search - WORD BASED */}
             <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by words (e.g. benzene alcohol)"
-                  value={filters.search}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    // Update local state instantly
-                    setFilters((prev) => ({ ...prev, search: value }));
-
-                    // Clear previous timeout
-                    if (debounceTimeout.current) {
-                      clearTimeout(debounceTimeout.current);
-                    }
-
-                    // Debounce API call - wait 500ms after user stops typing
-                    debounceTimeout.current = setTimeout(() => {
-                      handleFilterChange("search", value);
-                    }, 500);
-                  }}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by words (e.g. benzene alcohol)"
+                    value={filters.search}
+                    onChange={(e) => {
+                      // Update local state only (no API call yet)
+                      setFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }));
+                    }}
+                    onKeyDown={(e) => {
+                      // Allow Enter key to trigger search
+                      if (e.key === "Enter") {
+                        handleFilterChange("search", filters.search);
+                      }
+                    }}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                {/* Search Button */}
+                <button
+                  onClick={() => handleFilterChange("search", filters.search)}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
+                >
+                  <Search className="w-4 h-4" />
+                  Search
+                </button>
               </div>
               {filters.search && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-10">
@@ -482,18 +535,59 @@ const History = () => {
             </div>
           )}
         </div>
+        {/* Results Count & Clear Button */}
+        {(filteredDiscoveries.length > 0 || discoveries.length > 0) && (
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between">
+            <div>
+              Showing{" "}
+              <span className="font-semibold">
+                {filteredDiscoveries.length > 0
+                  ? filteredDiscoveries.length
+                  : discoveries.length}
+              </span>{" "}
+              discovery result
+              {(filteredDiscoveries.length > 0
+                ? filteredDiscoveries.length
+                : discoveries.length) === 1
+                ? ""
+                : "s"}
+              {filteredDiscoveries.length > 0 && (
+                <span className="text-purple-600 dark:text-purple-400 ml-2">
+                  (filtered from {discoveries.length} total)
+                </span>
+              )}
+            </div>
+
+            {/* Clear Advanced Filters Button */}
+            {filteredDiscoveries.length > 0 && (
+              <button
+                onClick={() => {
+                  setFilteredDiscoveries([]);
+                  setShowAdvancedSearch(false);
+                }}
+                className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center gap-1 font-medium"
+              >
+                <X className="w-4 h-4" />
+                Clear Advanced Filters
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Results */}
-        {discoveries.length === 0 ? (
+        {(filteredDiscoveries.length > 0 ? filteredDiscoveries : discoveries)
+          .length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
             <HistoryIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {filters.search || activeFilterCount > 0
+              {filters.search || activeFilterCount > 0 || showAdvancedSearch
                 ? "No results found"
                 : "No discoveries yet"}
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {filters.search || activeFilterCount > 0
+              {filters.search ||
+              activeFilterCount > 0 ||
+              (filteredDiscoveries.length === 0 && showAdvancedSearch)
                 ? "Try different search terms or adjust filters"
                 : "Start discovering compounds to see them here"}
             </p>
@@ -502,16 +596,13 @@ const History = () => {
           <>
             {/* Results Count */}
             {/* Mengganti displayedDiscoveries dengan discoveries karena logika loadHistory sudah melakukan filter */}
-            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-              Showing{" "}
-              <span className="font-semibold">{discoveries.length}</span>{" "}
-              {discoveries.length === 1 ? "discovery" : "discoveries"}
-              {filters.search && ` matching "${filters.search}"`}
-            </div>
 
             {/* Discovery Grid - CLICKABLE CARDS */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {discoveries.map((discovery) => (
+              {(filteredDiscoveries.length > 0
+                ? filteredDiscoveries
+                : discoveries
+              ).map((discovery) => (
                 <div
                   key={discovery._id}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg hover:border-orange-300 dark:hover:border-orange-700 transition-all cursor-pointer group"

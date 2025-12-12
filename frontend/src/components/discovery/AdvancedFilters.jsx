@@ -1,423 +1,343 @@
 import { useState } from "react";
-import { Filter, X, ChevronDown, ChevronUp } from "lucide-react";
+import { SlidersHorizontal, X, Filter } from "lucide-react";
 
-const AdvancedFilters = ({ compounds = [], onFilterChange }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+const AdvancedFilters = ({ compounds, onFilterChange }) => {
   const [filters, setFilters] = useState({
-    // Molecular Weight
-    mwMin: "",
-    mwMax: "",
-    // LogP
-    logPMin: "",
-    logPMax: "",
-    // TPSA
-    tpsaMin: "",
-    tpsaMax: "",
-    // H-Bond Donors
-    hbdMin: "",
-    hbdMax: "",
-    // H-Bond Acceptors
-    hbaMin: "",
-    hbaMax: "",
-    // Element filters
-    containsElements: [],
-    excludesElements: [],
-    // Ring count
-    ringCountMin: "",
-    ringCountMax: "",
-    // Complexity
-    complexityLevel: "any", // any, low, medium, high
+    hasValidation: null, // null = all, true = only with validation, false = without
+    hasProperties: null,
+    isAromatic: null,
+    minHBondDonors: "",
+    maxHBondDonors: "",
+    minHBondAcceptors: "",
+    maxHBondAcceptors: "",
+    minTPSA: "",
+    maxTPSA: "",
   });
 
-  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
-
-  const elementOptions = ["C", "H", "O", "N", "S", "P", "F", "Cl", "Br", "I"];
+  const [results, setResults] = useState([]);
 
   const applyFilters = () => {
-    let filtered = [...compounds];
+    let filtered = compounds;
 
-    // Molecular Weight filter
-    if (filters.mwMin) {
-      filtered = filtered.filter(
-        (c) => parseFloat(c.molecular_weight || 0) >= parseFloat(filters.mwMin)
-      );
-    }
-    if (filters.mwMax) {
-      filtered = filtered.filter(
-        (c) => parseFloat(c.molecular_weight || 0) <= parseFloat(filters.mwMax)
-      );
-    }
-
-    // LogP filter
-    if (filters.logPMin) {
-      filtered = filtered.filter(
-        (c) => parseFloat(c.logp || 0) >= parseFloat(filters.logPMin)
-      );
-    }
-    if (filters.logPMax) {
-      filtered = filtered.filter(
-        (c) => parseFloat(c.logp || 0) <= parseFloat(filters.logPMax)
-      );
-    }
-
-    // TPSA filter
-    if (filters.tpsaMin) {
-      filtered = filtered.filter(
-        (c) =>
-          parseFloat(c.properties?.tpsa || 0) >= parseFloat(filters.tpsaMin)
-      );
-    }
-    if (filters.tpsaMax) {
-      filtered = filtered.filter(
-        (c) =>
-          parseFloat(c.properties?.tpsa || 0) <= parseFloat(filters.tpsaMax)
-      );
-    }
-
-    // H-Bond Donors filter
-    if (filters.hbdMin) {
-      filtered = filtered.filter(
-        (c) =>
-          parseInt(c.properties?.h_bond_donors || 0) >= parseInt(filters.hbdMin)
-      );
-    }
-    if (filters.hbdMax) {
-      filtered = filtered.filter(
-        (c) =>
-          parseInt(c.properties?.h_bond_donors || 0) <= parseInt(filters.hbdMax)
-      );
-    }
-
-    // H-Bond Acceptors filter
-    if (filters.hbaMin) {
-      filtered = filtered.filter(
-        (c) =>
-          parseInt(c.properties?.h_bond_acceptors || 0) >=
-          parseInt(filters.hbaMin)
-      );
-    }
-    if (filters.hbaMax) {
-      filtered = filtered.filter(
-        (c) =>
-          parseInt(c.properties?.h_bond_acceptors || 0) <=
-          parseInt(filters.hbaMax)
-      );
-    }
-
-    // Contains elements filter
-    if (filters.containsElements.length > 0) {
-      filtered = filtered.filter((c) => {
-        const formula = c.formula || "";
-        return filters.containsElements.every((el) => formula.includes(el));
+    // 1. Has Validation Score
+    if (filters.hasValidation !== null) {
+      filtered = filtered.filter((compound) => {
+        const hasScore =
+          compound.validation_score !== null &&
+          compound.validation_score !== undefined;
+        return filters.hasValidation ? hasScore : !hasScore;
       });
     }
 
-    // Excludes elements filter
-    if (filters.excludesElements.length > 0) {
-      filtered = filtered.filter((c) => {
-        const formula = c.formula || "";
-        return !filters.excludesElements.some((el) => formula.includes(el));
+    // 2. Has Properties
+    if (filters.hasProperties !== null) {
+      filtered = filtered.filter((compound) => {
+        const hasProps =
+          compound.properties && Object.keys(compound.properties).length > 0;
+        return filters.hasProperties ? hasProps : !hasProps;
       });
     }
 
-    // Complexity level filter
-    if (filters.complexityLevel !== "any") {
-      filtered = filtered.filter((c) => {
-        const mw = parseFloat(c.molecular_weight || 0);
-        if (filters.complexityLevel === "low") return mw < 150;
-        if (filters.complexityLevel === "medium") return mw >= 150 && mw < 300;
-        if (filters.complexityLevel === "high") return mw >= 300;
-        return true;
+    // 3. Aromatic
+    if (filters.isAromatic !== null) {
+      filtered = filtered.filter((compound) => {
+        const aromatic =
+          compound.properties?.aromatic === true ||
+          compound.properties?.aromatic === "true";
+        return filters.isAromatic ? aromatic : !aromatic;
       });
     }
 
-    // Count active filters
-    const count = Object.values(filters).filter(
-      (v) =>
-        (Array.isArray(v) && v.length > 0) ||
-        (typeof v === "string" && v !== "" && v !== "any")
-    ).length;
-    setActiveFiltersCount(count);
-
-    if (onFilterChange) {
-      onFilterChange(filtered, count);
+    // 4. H-Bond Donors
+    if (filters.minHBondDonors) {
+      filtered = filtered.filter((compound) => {
+        const donors = compound.properties?.h_bond_donors || 0;
+        return donors >= parseInt(filters.minHBondDonors);
+      });
     }
-  };
-
-  const clearFilters = () => {
-    const resetFilters = {
-      mwMin: "",
-      mwMax: "",
-      logPMin: "",
-      logPMax: "",
-      tpsaMin: "",
-      tpsaMax: "",
-      hbdMin: "",
-      hbdMax: "",
-      hbaMin: "",
-      hbaMax: "",
-      containsElements: [],
-      excludesElements: [],
-      ringCountMin: "",
-      ringCountMax: "",
-      complexityLevel: "any",
-    };
-    setFilters(resetFilters);
-    setActiveFiltersCount(0);
-    if (onFilterChange) {
-      onFilterChange(compounds, 0);
+    if (filters.maxHBondDonors) {
+      filtered = filtered.filter((compound) => {
+        const donors = compound.properties?.h_bond_donors || 0;
+        return donors <= parseInt(filters.maxHBondDonors);
+      });
     }
+
+    // 5. H-Bond Acceptors
+    if (filters.minHBondAcceptors) {
+      filtered = filtered.filter((compound) => {
+        const acceptors = compound.properties?.h_bond_acceptors || 0;
+        return acceptors >= parseInt(filters.minHBondAcceptors);
+      });
+    }
+    if (filters.maxHBondAcceptors) {
+      filtered = filtered.filter((compound) => {
+        const acceptors = compound.properties?.h_bond_acceptors || 0;
+        return acceptors <= parseInt(filters.maxHBondAcceptors);
+      });
+    }
+
+    // 6. TPSA (Topological Polar Surface Area)
+    if (filters.minTPSA) {
+      filtered = filtered.filter((compound) => {
+        const tpsa = compound.properties?.tpsa || 0;
+        return tpsa >= parseFloat(filters.minTPSA);
+      });
+    }
+    if (filters.maxTPSA) {
+      filtered = filtered.filter((compound) => {
+        const tpsa = compound.properties?.tpsa || 0;
+        return tpsa <= parseFloat(filters.maxTPSA);
+      });
+    }
+
+    setResults(filtered);
+    onFilterChange(filtered);
   };
 
-  const updateFilter = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const toggleElement = (element, type) => {
-    setFilters((prev) => {
-      const list = [...prev[type]];
-      const index = list.indexOf(element);
-      if (index > -1) {
-        list.splice(index, 1);
-      } else {
-        list.push(element);
-      }
-      return { ...prev, [type]: list };
+  const handleClear = () => {
+    setFilters({
+      hasValidation: null,
+      hasProperties: null,
+      isAromatic: null,
+      minHBondDonors: "",
+      maxHBondDonors: "",
+      minHBondAcceptors: "",
+      maxHBondAcceptors: "",
+      minTPSA: "",
+      maxTPSA: "",
     });
+    setResults([]);
+    onFilterChange(compounds); // Reset to all
   };
+
+  const handleChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (typeof value === "boolean") return true; // Boolean filters always count if set
+    return value !== null && value !== "";
+  }).length;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors rounded-t-xl"
-      >
-        <div className="flex items-center gap-3">
-          <Filter className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <div className="text-left">
-            <h3 className="font-bold text-gray-900 dark:text-white">
-              Advanced Filters
-              {activeFiltersCount > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs font-bold">
-                  {activeFiltersCount} active
-                </span>
-              )}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Filter by properties, elements, and complexity
-            </p>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-5 h-5 text-blue-500" />
+          <h3 className="font-semibold text-gray-900 dark:text-white">
+            Property Filters
+          </h3>
+        </div>
+        {activeFiltersCount > 0 && (
+          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold rounded-full">
+            {activeFiltersCount} active
+          </span>
+        )}
+      </div>
+
+      {/* Filter Fields */}
+      <div className="space-y-4 mb-4">
+        {/* Boolean Filters */}
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+            Data Availability
+          </label>
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                handleChange(
+                  "hasValidation",
+                  filters.hasValidation === true ? null : true
+                )
+              }
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.hasValidation === true
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Has Validation
+            </button>
+            <button
+              onClick={() =>
+                handleChange(
+                  "hasProperties",
+                  filters.hasProperties === true ? null : true
+                )
+              }
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.hasProperties === true
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Has Properties
+            </button>
           </div>
         </div>
-        {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
 
-      {/* Filter Content */}
-      {isExpanded && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Molecular Weight */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Molecular Weight (g/mol)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.mwMin}
-                  onChange={(e) => updateFilter("mwMin", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.mwMax}
-                  onChange={(e) => updateFilter("mwMax", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-              </div>
-            </div>
-
-            {/* LogP */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                LogP (Lipophilicity)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Min"
-                  value={filters.logPMin}
-                  onChange={(e) => updateFilter("logPMin", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Max"
-                  value={filters.logPMax}
-                  onChange={(e) => updateFilter("logPMax", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-              </div>
-            </div>
-
-            {/* TPSA */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                TPSA (Ų)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.tpsaMin}
-                  onChange={(e) => updateFilter("tpsaMin", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.tpsaMax}
-                  onChange={(e) => updateFilter("tpsaMax", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-              </div>
-            </div>
-
-            {/* H-Bond Donors */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                H-Bond Donors
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.hbdMin}
-                  onChange={(e) => updateFilter("hbdMin", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.hbdMax}
-                  onChange={(e) => updateFilter("hbdMax", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-              </div>
-            </div>
-
-            {/* H-Bond Acceptors */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                H-Bond Acceptors
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={filters.hbaMin}
-                  onChange={(e) => updateFilter("hbaMin", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={filters.hbaMax}
-                  onChange={(e) => updateFilter("hbaMax", e.target.value)}
-                  className="w-1/2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Complexity Level */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Complexity Level
-              </label>
-              <select
-                value={filters.complexityLevel}
-                onChange={(e) =>
-                  updateFilter("complexityLevel", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              >
-                <option value="any">Any</option>
-                <option value="low">Low (MW &lt; 150)</option>
-                <option value="medium">Medium (150-300)</option>
-                <option value="high">High (MW &gt; 300)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Element Filters */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Contains Elements
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {elementOptions.map((element) => (
-                <button
-                  key={element}
-                  onClick={() => toggleElement(element, "containsElements")}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    filters.containsElements.includes(element)
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {element}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Excludes Elements
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {elementOptions.map((element) => (
-                <button
-                  key={element}
-                  onClick={() => toggleElement(element, "excludesElements")}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    filters.excludesElements.includes(element)
-                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {element}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex gap-2">
+        {/* Aromatic Filter */}
+        <div>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Aromaticity
+          </label>
+          <div className="flex gap-2">
             <button
-              onClick={applyFilters}
-              className="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              onClick={() =>
+                handleChange(
+                  "isAromatic",
+                  filters.isAromatic === true ? null : true
+                )
+              }
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.isAromatic === true
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
             >
-              Apply Filters
+              Aromatic
             </button>
-            {activeFiltersCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <X className="w-4 h-4" />
-                Clear
-              </button>
-            )}
+            <button
+              onClick={() =>
+                handleChange(
+                  "isAromatic",
+                  filters.isAromatic === false ? null : false
+                )
+              }
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filters.isAromatic === false
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              Non-Aromatic
+            </button>
           </div>
+        </div>
+
+        {/* H-Bond Donors Range */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Min H-Donors
+            </label>
+            <input
+              type="number"
+              placeholder="0"
+              min="0"
+              value={filters.minHBondDonors}
+              onChange={(e) => handleChange("minHBondDonors", e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Max H-Donors
+            </label>
+            <input
+              type="number"
+              placeholder="10"
+              min="0"
+              value={filters.maxHBondDonors}
+              onChange={(e) => handleChange("maxHBondDonors", e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+
+        {/* H-Bond Acceptors Range */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Min H-Acceptors
+            </label>
+            <input
+              type="number"
+              placeholder="0"
+              min="0"
+              value={filters.minHBondAcceptors}
+              onChange={(e) =>
+                handleChange("minHBondAcceptors", e.target.value)
+              }
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Max H-Acceptors
+            </label>
+            <input
+              type="number"
+              placeholder="10"
+              min="0"
+              value={filters.maxHBondAcceptors}
+              onChange={(e) =>
+                handleChange("maxHBondAcceptors", e.target.value)
+              }
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+
+        {/* TPSA Range */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Min TPSA (Ų)
+            </label>
+            <input
+              type="number"
+              placeholder="0"
+              step="0.1"
+              value={filters.minTPSA}
+              onChange={(e) => handleChange("minTPSA", e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Max TPSA (Ų)
+            </label>
+            <input
+              type="number"
+              placeholder="200"
+              step="0.1"
+              value={filters.maxTPSA}
+              onChange={(e) => handleChange("maxTPSA", e.target.value)}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={applyFilters}
+          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Apply Filters
+        </button>
+        {activeFiltersCount > 0 && (
+          <button
+            onClick={handleClear}
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Results Count */}
+      {results.length > 0 && (
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Filtered to <span className="font-bold">{results.length}</span>{" "}
+            compound{results.length !== 1 ? "s" : ""}
+          </p>
         </div>
       )}
     </div>

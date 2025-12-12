@@ -18,17 +18,18 @@ exports.getHistory = async (req, res) => {
       sortOrder = "desc",
     } = req.query;
 
-    // Build base query
-    const query = { user: req.user.id };
+    console.log("🔍 History Query - User ID:", req.user._id); // Debug log
 
-    // 1. TEXT SEARCH - WORD BASED (multiple words)
+    // ✅ FIX: Use userId (not user)
+    const query = { userId: req.user._id };
+
+    // 1. TEXT SEARCH - WORD BASED
     if (search) {
       const searchWords = search.trim().split(/\s+/);
       const searchRegex = searchWords.map(
         (word) => new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
       );
 
-      // Search in criteria OR compound names
       query.$and = searchRegex.map((regex) => ({
         $or: [{ criteria: regex }, { "compounds.name": regex }],
       }));
@@ -59,14 +60,13 @@ exports.getHistory = async (req, res) => {
       };
     }
 
-    // 5. MW & LOGP FILTERS (compound level - needs aggregation)
+    // 5. MW & LOGP FILTERS
     let useAggregation = false;
     const matchStages = [];
 
     if (minMW || maxMW || minLogP || maxLogP) {
       useAggregation = true;
 
-      // Add computed fields
       matchStages.push({
         $addFields: {
           avgMW: {
@@ -74,7 +74,15 @@ exports.getHistory = async (req, res) => {
               $map: {
                 input: "$compounds",
                 as: "comp",
-                in: { $toDouble: "$$comp.molecular_weight" },
+                in: {
+                  $cond: {
+                    if: {
+                      $eq: [{ $type: "$$comp.molecular_weight" }, "string"],
+                    },
+                    then: { $toDouble: "$$comp.molecular_weight" },
+                    else: "$$comp.molecular_weight",
+                  },
+                },
               },
             },
           },
@@ -83,14 +91,19 @@ exports.getHistory = async (req, res) => {
               $map: {
                 input: "$compounds",
                 as: "comp",
-                in: { $toDouble: "$$comp.logp" },
+                in: {
+                  $cond: {
+                    if: { $eq: [{ $type: "$$comp.logp" }, "string"] },
+                    then: { $toDouble: "$$comp.logp" },
+                    else: "$$comp.logp",
+                  },
+                },
               },
             },
           },
         },
       });
 
-      // MW filter
       if (minMW || maxMW) {
         const mwMatch = {};
         if (minMW) mwMatch.$gte = parseFloat(minMW);
@@ -98,7 +111,6 @@ exports.getHistory = async (req, res) => {
         matchStages.push({ $match: { avgMW: mwMatch } });
       }
 
-      // LogP filter
       if (minLogP || maxLogP) {
         const logpMatch = {};
         if (minLogP) logpMatch.$gte = parseFloat(minLogP);
@@ -110,26 +122,22 @@ exports.getHistory = async (req, res) => {
     let discoveries, total;
 
     if (useAggregation) {
-      // Use aggregation pipeline for compound filters
       const pipeline = [
         { $match: query },
         ...matchStages,
         { $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 } },
       ];
 
-      // Count total
       const countPipeline = [...pipeline, { $count: "total" }];
       const countResult = await Discovery.aggregate(countPipeline);
       total = countResult[0]?.total || 0;
 
-      // Get paginated results
       const skip = (parseInt(page) - 1) * parseInt(limit);
       pipeline.push({ $skip: skip });
       pipeline.push({ $limit: parseInt(limit) });
 
       discoveries = await Discovery.aggregate(pipeline);
     } else {
-      // Simple query without aggregation
       total = await Discovery.countDocuments(query);
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -139,6 +147,8 @@ exports.getHistory = async (req, res) => {
         .limit(parseInt(limit))
         .lean();
     }
+
+    console.log("✅ Found discoveries:", discoveries.length); // Debug log
 
     const totalPages = Math.ceil(total / parseInt(limit));
 
@@ -155,7 +165,7 @@ exports.getHistory = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get history error:", error);
+    console.error("❌ Get history error:", error);
     res.status(500).json({
       success: false,
       error: "Failed to fetch history",
@@ -166,20 +176,16 @@ exports.getHistory = async (req, res) => {
 
 exports.getStats = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user._id; // ✅ FIX: Use _id
 
-    // ✅ Aggregate with BOTH possible confidence field locations
     const stats = await Discovery.aggregate([
-      { $match: { userId: userId } },
+      { $match: { userId: userId } }, // ✅ FIX: Use userId
       {
         $group: {
           _id: null,
           totalDiscoveries: { $sum: 1 },
           totalCompounds: { $sum: { $size: "$compounds" } },
-          // Check BOTH locations
-          avgConfidenceFromMetadata: {
-            $avg: "$metadata.overall_confidence",
-          },
+          avgConfidenceFromMetadata: { $avg: "$metadata.overall_confidence" },
           avgConfidenceFromPreprocessing: {
             $avg: "$preprocessingAnalysis.confidenceScore",
           },
@@ -187,19 +193,15 @@ exports.getStats = async (req, res) => {
       },
     ]);
 
-    // ✅ Handle empty or no data
     if (!stats.length || stats[0].totalDiscoveries === 0) {
       return res.json({
         success: true,
-        stats: {
-          totalDiscoveries: 0,
-          totalCompounds: 0,
-          avgConfidence: 0,
-        },
+        totalDiscoveries: 0,
+        totalCompounds: 0,
+        avgConfidence: 0,
       });
     }
 
-    // ✅ Use whichever field has data (fallback)
     const avgConfidence =
       stats[0].avgConfidenceFromMetadata ||
       stats[0].avgConfidenceFromPreprocessing ||
@@ -207,17 +209,15 @@ exports.getStats = async (req, res) => {
 
     res.json({
       success: true,
-      stats: {
-        totalDiscoveries: stats[0].totalDiscoveries,
-        totalCompounds: stats[0].totalCompounds,
-        avgConfidence: avgConfidence, // ✅ Always a number
-      },
+      totalDiscoveries: stats[0].totalDiscoveries,
+      totalCompounds: stats[0].totalCompounds,
+      avgConfidence: avgConfidence,
     });
   } catch (error) {
     console.error("Get stats error:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: "Failed to fetch statistics",
     });
   }
 };

@@ -23,6 +23,7 @@ exports.createDiscovery = async (req, res) => {
           error: "Invalid structured data",
           details: validation.error,
         });
+        x;
       }
 
       // Convert structured data to criteria string
@@ -166,95 +167,6 @@ exports.createDiscovery = async (req, res) => {
     res.status(500).json({
       error: error.message || "Failed to create discovery",
       details: error.stack,
-    });
-  }
-};
-
-exports.getHistory = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, search = "" } = req.query;
-
-    const query = { userId: req.user._id };
-
-    // Search in criteria or compound names
-    if (search) {
-      query.$or = [
-        { criteria: { $regex: search, $options: "i" } },
-        { "compounds.name": { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const discoveries = await Discovery.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .lean();
-
-    const count = await Discovery.countDocuments(query);
-
-    res.json({
-      success: true,
-      discoveries,
-      totalPages: Math.ceil(count / limit),
-      currentPage: page,
-      total: count,
-    });
-  } catch (error) {
-    console.error("Get history error:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-exports.getStats = async (req, res) => {
-  try {
-    const userId = req.user._id;
-
-    // Aggregate stats with BOTH possible confidence field locations
-    const stats = await Discovery.aggregate([
-      { $match: { userId: userId } },
-      {
-        $group: {
-          _id: null,
-          totalDiscoveries: { $sum: 1 },
-          totalCompounds: { $sum: { $size: "$compounds" } },
-          // Check BOTH possible confidence locations
-          avgConfidenceFromMetadata: {
-            $avg: "$metadata.overall_confidence",
-          },
-          avgConfidenceFromPreprocessing: {
-            $avg: "$preprocessingAnalysis.confidenceScore",
-          },
-        },
-      },
-    ]);
-
-    // Handle empty result
-    if (!stats.length || stats[0].totalDiscoveries === 0) {
-      return res.json({
-        success: true,
-        totalDiscoveries: 0,
-        totalCompounds: 0,
-        avgConfidence: 0,
-      });
-    }
-
-    // Use whichever confidence field has data (fallback logic)
-    const avgConfidence =
-      stats[0].avgConfidenceFromMetadata ||
-      stats[0].avgConfidenceFromPreprocessing ||
-      0;
-
-    res.json({
-      success: true,
-      totalDiscoveries: stats[0].totalDiscoveries,
-      totalCompounds: stats[0].totalCompounds,
-      avgConfidence: avgConfidence,
-    });
-  } catch (error) {
-    console.error("Get stats error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
     });
   }
 };
