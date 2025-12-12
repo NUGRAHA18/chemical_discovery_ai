@@ -1,12 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { discoveryService } from "../services/discovery";
 import { favoritesService } from "../services/favorites";
-import { showError, showSuccess } from "../utils/toast";
+import { showError, showSuccess, showLoading } from "../utils/toast";
 import Loading from "../components/common/Loading";
 import MolecularViewer3D from "../components/discovery/MoleculeViewer3D";
 import PropertyCalculatorEnhanced from "../components/discovery/PropertyCalculatorEnhanced";
 import AdvancedSearch from "../components/discovery/AdvancedSearch";
 import AdvancedFilters from "../components/discovery/AdvancedFilters";
+import RangeSlider from "../components/filters/RangeSlider";
+import FilterPresets from "../components/filters/FilterPresets";
 import {
   History as HistoryIcon,
   Search,
@@ -22,12 +24,12 @@ import { exportDiscoveryToPDF } from "../utils/pdfExport";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
-  const [allCompounds, setAllCompounds] = useState([]); // For advanced search
+  const [allCompounds, setAllCompounds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedCompound, setSelectedCompound] = useState(null); // For detail modal
+  const [selectedCompound, setSelectedCompound] = useState(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   const [filters, setFilters] = useState({
@@ -40,23 +42,31 @@ const History = () => {
     maxLogP: "",
     minValidation: "",
     inputMode: "all",
-    sortBy: "date",
+    sortBy: "createdAt",
     sortOrder: "desc",
   });
 
+  // Slider State
+  const [mwRange, setMwRange] = useState([0, 1000]);
+  const [logpRange, setLogpRange] = useState([-5, 10]);
+  const debounceTimeout = useRef(null);
+  // Derived State (Count active filters)
   const activeFilterCount = Object.values(filters).filter(
     (v) => v && v !== "all" && v !== "date" && v !== "desc"
   ).length;
 
+  // FETCH DATA
   const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
 
+      // Build query params (send to backend)
       const params = {
         page,
         limit: 12,
       };
 
+      // Add all filters to params
       if (filters.search) params.search = filters.search;
       if (filters.dateFrom) params.dateFrom = filters.dateFrom;
       if (filters.dateTo) params.dateTo = filters.dateTo;
@@ -70,10 +80,11 @@ const History = () => {
       if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
       const data = await discoveryService.getHistory(params);
+
       setDiscoveries(data.discoveries || []);
       setTotalPages(data.pagination?.totalPages || 1);
 
-      // Extract all compounds for advanced search
+      // Extract compounds for advanced search
       const compounds = (data.discoveries || []).flatMap(
         (d) => d.compounds || []
       );
@@ -84,110 +95,20 @@ const History = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, filters]); // Dependencies: page and filters
 
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
-  // WORD-BASED SEARCH (not character-based)
-  const filterDiscoveriesByWords = (discoveriesList) => {
-    return discoveriesList.filter((discovery) => {
-      // 1. Word-based search
-      if (filters.search) {
-        const searchWords = filters.search.toLowerCase().trim().split(/\s+/);
-        const searchableText = `
-        ${discovery.criteria || ""} 
-        ${discovery.compounds?.map((c) => c.name).join(" ") || ""}
-      `.toLowerCase();
-
-        const matchesSearch = searchWords.every((word) =>
-          searchableText.includes(word)
-        );
-        if (!matchesSearch) return false;
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
       }
-
-      // 2. Date FROM filter
-      if (filters.dateFrom) {
-        const discoveryDate = new Date(discovery.createdAt);
-        const fromDate = new Date(filters.dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (discoveryDate < fromDate) return false;
-      }
-
-      // 3. Date TO filter
-      if (filters.dateTo) {
-        const discoveryDate = new Date(discovery.createdAt);
-        const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (discoveryDate > toDate) return false;
-      }
-
-      // 4. Molecular Weight filter
-      if (filters.minMW) {
-        const avgMW =
-          discovery.compounds?.reduce(
-            (sum, c) => sum + (c.molecular_weight || 0),
-            0
-          ) / (discovery.compounds?.length || 1);
-        if (avgMW < parseFloat(filters.minMW)) return false;
-      }
-
-      if (filters.maxMW) {
-        const avgMW =
-          discovery.compounds?.reduce(
-            (sum, c) => sum + (c.molecular_weight || 0),
-            0
-          ) / (discovery.compounds?.length || 1);
-        if (avgMW > parseFloat(filters.maxMW)) return false;
-      }
-
-      // 5. LogP filter
-      if (filters.minLogP) {
-        const avgLogP =
-          discovery.compounds?.reduce((sum, c) => sum + (c.logp || 0), 0) /
-          (discovery.compounds?.length || 1);
-        if (avgLogP < parseFloat(filters.minLogP)) return false;
-      }
-
-      if (filters.maxLogP) {
-        const avgLogP =
-          discovery.compounds?.reduce((sum, c) => sum + (c.logp || 0), 0) /
-          (discovery.compounds?.length || 1);
-        if (avgLogP > parseFloat(filters.maxLogP)) return false;
-      }
-
-      // 6. Validation Score filter
-      if (filters.minValidation) {
-        const avgValidation =
-          discovery.compounds?.reduce(
-            (sum, c) => sum + (c.validation_score || 0),
-            0
-          ) / (discovery.compounds?.length || 1);
-        if (avgValidation < parseFloat(filters.minValidation)) return false;
-      }
-
-      // 7. Input Mode filter ✅ FIX
-      if (filters.inputMode && filters.inputMode !== "all") {
-        const discoveryMode = discovery.inputMode || "";
-        if (
-          filters.inputMode === "structured" &&
-          discoveryMode !== "structured"
-        ) {
-          return false;
-        }
-        if (
-          filters.inputMode === "ai-prompt" &&
-          discoveryMode !== "ai-prompt"
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  };
-
+    };
+  }, []);
+  // HANDLERS
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this discovery?")) return;
 
@@ -200,12 +121,38 @@ const History = () => {
     }
   };
 
+  // Asumsi fungsi showLoading() diimpor atau didefinisikan (telah saya tambahkan di import)
   const handleExportPDF = async (discovery) => {
     try {
-      const result = await exportDiscoveryToPDF(discovery);
-      if (result.success) {
-        showSuccess("PDF exported!");
-      }
+      showLoading("Generating PDF...");
+      await exportDiscoveryToPDF(discovery);
+      showSuccess(`PDF exported: discovery-${discovery._id}.pdf`);
+    } catch (error) {
+      showError("Export failed");
+    }
+  };
+
+  // ✅ ADD NEW: Export ALL filtered results
+  const handleExportAllFiltered = async () => {
+    if (discoveries.length === 0) {
+      showError("No discoveries to export");
+      return;
+    }
+
+    try {
+      showLoading("Exporting filtered discoveries...");
+
+      // Export as JSON
+      const dataStr = JSON.stringify(discoveries, null, 2);
+      const dataBlob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `filtered-discoveries-${Date.now()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      showSuccess(`Exported ${discoveries.length} discoveries`);
     } catch (error) {
       showError("Export failed");
     }
@@ -246,9 +193,7 @@ const History = () => {
     setPage(1);
   };
 
-  // Apply word-based filtering
-  const displayedDiscoveries = filterDiscoveriesByWords(discoveries);
-
+  // RENDER: Loading State
   if (loading && page === 1) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -257,6 +202,7 @@ const History = () => {
     );
   }
 
+  // RENDER: Main Component
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -277,18 +223,32 @@ const History = () => {
               </div>
             </div>
 
-            {/* Advanced Search Toggle */}
-            <button
-              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                showAdvancedSearch
-                  ? "bg-purple-600 text-white"
-                  : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              {showAdvancedSearch ? "Hide" : "Show"} Advanced Search
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {/* Export Filtered Button */}
+              {discoveries.length > 0 && (
+                <button
+                  onClick={handleExportAllFiltered}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Export Filtered ({discoveries.length})
+                </button>
+              )}
+
+              {/* Advanced Search Toggle */}
+              <button
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                  showAdvancedSearch
+                    ? "bg-purple-600 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {showAdvancedSearch ? "Hide" : "Show"} Advanced Search
+              </button>
+            </div>
           </div>
         </div>
 
@@ -328,15 +288,30 @@ const History = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by words (e.g. benzene alcohol)."
+                  placeholder="Search by words (e.g. benzene alcohol)"
                   value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Update local state instantly
+                    setFilters((prev) => ({ ...prev, search: value }));
+
+                    // Clear previous timeout
+                    if (debounceTimeout.current) {
+                      clearTimeout(debounceTimeout.current);
+                    }
+
+                    // Debounce API call - wait 500ms after user stops typing
+                    debounceTimeout.current = setTimeout(() => {
+                      handleFilterChange("search", value);
+                    }, 500);
+                  }}
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               {filters.search && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-10">
-                  Searching for:{" "}
+                  Searching for words:{" "}
                   {filters.search.split(/\s+/).map((word, i) => (
                     <span
                       key={i}
@@ -381,6 +356,27 @@ const History = () => {
           {/* Extended Filters */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {/* Filter Presets */}
+              <div className="mb-4">
+                <FilterPresets // Asumsi komponen ini ada
+                  currentFilters={filters}
+                  onApplyPreset={(presetFilters) => {
+                    setFilters(presetFilters);
+                    // Update sliders
+                    if (presetFilters.minMW)
+                      setMwRange([
+                        presetFilters.minMW,
+                        presetFilters.maxMW || 1000,
+                      ]);
+                    if (presetFilters.minLogP)
+                      setLogpRange([
+                        presetFilters.minLogP,
+                        presetFilters.maxLogP || 10,
+                      ]);
+                    setPage(1);
+                  }}
+                />
+              </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Date From */}
                 <div>
@@ -393,11 +389,11 @@ const History = () => {
                     onChange={(e) =>
                       handleFilterChange("dateFrom", e.target.value)
                     }
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
-                {/* Date To */}
+                {/* Date To - FIXED */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     To Date
@@ -408,35 +404,61 @@ const History = () => {
                     onChange={(e) =>
                       handleFilterChange("dateTo", e.target.value)
                     }
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
                 {/* MW Range */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Molecular Weight
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      value={filters.minMW}
-                      onChange={(e) =>
-                        handleFilterChange("minMW", e.target.value)
+                  <RangeSlider
+                    label="Molecular Weight (g/mol)"
+                    min={0}
+                    max={1000}
+                    step={10}
+                    value={mwRange}
+                    onChange={(range) => {
+                      // Update local state instantly (no reload)
+                      setMwRange(range);
+
+                      // Clear previous timeout
+                      if (debounceTimeout.current) {
+                        clearTimeout(debounceTimeout.current);
                       }
-                      className="w-1/2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      value={filters.maxMW}
-                      onChange={(e) =>
-                        handleFilterChange("maxMW", e.target.value)
+
+                      // Set new timeout - call API after 800ms of no movement
+                      debounceTimeout.current = setTimeout(() => {
+                        handleFilterChange("minMW", range[0]);
+                        handleFilterChange("maxMW", range[1]);
+                      }, 800);
+                    }}
+                    unit=" g/mol"
+                  />
+                </div>
+
+                {/* LogP Range Slider */}
+                <div>
+                  <RangeSlider
+                    label="LogP (Lipophilicity)"
+                    min={-5}
+                    max={10}
+                    step={0.1}
+                    value={logpRange}
+                    onChange={(range) => {
+                      // Update local state instantly (no reload)
+                      setLogpRange(range);
+
+                      // Clear previous timeout
+                      if (debounceTimeout.current) {
+                        clearTimeout(debounceTimeout.current);
                       }
-                      className="w-1/2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
-                    />
-                  </div>
+
+                      // Set new timeout - call API after 800ms
+                      debounceTimeout.current = setTimeout(() => {
+                        handleFilterChange("minLogP", range[0].toFixed(1));
+                        handleFilterChange("maxLogP", range[1].toFixed(1));
+                      }, 800);
+                    }}
+                  />
                 </div>
 
                 {/* Input Mode */}
@@ -449,7 +471,7 @@ const History = () => {
                     onChange={(e) =>
                       handleFilterChange("inputMode", e.target.value)
                     }
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
                   >
                     <option value="all">All</option>
                     <option value="structured">Structured</option>
@@ -462,7 +484,7 @@ const History = () => {
         </div>
 
         {/* Results */}
-        {displayedDiscoveries.length === 0 ? (
+        {discoveries.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
             <HistoryIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -479,18 +501,17 @@ const History = () => {
         ) : (
           <>
             {/* Results Count */}
+            {/* Mengganti displayedDiscoveries dengan discoveries karena logika loadHistory sudah melakukan filter */}
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               Showing{" "}
-              <span className="font-semibold">
-                {displayedDiscoveries.length}
-              </span>{" "}
-              {displayedDiscoveries.length === 1 ? "discovery" : "discoveries"}
+              <span className="font-semibold">{discoveries.length}</span>{" "}
+              {discoveries.length === 1 ? "discovery" : "discoveries"}
               {filters.search && ` matching "${filters.search}"`}
             </div>
 
             {/* Discovery Grid - CLICKABLE CARDS */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {displayedDiscoveries.map((discovery) => (
+              {discoveries.map((discovery) => (
                 <div
                   key={discovery._id}
                   className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg hover:border-orange-300 dark:hover:border-orange-700 transition-all cursor-pointer group"

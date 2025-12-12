@@ -7,6 +7,10 @@ const morgan = require("morgan");
 const connectDB = require("./config/database");
 const path = require("path");
 const chatRoutes = require("./routes/chat.routes");
+
+// 1. IMPORT FUNGSI REDIS CACHE
+const { getCacheStats } = require("./config/redis");
+
 const app = express();
 const imageFolderPath = path.join(__dirname, "public/images");
 
@@ -52,6 +56,18 @@ app.use(
   },
   express.static(path.join(__dirname, "../public/images"))
 );
+
+// 2. DEFINISI ENDPOINT UNTUK CACHE STATS
+app.get("/api/cache/stats", async (req, res) => {
+  try {
+    const stats = await getCacheStats();
+    res.json(stats);
+  } catch (error) {
+    // Menampilkan error di console untuk debugging
+    console.error("Error getting cache stats:", error);
+    res.status(500).json({ error: "Failed to get cache stats" });
+  }
+});
 
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/discover", require("./routes/discovery.routes"));
