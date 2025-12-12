@@ -5,14 +5,39 @@ const {
   buildCriteriaFromStructured,
   validateStructuredData,
 } = require("../utils/criteriaBuilder");
+const { emitProgress, emitLog } = require("../config/socket");
 
 exports.createDiscovery = async (req, res) => {
   try {
+    const userId = req.user._id;
     const { criteria, inputMode, structuredData } = req.body;
 
     let finalCriteria = criteria;
     let processedStructuredData = null;
     let actualInputMode = inputMode || "ai-prompt";
+
+    emitLog(userId, {
+      type: "info",
+      message: "🚀 Discovery request received",
+      agent: "System",
+    });
+
+    emitProgress(userId, {
+      step: "initializing",
+      progress: 0,
+      message: "Initializing discovery process...",
+      agent: "System",
+    });
+
+    // Validate input
+    if (!inputMode || !["structured", "ai-prompt"].includes(inputMode)) {
+      emitLog(userId, {
+        type: "error",
+        message: "❌ Invalid input mode",
+        agent: "System",
+      });
+      return res.status(400).json({ error: "Invalid input mode" });
+    }
 
     // === HYBRID INPUT HANDLING ===
     if (actualInputMode === "structured") {
@@ -42,15 +67,43 @@ exports.createDiscovery = async (req, res) => {
       finalCriteria = criteria.trim();
       console.log("AI Prompt mode - Direct criteria:", finalCriteria);
     }
+    emitLog(userId, {
+      type: "info",
+      message: "📡 Sending request to ML service...",
+      agent: "System",
+    });
+
+    emitProgress(userId, {
+      step: "preprocessing",
+      progress: 5,
+      message: "Connecting to ML service...",
+      agent: "ML Service",
+    });
 
     // === SEND TO ML SERVICE ===
     console.log("Sending to ML service...");
-    const mlResult = await mlService.discover(finalCriteria);
+    const mlResponse = await mlService.discover(
+      { inputMode, structuredData, criteria },
+      userId
+    );
 
-    if (mlResult.status !== "success") {
+    emitLog(userId, {
+      type: "success",
+      message: "✅ ML service completed successfully",
+      agent: "System",
+    });
+
+    emitProgress(userId, {
+      step: "saving",
+      progress: 95,
+      message: "Saving results to database...",
+      agent: "System",
+    });
+
+    if (mlResponse.status !== "success") {
       return res.status(500).json({
         error: "ML processing failed",
-        details: mlResult.error,
+        details: mlResponse.error,
       });
     }
 
@@ -66,27 +119,28 @@ exports.createDiscovery = async (req, res) => {
       criteria: finalCriteria,
       preprocessingAnalysis: {
         normalizedInput:
-          mlResult.preprocessing_analysis?.normalized_input || "",
-        concepts: mlResult.preprocessing_analysis?.concepts || {},
+          mlResponse.preprocessing_analysis?.normalized_input || "", // ✅ FIX
+        concepts: mlResponse.preprocessing_analysis?.concepts || {}, // ✅ FIX
         searchTermsUsed:
-          mlResult.preprocessing_analysis?.search_terms_used || [],
-        confidenceScore: mlResult.preprocessing_analysis?.confidence_score || 0,
+          mlResponse.preprocessing_analysis?.search_terms_used || [], // ✅ FIX
+        confidenceScore:
+          mlResponse.preprocessing_analysis?.confidence_score || 0, // ✅ FIX
       },
-      analysis: mlResult.analysis || "Analysis not available",
-      research: mlResult.research_insights || "Research not available",
-      compounds: [], // Empty for now, will update after processing images
-      validation: mlResult.validation || {},
-      justification: mlResult.justification || "Justification not available",
-      metadata: mlResult.metadata || {},
+      analysis: mlResponse.analysis || "Analysis not available", // ✅ FIX
+      research: mlResponse.research_insights || "Research not available", // ✅ FIX
+      compounds: [],
+      validation: mlResponse.validation || {}, // ✅ FIX
+      justification: mlResponse.justification || "Justification not available", // ✅ FIX
+      metadata: mlResponse.metadata || {}, // ✅ FIX
     });
-
     // SAVE to get _id
     await discovery.save();
     console.log("Discovery saved with ID:", discovery._id);
 
     // === PROCESS COMPOUNDS WITH IMAGES ===
     const processedCompounds = await Promise.all(
-      (mlResult.compounds || []).map(async (compound, index) => {
+      (mlResponse.compounds || []).map(async (compound, index) => {
+        // ✅ FIX
         try {
           // Save structure image if available
           let structureImage = null;
@@ -142,6 +196,29 @@ exports.createDiscovery = async (req, res) => {
       `Discovery complete with ${processedCompounds.length} compounds`
     );
 
+    // ✅ ADD: Emit completion logs
+    emitLog(userId, {
+      type: "success",
+      message: `✅ Discovery saved! Generated ${processedCompounds.length} compounds`,
+      agent: "System",
+    });
+
+    emitProgress(userId, {
+      step: "complete",
+      progress: 100,
+      message: "Discovery complete!",
+      agent: "System",
+      discoveryId: discovery._id,
+    });
+
+    // ✅ ADD: Emit completion event
+    const { emitToUser } = require("../config/socket");
+    emitToUser(userId, "discovery:complete", {
+      discoveryId: discovery._id,
+      compounds: processedCompounds.length,
+      success: true,
+    });
+
     // === RETURN RESPONSE ===
     res.status(201).json({
       success: true,
@@ -164,6 +241,23 @@ exports.createDiscovery = async (req, res) => {
     });
   } catch (error) {
     console.error("Discovery error:", error);
+
+    // ✅ ADD: Error emission
+    const userId = req.user?._id;
+    if (userId) {
+      emitLog(userId, {
+        type: "error",
+        message: `❌ Error: ${error.message}`,
+        agent: "System",
+      });
+
+      const { emitToUser } = require("../config/socket");
+      emitToUser(userId, "discovery:error", {
+        error: error.message,
+        details: error.stack,
+      });
+    }
+
     res.status(500).json({
       error: error.message || "Failed to create discovery",
       details: error.stack,

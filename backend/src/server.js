@@ -10,7 +10,7 @@ const chatRoutes = require("./routes/chat.routes");
 
 // 1. IMPORT FUNGSI REDIS CACHE
 const { getCacheStats } = require("./config/redis");
-
+const { initializeSocket } = require("./config/socket");
 const app = express();
 const imageFolderPath = path.join(__dirname, "public/images");
 
@@ -76,8 +76,10 @@ app.use("/api/favorites", require("./routes/favorites.routes"));
 app.use("/api/export", require("./routes/export.routes"));
 app.use("/api/chat", chatRoutes);
 app.use("/api", require("./routes/propertyCalculator"));
+app.use("/api/internal", require("./routes/internal.routes"));
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use("/api/profile", require("./routes/profile.routes"));
+app.use("/api/internal", require("./routes/internal.routes"));
 app.get("/health", (req, res) => {
   res.json({
     status: "healthy",
@@ -98,23 +100,15 @@ app.use((err, req, res, next) => {
   });
 });
 
+const http = require("http");
+const server = http.createServer(app);
+initializeSocket(server);
+
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
+server.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`✅ Socket.io ready`);
+  console.log(`✅ Environment: ${process.env.NODE_ENV || "development"}`);
 });
-
-const folderGambar = path.join(__dirname, "../public/images");
-console.log("Server melayani gambar dari folder:", folderGambar);
-app.use(
-  "/api/images",
-  express.static(folderGambar, {
-    setHeaders: function (res, path, stat) {
-      // Header ini wajib agar Frontend (Port 5173) tidak diblokir browser
-      res.set("Cross-Origin-Resource-Policy", "cross-origin");
-      res.set("Access-Control-Allow-Origin", "*");
-    },
-  })
-);
 
 module.exports = app;

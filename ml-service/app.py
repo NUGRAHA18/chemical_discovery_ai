@@ -10,6 +10,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from dotenv import load_dotenv
+import requests
+from datetime import datetime
+
 
 # RDKit for molecular visualization
 try:
@@ -741,7 +744,47 @@ Keep under 300 words. Be clear and structured.
 # Initialize agent
 enhanced_agent = EnhancedChemicalDiscoveryAgent()
 
+def emit_progress(user_id, step, progress, message, agent):
+    """Send progress update to backend WebSocket"""
+    if not user_id or user_id == 'anonymous':
+        return
+    
+    try:
+        backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
+        requests.post(
+            f'{backend_url}/api/internal/progress',
+            json={
+                'userId': user_id,
+                'step': step,
+                'progress': progress,
+                'message': message,
+                'agent': agent
+            },
+            timeout=2
+        )
+    except Exception as e:
+        print(f"⚠️  Failed to emit progress: {e}")
 
+def emit_log(user_id, log_type, message, agent):
+    """Send log message to backend WebSocket"""
+    if not user_id or user_id == 'anonymous':
+        return
+    
+    try:
+        backend_url = os.getenv('BACKEND_URL', 'http://localhost:3000')
+        requests.post(
+            f'{backend_url}/api/internal/log',
+            json={
+                'userId': user_id,
+                'type': log_type,
+                'message': message,
+                'agent': agent
+            },
+            timeout=2
+        )
+    except Exception as e:
+        print(f"⚠️  Failed to emit log: {e}")
+        
 # === FLASK ROUTES ===
 @app.route('/')
 def home():
@@ -764,10 +807,15 @@ def health_check():
 
 @app.route('/api/discover', methods=['POST'])
 def discover_chemicals():
-    """Main endpoint for chemical discovery"""
+    """Main endpoint for chemical discovery with real-time progress"""
+    user_id = None
     try:
+        # ✅ GET USER ID from header
+        user_id = request.headers.get('X-User-Id', 'anonymous')
+        
         data = request.get_json()
         if not data or 'criteria' not in data:
+            emit_log(user_id, 'error', '❌ Missing criteria field', 'System')
             return jsonify({
                 'error': 'Missing required field: criteria',
                 'status': 'failed'
@@ -775,6 +823,7 @@ def discover_chemicals():
 
         raw_criteria = data.get('criteria')
         if raw_criteria is None:
+            emit_log(user_id, 'error', '❌ Criteria cannot be null', 'System')
             return jsonify({
                 'error': 'Criteria cannot be null',
                 'status': 'failed'
@@ -782,6 +831,7 @@ def discover_chemicals():
 
         user_input = str(raw_criteria).strip()
         if not user_input:
+            emit_log(user_id, 'error', '❌ Criteria cannot be empty', 'System')
             return jsonify({
                 'error': 'Criteria cannot be empty',
                 'status': 'failed'
@@ -789,22 +839,78 @@ def discover_chemicals():
         
         logger.info(f"Processing discovery request: {user_input}")
         
-        # Enhanced preprocessing
+        # ✅ STEP 1: PREPROCESSING (0-15%)
+        emit_log(user_id, 'info', '🔬 ML Service started processing', 'ML Service')
+        emit_progress(user_id, 'preprocessing', 5, 'Initializing preprocessing...', 'Preprocessor')
+        emit_log(user_id, 'info', '📋 Running advanced preprocessor agent', 'Preprocessor')
+        
         processed_input = enhanced_agent.advanced_preprocessing(user_input)
         
-        # Agentic Workflow
+        emit_log(user_id, 'success', f'✅ Preprocessing complete (confidence: {processed_input.confidence_score:.2f})', 'Preprocessor')
+        emit_log(user_id, 'info', f'📝 Search terms: {", ".join(processed_input.search_terms[:3])}...', 'Preprocessor')
+        
+        # ✅ STEP 2: ANALYZING (15-25%)
+        emit_progress(user_id, 'analyzing', 15, 'Analyzing chemical requirements...', 'Analyzer')
+        emit_log(user_id, 'info', '🔍 Running analyzer agent', 'Analyzer')
+        
         analysis = enhanced_agent.analyze_criteria(processed_input)
+        
+        emit_log(user_id, 'success', '✅ Analysis complete', 'Analyzer')
+        emit_log(user_id, 'info', f'🎯 Key properties identified', 'Analyzer')
+        
+        # ✅ STEP 3: RESEARCHING (25-40%)
+        emit_progress(user_id, 'researching', 25, 'Researching existing compounds...', 'Researcher')
+        emit_log(user_id, 'info', '📚 Searching PubChem database', 'Researcher')
+        
         research = enhanced_agent.research_existing_compounds(analysis, processed_input.search_terms)
+        
+        # Count base compounds from research
+        base_count = len(research.get('base_compounds', [])) if isinstance(research, dict) else 0
+        emit_log(user_id, 'success', f'✅ Research complete - Found {base_count} base compounds', 'Researcher')
+        emit_progress(user_id, 'researching', 40, f'Research complete ({base_count} base compounds found)', 'Researcher')
+        
+        # ✅ STEP 4: GENERATING (40-70%)
+        emit_progress(user_id, 'generating', 40, 'Generating novel compounds...', 'Generator')
+        emit_log(user_id, 'info', '🧪 Generating compound 1/3...', 'Generator')
+        
         compounds = enhanced_agent.generate_compounds(analysis, research, processed_input)
         
         if not compounds:
+            emit_log(user_id, 'error', '❌ Failed to generate compounds', 'Generator')
             return jsonify({
                 'error': 'Failed to generate compounds. Please try different criteria.',
                 'status': 'failed'
             }), 500
         
+        # Log each compound generation
+        for idx, compound in enumerate(compounds, 1):
+            progress_pct = 40 + (idx * 10)  # 40, 50, 60%
+            emit_log(user_id, 'info', f'✨ Generated compound {idx}/3: {compound.name}', 'Generator')
+            emit_progress(user_id, 'generating', progress_pct, f'Generated {idx}/3 compounds', 'Generator')
+        
+        emit_log(user_id, 'success', f'✅ Successfully generated {len(compounds)} compounds', 'Generator')
+        
+        # ✅ STEP 5: VALIDATING (70-85%)
+        emit_progress(user_id, 'validating', 70, 'Validating compound structures...', 'Validator')
+        emit_log(user_id, 'info', '✔️  Running structure validation', 'Validator')
+        
         validation = enhanced_agent.validate_compounds(compounds)
+        
+        overall_conf = validation.get('overall_confidence', 0.5)
+        emit_log(user_id, 'success', f'✅ Validation complete (confidence: {overall_conf:.1%})', 'Validator')
+        emit_progress(user_id, 'validating', 85, f'Validation complete ({overall_conf:.0%} confidence)', 'Validator')
+        
+        # ✅ STEP 6: JUSTIFYING (85-95%)
+        emit_progress(user_id, 'justifying', 85, 'Generating scientific justification...', 'Justifier')
+        emit_log(user_id, 'info', '📝 Creating scientific justification', 'Justifier')
+        
         justification = enhanced_agent.create_justification(compounds, validation, processed_input)
+        
+        emit_log(user_id, 'success', '✅ Justification complete', 'Justifier')
+        
+        # ✅ STEP 7: FINALIZING (95-100%)
+        emit_progress(user_id, 'finalizing', 95, 'Finalizing results...', 'System')
+        emit_log(user_id, 'info', '📦 Packaging results', 'System')
         
         # Format response
         result = {
@@ -848,17 +954,26 @@ def discover_chemicals():
             }
         }
         
-        logger.info(f"âœ“ Successfully generated {len(compounds)} compounds")
+        # ✅ COMPLETION
+        emit_progress(user_id, 'complete', 100, 'Discovery complete!', 'System')
+        emit_log(user_id, 'success', f'🎉 Successfully generated {len(compounds)} compounds!', 'System')
+        
+        logger.info(f"✅ Successfully generated {len(compounds)} compounds")
         return jsonify(result)
         
     except Exception as e:
         logger.exception(f"Unexpected error: {e}")
+        
+        # ✅ ERROR HANDLING
+        if user_id:
+            emit_log(user_id, 'error', f'❌ Error: {str(e)}', 'System')
+            emit_progress(user_id, 'error', 0, f'Error: {str(e)}', 'System')
+        
         return jsonify({
             'error': 'Internal server error. Please try again.',
             'status': 'failed',
             'details': str(e)
         }), 500
-    
 @app.route('/api/calculate-properties', methods=['POST'])
 def calculate_properties():
     """Calculate molecular properties from SMILES"""

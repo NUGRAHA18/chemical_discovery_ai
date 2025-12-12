@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { discoveryService } from "../services/discovery";
+import { useState, useEffect } from "react";
 import { favoritesService } from "../services/favorites";
 import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
 import CompoundDetailModal from "../components/discovery/CompoundDetailModal";
-import Loading from "../components/common/Loading";
 import {
   showSuccess,
   showError,
@@ -16,6 +14,8 @@ import { useComparison } from "../contexts/ComparisonContext";
 import ComparisonModal from "../components/discovery/ComparisonModal";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 import TemplatesModal from "../components/discovery/TemplatesModal";
+import { useSocket } from "../contexts/SocketContext"; // ✅ ADD
+import ProgressTracker from "../components/discovery/ProgressTracker"; // ✅ ADD
 
 // Import Icons
 import {
@@ -28,7 +28,6 @@ import {
   FileText,
   AlertCircle,
   LayoutTemplate,
-  TestTube,
   Lightbulb,
   BookOpen,
 } from "lucide-react";
@@ -39,10 +38,10 @@ const DISCOVERY_STATE_KEY = "discovery_in_progress";
 const Discovery = () => {
   const [inputMode, setInputMode] = useState("structured");
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [discovery, setDiscovery] = useState(null);
   const [error, setError] = useState("");
   const [showComparison, setShowComparison] = useState(false);
+  const { discoveryProgress, discoveryLogs, clearProgress } = useSocket();
 
   // ✅ FIX 2: Get addToComparison from context
   const { comparisonList, addToComparison } = useComparison();
@@ -52,8 +51,6 @@ const Discovery = () => {
   // Detail Modal States
   const [selectedCompound, setSelectedCompound] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-
-  const timeoutRef = useRef(null);
 
   const [criteria, setCriteria] = useState("");
   const [structuredData, setStructuredData] = useState({
@@ -75,7 +72,6 @@ const Discovery = () => {
       try {
         const parsed = JSON.parse(savedState);
         setLoading(parsed.loading);
-        setProgress(parsed.progress);
         if (parsed.discovery) {
           setDiscovery(parsed.discovery);
         }
@@ -91,8 +87,6 @@ const Discovery = () => {
       sessionStorage.setItem(
         DISCOVERY_STATE_KEY,
         JSON.stringify({
-          loading,
-          progress,
           discovery,
           timestamp: Date.now(),
         })
@@ -100,7 +94,7 @@ const Discovery = () => {
     } else {
       sessionStorage.removeItem(DISCOVERY_STATE_KEY);
     }
-  }, [loading, progress, discovery]);
+  }, [loading, discovery]);
 
   // Cleanup stale sessions (optional)
   useEffect(() => {
@@ -117,77 +111,38 @@ const Discovery = () => {
     };
     checkStaleSession();
   }, []);
-
-  const handleStructuredSubmit = async (structuredData) => {
-    setLoading(true);
-    setProgress(10);
-    setError("");
-    setDiscovery(null);
-
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
-      setProgress(0);
-      setError("Request timeout. ML service might be down. Please try again.");
-    }, 180000);
-
+  const handleSubmit = async (formData) => {
     try {
-      setProgress(30);
-      const response = await discoveryService.createDiscovery({
-        inputMode: "structured",
-        structuredData,
-      });
+      setLoading(true);
+      setError("");
+      setDiscovery(null);
+      clearProgress(); // Clear previous progress
 
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setProgress(90);
-      setDiscovery(response.discovery);
-      setProgress(100);
-      showSuccess("Compounds generated successfully!");
-    } catch (err) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setError(
-        err.response?.data?.error ||
-          "Failed to generate compounds. Please try again."
-      );
-    } finally {
+      // Success handled by ProgressTracker onComplete
+      // Don't show toast here, wait for WebSocket completion
+    } catch (error) {
       setLoading(false);
-      setProgress(0);
+      setError(
+        error.response?.data?.error ||
+          error.message ||
+          "Failed to create discovery"
+      );
+      showError(error.message || "Failed to create discovery");
     }
   };
 
+  const handleStructuredSubmit = async (structuredData) => {
+    await handleSubmit({
+      inputMode: "structured",
+      structuredData,
+    });
+  };
+
   const handleAIPromptSubmit = async (criteria) => {
-    setLoading(true);
-    setProgress(10);
-    setError("");
-    setDiscovery(null);
-
-    timeoutRef.current = setTimeout(() => {
-      setLoading(false);
-      setProgress(0);
-      setError("Request timeout. ML service might be down. Please try again.");
-    }, 180000);
-
-    try {
-      setProgress(30);
-      const response = await discoveryService.createDiscovery({
-        inputMode: "ai-prompt",
-        criteria,
-      });
-
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setProgress(90);
-      setDiscovery(response.discovery);
-      setProgress(100);
-      showSuccess("Compounds generated successfully!");
-    } catch (err) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setError(
-        err.response?.data?.error ||
-          "Failed to generate compounds. Please try again."
-      );
-    } finally {
-      setLoading(false);
-      setProgress(0);
-    }
+    await handleSubmit({
+      inputMode: "ai-prompt",
+      criteria,
+    });
   };
 
   const handleAddToFavorites = async (compound) => {
@@ -430,42 +385,6 @@ const Discovery = () => {
           </div>
         </div>
 
-        {/* LOADING STATE */}
-        {loading && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8 mb-8 text-center">
-            <div className="flex flex-col items-center justify-center">
-              <div className="relative">
-                <Loading size="lg" />
-                <TestTube className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary-600 dark:text-primary-400 opacity-50" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mt-4">
-                Synthesizing Compounds...
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-md mx-auto">
-                Our AI is analyzing molecular structures and optimizing
-                properties based on your criteria. This typically takes 10-30
-                seconds.
-              </p>
-
-              {/* Progress Bar */}
-              {progress > 0 && (
-                <div className="w-full max-w-md mt-6">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Processing</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-primary-600 h-2 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* ERROR STATE */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-8 flex items-start">
@@ -644,6 +563,20 @@ const Discovery = () => {
           }}
           onAddToFavorites={handleAddToFavorites}
           onAddToCompare={handleAddToCompare}
+        />
+      )}
+      {/* ✅ ADD: Progress Tracker with WebSocket */}
+      {(discoveryProgress || loading) && (
+        <ProgressTracker
+          progress={discoveryProgress}
+          logs={discoveryLogs}
+          onComplete={(data) => {
+            setLoading(false);
+            clearProgress();
+
+            // Reload page to show results
+            window.location.reload();
+          }}
         />
       )}
     </div>

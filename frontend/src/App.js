@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -12,7 +12,6 @@ import ChatAssistant from "./pages/ChatAssistant";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import Profile from "./pages/Profile";
 import PropertyCalculatorPage from "./pages/PropertyCalculatorPage";
-import PropertyCalculator from "./pages/PropertyCalculator";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
@@ -28,101 +27,106 @@ function App() {
     <ErrorBoundary>
       <DarkModeProvider>
         <ComparisonProvider>
+          {/* AuthProvider dipindahkan ke index.js pada kasus Anda, tapi tetap di sini
+              jika Anda ingin AuthProvider berada di bawah DarkMode/Comparison */}
           <AuthProvider>
-            <Router>
-              <div className="flex flex-col min-h-screen">
-                <Navbar />
-                <ToastNotification />
-                <main className="flex-grow">
-                  {/* ✅ SUSPENSE WRAPPER untuk Lazy Loading */}
-                  <Suspense
-                    fallback={
-                      <div className="flex justify-center items-center min-h-screen">
-                        <Loading size="lg" />
-                      </div>
-                    }
-                  >
-                    <Routes>
-                      {/* Public Routes */}
-                      <Route path="/" element={<Landing />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
+            {/* 🛑 DIHAPUS: Router KOMPONEN INI PENYEBAB ERROR */}
+            <div className="flex flex-col min-h-screen">
+              <Navbar />
+              <ToastNotification />
+              <main className="flex-grow">
+                {/* ✅ SUSPENSE WRAPPER untuk Lazy Loading */}
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center items-center min-h-screen">
+                      <Loading size="lg" />
+                    </div>
+                  }
+                >
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
-                      {/* Protected Routes */}
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <Dashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/profile"
-                        element={
-                          <ProtectedRoute>
-                            <Profile />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/discover"
-                        element={
-                          <ProtectedRoute>
-                            <Discovery />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/history"
-                        element={
-                          <ProtectedRoute>
-                            <History />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/favorites"
-                        element={
-                          <ProtectedRoute>
-                            <Favorites />
-                          </ProtectedRoute>
-                        }
-                      />
+                    {/* Protected Routes */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/discover"
+                      element={
+                        <ProtectedRoute>
+                          <Discovery />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/history"
+                      element={
+                        <ProtectedRoute>
+                          <History />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/favorites"
+                      element={
+                        <ProtectedRoute>
+                          <Favorites />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/chat"
+                      element={
+                        <ProtectedRoute>
+                          <ChatAssistant />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      <Route
-                        path="/chat"
-                        element={
-                          <ProtectedRoute>
-                            <ChatAssistant />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/property-calculator"
-                        element={
-                          <ProtectedRoute>
-                            <PropertyCalculatorPage />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/property-calculator"
-                        element={
-                          <ProtectedRoute>
-                            <PropertyCalculator />
-                          </ProtectedRoute>
-                        }
-                      />
+                    {/* Rute Property Calculator Pertama */}
+                    <Route
+                      path="/property-calculator"
+                      element={
+                        <ProtectedRoute>
+                          <PropertyCalculatorPage />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                      {/* 404 Not Found */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </Router>
+                    {/* 🛑 DIHAPUS: Rute Property Calculator Duplikat */}
+                    {/* <Route
+                      path="/property-calculator"
+                      element={
+                        <ProtectedRoute>
+                          <PropertyCalculator />
+                        </ProtectedRoute>
+                      }
+                    /> */}
+
+                    {/* 404 Not Found */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </main>
+              <Footer />
+            </div>
+            {/* 🛑 DIHAPUS: Penutup Router */}
           </AuthProvider>
         </ComparisonProvider>
       </DarkModeProvider>
