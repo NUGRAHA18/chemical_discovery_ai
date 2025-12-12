@@ -108,8 +108,7 @@ exports.uploadProfilePhoto = async (req, res) => {
       .toFile(filepath);
 
     // Update user profile photo path
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    user.profilePhoto = `${baseUrl}/images/profiles/${filename}`;
+    user.profilePhoto = `/images/profiles/${filename}`;
     await user.save();
 
     res.json({

@@ -23,7 +23,7 @@ exports.discover = async (requestData, userId = null) => {
         timeout: 300000, // 5 minutes
         headers: {
           "Content-Type": "application/json",
-          "X-User-Id": userId || "anonymous", // Pass userId to ML service
+          "X-User-Id": userId || "anonymous",
         },
       }
     );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext"; // Pastikan path ini sesuai
 import DarkModeToggle from "../common/DarkModeToggle"; // Pastikan path ini sesuai
+
 import {
   Home,
   LayoutDashboard,
@@ -18,8 +19,9 @@ import {
   Archive,
   Settings,
   User,
-  Shield,
 } from "lucide-react";
+
+const API_BASE_URL = "http://localhost:3000";
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -89,23 +91,41 @@ const Navbar = () => {
     }`;
 
   // Helper component untuk Avatar agar kode tidak berulang
+
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    // Jika path sudah mengandung http (misal login pake Google/URL eksternal), biarkan
+    if (path.startsWith("http") || path.startsWith("https")) {
+      return path;
+    }
+    // Jika path relatif, gabungkan dengan URL Backend
+    return `${API_BASE_URL}${path}`;
+  };
+
+  // Helper component untuk Avatar
   const UserAvatar = ({ className, fallbackClassName }) => (
     <>
       {profilePhoto ? (
         <img
-          src={profilePhoto}
+          // ✅ 2. Panggil helper function di sini
+          src={getImageUrl(profilePhoto)}
           alt="Profile"
           className={`${className} object-cover border-2 border-primary-200 dark:border-primary-700`}
           onError={(e) => {
+            // Fallback jika gambar gagal dimuat (misal file terhapus di server)
             e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
+            // Pastikan sibling (div inisial) dimunculkan
+            if (e.target.nextSibling) {
+              e.target.nextSibling.style.display = "flex";
+            }
           }}
         />
       ) : null}
 
-      {/* Fallback Initials (Muncul jika tidak ada foto atau foto error) */}
+      {/* Fallback Initials */}
       <div
         className={`${className} ${fallbackClassName} bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold`}
+        // ✅ 3. Logic display diperbaiki sedikit agar lebih aman
         style={{ display: profilePhoto ? "none" : "flex" }}
       >
         {user?.name?.charAt(0)?.toUpperCase() || "U"}

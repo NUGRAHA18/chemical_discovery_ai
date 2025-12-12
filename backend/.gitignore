@@ -6,6 +6,9 @@ npm-debug.log*
 public/images/structures/*
 !public/images/structures/.gitkeep
 
+
+public/images/profiles/*
+!public/images/profiles/.gitkeep
 .DS_Store
 .vscode/
 .idea/

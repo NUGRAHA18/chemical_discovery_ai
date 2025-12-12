@@ -13,6 +13,13 @@ import {
 } from "lucide-react";
 import { showSuccess, showError } from "../utils/toast";
 import Loading from "../components/common/Loading";
+const API_BASE_URL = "http://localhost:3000";
+
+const getImageUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}${path}`;
+};
 
 const Profile = () => {
   const [loading, setLoading] = useState(true);
@@ -319,7 +326,10 @@ const Profile = () => {
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-lg relative">
                   {profile.profilePhoto ? (
                     <img
-                      src={profile.profilePhoto}
+                      src={
+                        getImageUrl(profile.profilePhoto) || // FIXED
+                        "/default-avatar.png"
+                      }
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />

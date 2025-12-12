@@ -13,6 +13,11 @@ from dotenv import load_dotenv
 import requests
 from datetime import datetime
 
+# --- INTEGRASI BARU: Import Manager yang sudah dibuat ---
+from gemini_manager import gemini_client 
+
+# Konstanta Model Name (Bisa diubah sesuai kebutuhan, misal: gemini-1.5-flash atau gemini-2.0-flash-exp)
+MODEL_NAME = 'gemini-2.5-flash' 
 
 # RDKit for molecular visualization
 try:
@@ -21,19 +26,19 @@ try:
     from io import BytesIO
     import base64
     RDKIT_AVAILABLE = True
-    print("âœ“ RDKit loaded successfully")
+    print("✓ RDKit loaded successfully")
 except ImportError:
     RDKIT_AVAILABLE = False
-    print("âš  RDKit not available. Molecular visualization disabled.")
+    print("⚠️ RDKit not available. Molecular visualization disabled.")
 
 # PubChem integration
 try:
     import pubchempy as pcp
     PUBCHEM_AVAILABLE = True
-    print("âœ“ PubChem loaded successfully")
+    print("✓ PubChem loaded successfully")
 except Exception as e:
     PUBCHEM_AVAILABLE = False
-    print(f"âš  PubChem not available: {e}")
+    print(f"⚠️ PubChem not available: {e}")
 
 app = Flask(__name__)
 CORS(app)
@@ -45,21 +50,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# === CONFIGURE GEMINI (FIXED!) ===
+# === CONFIGURE GEMINI (UPDATED) ===
 load_dotenv()
 
-# Get API key
-api_key = os.getenv("GEMINI_API_KEY")  # Use os.getenv() not os.environ.get()
-if not api_key:
-    raise RuntimeError("GEMINI_API_KEY not found in .env file. Please set it before running.")
-
-# Configure Gemini
-genai.configure(api_key=api_key)  # âœ… FIXED: was 'gemini_key'
-
-# Initialize model GLOBALLY
-model = genai.GenerativeModel('gemini-2.5-flash')
-
-print("âœ“ Gemini AI configured successfully")
+# CATATAN:
+# Kita tidak lagi inisialisasi single key di sini.
+# gemini_client dari gemini_manager.py yang akan handle load .env dan rotasi key.
+print("✓ Gemini AI configured successfully (via GeminiManager)")
 
 
 # === DATA CLASSES ===
@@ -116,7 +113,7 @@ class ChemicalDatabase:
                     query_results = future.result()
                     if query_results:
                         results.extend(query_results)
-                        logger.info(f"âœ… Found {len(query_results)} results for: {query}")
+                        logger.info(f"✅ Found {len(query_results)} results for: {query}")
                 except Exception as e:
                     logger.error(f"Search failed for {query}: {e}")
         
@@ -240,7 +237,7 @@ class EnhancedChemicalDiscoveryAgent:
     def __init__(self):
         self.db = ChemicalDatabase()
         self.max_retries = 3
-        self.model = model  # Use global model
+        # self.model dihapus, kita pakai gemini_client langsung
         
         # Enhanced agent definitions
         self.agents = {
@@ -351,8 +348,12 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
 """
         
         try:
-            response = self.model.generate_content(prompt)  # âœ… FIXED: use self.model
-            json_str = self._extract_json(response.text)
+            # --- MODIFICATION: Use gemini_client ---
+            response_text = gemini_client.generate_content_safe(
+                model_name=MODEL_NAME, 
+                prompt=prompt
+            )
+            json_str = self._extract_json(response_text) # response_text sudah string
             concepts = json.loads(json_str)
             
             # Validate compounds
@@ -360,7 +361,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
             concepts['specific_compounds'] = validated_compounds
             
             concepts['extraction_success'] = True
-            logger.info(f"âœ“ Extracted {len(validated_compounds)} valid compounds")
+            logger.info(f"✓ Extracted {len(validated_compounds)} valid compounds")
             return concepts
             
         except Exception as e:
@@ -429,7 +430,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
         if not fallback_compounds:
             fallback_compounds = ['ethanol', 'water', 'acetone']
         
-        logger.info(f"ðŸ” Using fallback compounds: {fallback_compounds}")
+        logger.info(f"🔎 Using fallback compounds: {fallback_compounds}")
         return fallback_compounds[:6]
     
     def _generate_search_terms_from_llm(self, concepts: Dict) -> List[str]:
@@ -437,7 +438,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
         specific_compounds = concepts.get('specific_compounds', [])
         
         if specific_compounds:
-            logger.info(f"ðŸ” Using LLM-extracted compounds: {specific_compounds}")
+            logger.info(f"🔎 Using LLM-extracted compounds: {specific_compounds}")
             return specific_compounds
         
         return []
@@ -483,8 +484,12 @@ Keep response under 200 words.
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            # --- MODIFICATION: Use gemini_client ---
+            response_text = gemini_client.generate_content_safe(
+                model_name=MODEL_NAME, 
+                prompt=prompt
+            )
+            return response_text.strip()
         except Exception as e:
             logger.error(f"Analysis error: {e}")
             return "Based on the provided criteria, we will identify suitable chemical compounds with the desired properties."
@@ -557,8 +562,12 @@ Generate EXACTLY 3 compounds in valid JSON format.
         
         for attempt in range(self.max_retries):
             try:
-                response = self.model.generate_content(prompt)
-                json_str = self._extract_json(response.text)
+                # --- MODIFICATION: Use gemini_client ---
+                response_text = gemini_client.generate_content_safe(
+                    model_name=MODEL_NAME, 
+                    prompt=prompt
+                )
+                json_str = self._extract_json(response_text)
                 data = json.loads(json_str)
                 
                 compounds = []
@@ -592,7 +601,7 @@ Generate EXACTLY 3 compounds in valid JSON format.
                     compounds.append(compound_obj)
                 
                 if len(compounds) >= 3:
-                    logger.info(f"âœ“ Generated {len(compounds)} compounds")
+                    logger.info(f"✓ Generated {len(compounds)} compounds")
                     return compounds
                 
             except Exception as e:
@@ -638,8 +647,12 @@ OUTPUT FORMAT (JSON):
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            json_str = self._extract_json(response.text)
+            # --- MODIFICATION: Use gemini_client ---
+            response_text = gemini_client.generate_content_safe(
+                model_name=MODEL_NAME, 
+                prompt=prompt
+            )
+            json_str = self._extract_json(response_text)
             validation = json.loads(json_str)
             
             # Update compound validation scores
@@ -690,8 +703,12 @@ Keep under 300 words. Be clear and structured.
 """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            # --- MODIFICATION: Use gemini_client ---
+            response_text = gemini_client.generate_content_safe(
+                model_name=MODEL_NAME, 
+                prompt=prompt
+            )
+            return response_text.strip()
         except Exception as e:
             logger.error(f"Justification error: {e}")
             return "The recommended compounds meet the specified requirements based on their molecular properties and known characteristics in literature."
@@ -1016,7 +1033,7 @@ def calculate_properties():
 
 @app.route('/api/chat-stream', methods=['POST'])
 def chat_stream():
-    """Stream AI chat responses using Server-Sent Events"""
+    """Stream AI chat responses using Server-Sent Events (AUTO-KEY ROTATION ENABLED)"""
     try:
         data = request.json
         user_message = data.get('message', '')
@@ -1033,8 +1050,16 @@ def chat_stream():
                 
                 logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")
                 
-                # Stream from Gemini
-                response = model.generate_content(
+                # --- LOGIC STREAMING DENGAN ROTASI KEY ---
+                # 1. Pastikan config menggunakan key yang sedang aktif di manager
+                gemini_client.configure_current_key() 
+                
+                # 2. Inisialisasi model lokal (bukan global variable 'model' lagi)
+                # Gunakan model name yang sama dengan konstanta di atas
+                streaming_model = genai.GenerativeModel(MODEL_NAME) 
+                
+                # 3. Stream
+                response = streaming_model.generate_content(
                     prompt,
                     stream=True,
                     generation_config=genai.types.GenerationConfig(
@@ -1053,6 +1078,11 @@ def chat_stream():
                 logger.info(f"Chat response completed for user {user_id}")
                 
             except Exception as e:
+                # Jika error quota saat streaming, kita paksa switch key untuk request berikutnya
+                if "429" in str(e) or "ResourceExhausted" in str(e):
+                     print(f"⚠️ Streaming kena limit ({e}), switching key untuk next request...")
+                     gemini_client.switch_key()
+                
                 logger.error(f"Chat stream error: {str(e)}")
                 yield f"data: [ERROR] {str(e)}\n\n"
         
@@ -1112,12 +1142,12 @@ Generated Compounds:
 # === RUN SERVER ===
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("ðŸ§ª CHEMICAL DISCOVERY ML SERVICE")
+    print("🧪 CHEMICAL DISCOVERY ML SERVICE")
     print("="*60)
-    print(f"âœ“ Flask initialized")
-    print(f"âœ“ RDKit: {'Available' if RDKIT_AVAILABLE else 'Not Available'}")
-    print(f"âœ“ PubChem: {'Available' if PUBCHEM_AVAILABLE else 'Not Available'}")
-    print(f"âœ“ Gemini AI: Configured")
+    print(f"✓ Flask initialized")
+    print(f"✓ RDKit: {'Available' if RDKIT_AVAILABLE else 'Not Available'}")
+    print(f"✓ PubChem: {'Available' if PUBCHEM_AVAILABLE else 'Not Available'}")
+    print(f"✓ Gemini AI: Configured (Key Rotation Active)")
     print("="*60 + "\n")
     
     app.run(debug=True, host='0.0.0.0', port=5000)

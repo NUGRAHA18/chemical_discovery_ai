@@ -54,6 +54,7 @@ exports.login = async (req, res) => {
         email: user.email,
         name: user.name,
         lastLogin: user.lastLogin,
+        profilePhoto: user.profilePhoto || null,
       },
     });
   } catch (error) {
