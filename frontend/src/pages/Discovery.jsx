@@ -4,6 +4,7 @@ import StructuredForm from "../components/discovery/StructuredForm";
 import AIPromptForm from "../components/discovery/AIPromptForm";
 import CompoundCard from "../components/discovery/CompoundCard";
 import CompoundDetailModal from "../components/discovery/CompoundDetailModal";
+import { discoveryService } from "../services/discovery";
 import {
   showSuccess,
   showError,
@@ -118,8 +119,11 @@ const Discovery = () => {
       setDiscovery(null);
       clearProgress(); // Clear previous progress
 
-      // Success handled by ProgressTracker onComplete
-      // Don't show toast here, wait for WebSocket completion
+      // ✅ FIX 2: Panggil API dan inisialisasi proses
+      await discoveryService.createDiscovery(formData);
+
+      // Sukses ditangani oleh WebSocket / ProgressTracker
+      // Jangan tampilkan toast di sini, tunggu event complete dari socket
     } catch (error) {
       setLoading(false);
       setError(
@@ -289,6 +293,30 @@ const Discovery = () => {
       setCriteria(template.aiPrompt || template.description);
     }
     setShowTemplates(false);
+  };
+
+  const handleProgressComplete = async (data) => {
+    setLoading(false);
+    clearProgress();
+
+    // Data dari WebSocket hanya berisi discoveryId dan compounds.length
+    if (data.discoveryId) {
+      showSuccess("Discovery complete! Fetching final results...");
+      try {
+        // ✅ FIX 3: Fetch data lengkap dari backend menggunakan ID
+        const response = await discoveryService.getDiscovery(data.discoveryId);
+
+        setDiscovery(response.discovery); // <--- Update state langsung
+        sessionStorage.removeItem(DISCOVERY_STATE_KEY);
+        dismissToast();
+        showSuccess("Discovery results loaded!");
+      } catch (fetchError) {
+        showError("Discovery complete, but failed to fetch final result.");
+        setError("Failed to fetch final discovery result.");
+      }
+    } else {
+      showError("Discovery complete, but missing result ID.");
+    }
   };
 
   return (
@@ -570,13 +598,7 @@ const Discovery = () => {
         <ProgressTracker
           progress={discoveryProgress}
           logs={discoveryLogs}
-          onComplete={(data) => {
-            setLoading(false);
-            clearProgress();
-
-            // Reload page to show results
-            window.location.reload();
-          }}
+          onComplete={handleProgressComplete}
         />
       )}
     </div>

@@ -16,7 +16,18 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const [discoveryProgress, setDiscoveryProgress] = useState(null);
   const [discoveryLogs, setDiscoveryLogs] = useState([]);
-  const socketRef = useRef(null);
+
+  // ✅ FIX: Ref untuk melacak apakah komponen masih ter-mount
+  // Ini mencegah error "update state on unmounted component"
+  const isComponentMounted = useRef(false);
+
+  // useEffect khusus untuk lifecycle tracking
+  useEffect(() => {
+    isComponentMounted.current = true;
+    return () => {
+      isComponentMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -38,60 +49,76 @@ export const SocketProvider = ({ children }) => {
       }
     );
 
-    socketRef.current = newSocket;
+    // ✅ FIX: Membungkus semua state update dengan pengecekan isComponentMounted
 
     // Connection events
     newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
-      setConnected(true);
+      if (isComponentMounted.current) {
+        console.log("✅ Socket connected:", newSocket.id);
+        setConnected(true);
+      }
     });
 
     newSocket.on("disconnect", (reason) => {
-      console.log("🔌 Socket disconnected:", reason);
-      setConnected(false);
+      if (isComponentMounted.current) {
+        console.log("🔌 Socket disconnected:", reason);
+        setConnected(false);
+      }
     });
 
     newSocket.on("connect_error", (error) => {
-      console.error("❌ Socket connection error:", error.message);
-      setConnected(false);
+      if (isComponentMounted.current) {
+        console.error("❌ Socket connection error:", error.message);
+        setConnected(false);
+      }
     });
 
     // Discovery events
     newSocket.on("discovery:progress", (data) => {
-      console.log("📊 Progress:", data);
-      setDiscoveryProgress(data);
+      if (isComponentMounted.current) {
+        console.log("📊 Progress:", data);
+        setDiscoveryProgress(data);
+      }
     });
 
     newSocket.on("discovery:log", (data) => {
-      console.log("📝 Log:", data);
-      setDiscoveryLogs((prev) => [...prev, data]);
+      if (isComponentMounted.current) {
+        console.log("📝 Log:", data);
+        setDiscoveryLogs((prev) => [...prev, data]);
+      }
     });
 
     newSocket.on("discovery:complete", (data) => {
-      console.log("✅ Discovery complete:", data);
-      setDiscoveryProgress({
-        step: "complete",
-        progress: 100,
-        message: "Complete!",
-        ...data,
-      });
+      if (isComponentMounted.current) {
+        console.log("✅ Discovery complete:", data);
+        setDiscoveryProgress({
+          step: "complete",
+          progress: 100,
+          message: "Complete!",
+          ...data,
+        });
+      }
     });
 
     newSocket.on("discovery:error", (data) => {
-      console.error("❌ Discovery error:", data);
-      setDiscoveryProgress({
-        step: "error",
-        progress: 0,
-        message: data.error,
-        error: true,
-      });
+      if (isComponentMounted.current) {
+        console.error("❌ Discovery error:", data);
+        setDiscoveryProgress({
+          step: "error",
+          progress: 0,
+          message: data.error,
+          error: true,
+        });
+      }
     });
 
     setSocket(newSocket);
 
+    // Cleanup function
     return () => {
       console.log("🔌 Cleaning up socket connection");
-      newSocket.close();
+      // Memutuskan koneksi saat komponen unmount
+      if (newSocket) newSocket.disconnect();
     };
   }, []);
 

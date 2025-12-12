@@ -39,9 +39,12 @@ const ChatAssistant = () => {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
+  // ✅ FIX 1: Ref khusus untuk scrolling (best practice)
+  const messagesEndRef = useRef(null);
+
   const chatContainerRef = useRef(null);
   const eventSourceRef = useRef(null);
-  const shouldAutoScrollRef = useRef(false);
+  // const shouldAutoScrollRef = useRef(false); // Tidak diperlukan lagi
 
   useEffect(() => {
     loadChatHistory();
@@ -54,31 +57,25 @@ const ChatAssistant = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if ((isLoading || isStreaming) && shouldAutoScrollRef.current) {
-      scrollChatToBottom();
-    }
-  }, [messages, isLoading, isStreaming]);
-
-  useEffect(() => {
-    if (!loadingHistory && messages.length > 0) {
-      setTimeout(() => scrollChatToBottom(), 100);
-    }
-  }, [loadingHistory]);
-
-  const handleScroll = (e) => {
-    const element = e.target;
-    const isAtBottom =
-      element.scrollHeight - element.scrollTop - element.clientHeight < 50;
-    shouldAutoScrollRef.current = isAtBottom;
-  };
-
-  const scrollChatToBottom = () => {
+  // ✅ FIX 2: Logic Auto-Scroll Sederhana & Handal
+  const scrollToBottom = () => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      const { scrollHeight, clientHeight } = chatContainerRef.current;
+      // Scroll container chat ke posisi paling bawah
+      chatContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: "smooth", // Tetap smooth
+      });
     }
   };
+
+  // Scroll setiap kali pesan bertambah (termasuk streaming)
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
+
+  // Hapus useEffect scroll manual yang lama agar tidak konflik
+  // ...
 
   const loadChatHistory = async () => {
     try {
@@ -113,7 +110,7 @@ const ChatAssistant = () => {
   const handleSendMessage = async (message) => {
     if (!message.trim() || isLoading || isStreaming) return;
 
-    shouldAutoScrollRef.current = true;
+    // shouldAutoScrollRef.current = true; // Tidak perlu
 
     const userMessage = {
       role: "user",
@@ -375,9 +372,8 @@ const ChatAssistant = () => {
         >
           {/* Messages */}
           <div
-            ref={chatContainerRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50 dark:bg-gray-900/50"
+            ref={chatContainerRef} // Ref lama untuk container
+            className="flex-1 overflow-y-auto p-4 space-y-6 scroll-smooth"
           >
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -393,13 +389,13 @@ const ChatAssistant = () => {
                 </p>
               </div>
             ) : (
-              messages.map((message) => (
-                <ChatMessage
-                  key={message._id}
-                  message={message}
-                  onViewDiscovery={handleViewDiscovery}
-                />
-              ))
+              <>
+                {messages.map((msg, idx) => (
+                  <ChatMessage key={idx} message={msg} />
+                ))}
+                {/* ✅ FIX 3: Dummy div untuk target auto-scroll */}
+                <div ref={messagesEndRef} />
+              </>
             )}
 
             {isLoading && (

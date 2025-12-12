@@ -19,6 +19,12 @@ import {
   Heart,
   Sparkles,
   Maximize2,
+  CheckCircle,
+  FlaskConical,
+  Calendar,
+  ArrowRight,
+  Beaker,
+  FileText,
 } from "lucide-react";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 
@@ -32,6 +38,7 @@ const History = () => {
   const [selectedCompound, setSelectedCompound] = useState(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [filteredDiscoveries, setFilteredDiscoveries] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [filters, setFilters] = useState({
     search: "",
@@ -47,72 +54,93 @@ const History = () => {
     sortOrder: "desc",
   });
 
-  // Slider State
+  const [localFilters, setLocalFilters] = useState(filters);
   const [mwRange, setMwRange] = useState([0, 1000]);
   const [logpRange, setLogpRange] = useState([-5, 10]);
-  const debounceTimeout = useRef(null);
-  // Derived State (Count active filters)
+
+  useEffect(() => {
+    setSearchTerm(filters.search);
+  }, [filters.search]);
+
+  useEffect(() => {
+    setLocalFilters(filters);
+    setMwRange([filters.minMW || 0, filters.maxMW || 1000]);
+    setLogpRange([filters.minLogP || -5, filters.maxLogP || 10]);
+  }, [filters]);
+
   const activeFilterCount = Object.values(filters).filter(
     (v) => v && v !== "all" && v !== "date" && v !== "desc"
   ).length;
 
-  // FETCH DATA
   const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Build query params (send to backend)
-      const params = {
-        page,
-        limit: 12,
-      };
-
-      // Add all filters to params
-      if (filters.search) params.search = filters.search;
-      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
-      if (filters.dateTo) params.dateTo = filters.dateTo;
-      if (filters.minMW) params.minMW = filters.minMW;
-      if (filters.maxMW) params.maxMW = filters.maxMW;
-      if (filters.minLogP) params.minLogP = filters.minLogP;
-      if (filters.maxLogP) params.maxLogP = filters.maxLogP;
-      if (filters.minValidation) params.minValidation = filters.minValidation;
-      if (filters.inputMode !== "all") params.inputMode = filters.inputMode;
-      if (filters.sortBy) params.sortBy = filters.sortBy;
-      if (filters.sortOrder) params.sortOrder = filters.sortOrder;
+      const params = { page, limit: 12 };
+      Object.keys(filters).forEach((key) => {
+        if (filters[key]) params[key] = filters[key];
+      });
 
       const data = await discoveryService.getHistory(params);
-
       setDiscoveries(data.discoveries || []);
       setTotalPages(data.pagination?.totalPages || 1);
 
-      // Extract compounds for advanced search
       const compounds = (data.discoveries || []).flatMap(
         (d) => d.compounds || []
       );
       setAllCompounds(compounds);
     } catch (error) {
       showError("Failed to load history");
-      console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [page, filters]); // Dependencies: page and filters
+  }, [page, filters]);
 
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
 
-  useEffect(() => {
-    return () => {
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-    };
-  }, []);
-  // HANDLERS
+  const handleLocalFilterChange = (key, value) => {
+    setLocalFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const applyFilters = () => {
+    setFilters(localFilters);
+    setPage(1);
+    setFilteredDiscoveries([]);
+    showSuccess("Filters applied");
+  };
+
+  const executeSearch = (term) => {
+    setFilters((prev) => ({ ...prev, search: term }));
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: "",
+      dateFrom: "",
+      dateTo: "",
+      minMW: "",
+      maxMW: "",
+      minLogP: "",
+      maxLogP: "",
+      minValidation: "",
+      inputMode: "all",
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    });
+    setPage(1);
+    setFilteredDiscoveries([]);
+  };
+
+  const handlePresetApply = (presetFilters) => {
+    setLocalFilters(presetFilters);
+    setFilters(presetFilters);
+    setPage(1);
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this discovery?")) return;
-
     try {
       await discoveryService.deleteDiscovery(id);
       showSuccess("Discovery deleted");
@@ -122,28 +150,20 @@ const History = () => {
     }
   };
 
-  // Asumsi fungsi showLoading() diimpor atau didefinisikan (telah saya tambahkan di import)
   const handleExportPDF = async (discovery) => {
     try {
       showLoading("Generating PDF...");
       await exportDiscoveryToPDF(discovery);
-      showSuccess(`PDF exported: discovery-${discovery._id}.pdf`);
+      showSuccess(`PDF exported`);
     } catch (error) {
       showError("Export failed");
     }
   };
 
-  // ✅ ADD NEW: Export ALL filtered results
   const handleExportAllFiltered = async () => {
-    if (discoveries.length === 0) {
-      showError("No discoveries to export");
-      return;
-    }
-
+    if (discoveries.length === 0) return;
     try {
-      showLoading("Exporting filtered discoveries...");
-
-      // Export as JSON
+      showLoading("Exporting...");
       const dataStr = JSON.stringify(discoveries, null, 2);
       const dataBlob = new Blob([dataStr], { type: "application/json" });
       const url = URL.createObjectURL(dataBlob);
@@ -152,8 +172,7 @@ const History = () => {
       link.download = `filtered-discoveries-${Date.now()}.json`;
       link.click();
       URL.revokeObjectURL(url);
-
-      showSuccess(`Exported ${discoveries.length} discoveries`);
+      showSuccess("Exported successfully");
     } catch (error) {
       showError("Export failed");
     }
@@ -168,35 +187,10 @@ const History = () => {
       });
       showSuccess("Added to favorites!");
     } catch (error) {
-      showError("Failed to add (might exist)");
+      showError("Failed to add");
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
-    setFilteredDiscoveries([]);
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: "",
-      dateFrom: "",
-      dateTo: "",
-      minMW: "",
-      maxMW: "",
-      minLogP: "",
-      maxLogP: "",
-      minValidation: "",
-      inputMode: "all",
-      sortBy: "date",
-      sortOrder: "desc",
-    });
-    setPage(1);
-    setFilteredDiscoveries([]);
-  };
-
-  // RENDER: Loading State
   if (loading && page === 1) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -205,11 +199,13 @@ const History = () => {
     );
   }
 
-  // RENDER: Main Component
+  const displayedDiscoveries =
+    filteredDiscoveries.length > 0 ? filteredDiscoveries : discoveries;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -226,9 +222,7 @@ const History = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-2">
-              {/* Export Filtered Button */}
               {discoveries.length > 0 && (
                 <button
                   onClick={handleExportAllFiltered}
@@ -238,8 +232,6 @@ const History = () => {
                   Export Filtered ({discoveries.length})
                 </button>
               )}
-
-              {/* Advanced Search Toggle */}
               <button
                 onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
@@ -260,64 +252,30 @@ const History = () => {
           <div className="grid lg:grid-cols-2 gap-6 mb-6">
             <AdvancedSearch
               compounds={allCompounds}
-              onResultsFound={(filteredCompounds) => {
-                console.log(
-                  "🔍 Advanced Search Results:",
-                  filteredCompounds.length,
-                  filteredCompounds
-                );
-
-                // ✅ FIX: Find discoveries that contain these compounds
-                const compoundIds = filteredCompounds.map(
-                  (c) => c._id || c.id || c.name
-                );
-
-                const filtered = discoveries.filter((discovery) =>
-                  discovery.compounds?.some(
-                    (compound) =>
-                      compoundIds.includes(compound._id) ||
-                      compoundIds.includes(compound.id) ||
-                      compoundIds.includes(compound.name)
+              onResultsFound={(results) => {
+                const compoundIds = results.map((c) => c._id || c.id || c.name);
+                const filtered = discoveries.filter((d) =>
+                  d.compounds?.some(
+                    (c) =>
+                      compoundIds.includes(c._id) ||
+                      compoundIds.includes(c.id) ||
+                      compoundIds.includes(c.name)
                   )
-                );
-
-                console.log(
-                  "📦 Filtered Discoveries:",
-                  filtered.length,
-                  "Compound IDs:",
-                  compoundIds
                 );
                 setFilteredDiscoveries(filtered);
               }}
             />
             <AdvancedFilters
               compounds={allCompounds}
-              onFilterChange={(filteredCompounds) => {
-                console.log(
-                  "🔧 Advanced Filter Results:",
-                  filteredCompounds.length,
-                  filteredCompounds
-                );
-
-                // ✅ FIX: Find discoveries that contain these compounds
-                const compoundIds = filteredCompounds.map(
-                  (c) => c._id || c.id || c.name
-                );
-
-                const filtered = discoveries.filter((discovery) =>
-                  discovery.compounds?.some(
-                    (compound) =>
-                      compoundIds.includes(compound._id) ||
-                      compoundIds.includes(compound.id) ||
-                      compoundIds.includes(compound.name)
+              onFilterChange={(results) => {
+                const compoundIds = results.map((c) => c._id || c.id || c.name);
+                const filtered = discoveries.filter((d) =>
+                  d.compounds?.some(
+                    (c) =>
+                      compoundIds.includes(c._id) ||
+                      compoundIds.includes(c.id) ||
+                      compoundIds.includes(c.name)
                   )
-                );
-
-                console.log(
-                  "📦 Filtered Discoveries:",
-                  filtered.length,
-                  "Compound IDs:",
-                  compoundIds
                 );
                 setFilteredDiscoveries(filtered);
               }}
@@ -328,7 +286,6 @@ const History = () => {
         {/* Filters Bar */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
           <div className="flex flex-wrap items-center gap-3">
-            {/* Search - WORD BASED */}
             <div className="flex-1 min-w-[200px]">
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -336,26 +293,16 @@ const History = () => {
                   <input
                     type="text"
                     placeholder="Search by words (e.g. benzene alcohol)"
-                    value={filters.search}
-                    onChange={(e) => {
-                      // Update local state only (no API call yet)
-                      setFilters((prev) => ({
-                        ...prev,
-                        search: e.target.value,
-                      }));
-                    }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => {
-                      // Allow Enter key to trigger search
-                      if (e.key === "Enter") {
-                        handleFilterChange("search", filters.search);
-                      }
+                      if (e.key === "Enter") executeSearch(searchTerm);
                     }}
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-                {/* Search Button */}
                 <button
-                  onClick={() => handleFilterChange("search", filters.search)}
+                  onClick={() => executeSearch(searchTerm)}
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2 font-medium whitespace-nowrap"
                 >
                   <Search className="w-4 h-4" />
@@ -364,20 +311,11 @@ const History = () => {
               </div>
               {filters.search && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-10">
-                  Searching for words:{" "}
-                  {filters.search.split(/\s+/).map((word, i) => (
-                    <span
-                      key={i}
-                      className="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded mr-1"
-                    >
-                      {word}
-                    </span>
-                  ))}
+                  Active search: <b>{filters.search}</b>
                 </p>
               )}
             </div>
 
-            {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
@@ -408,29 +346,15 @@ const History = () => {
 
           {/* Extended Filters */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              {/* Filter Presets */}
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in">
               <div className="mb-4">
-                <FilterPresets // Asumsi komponen ini ada
-                  currentFilters={filters}
-                  onApplyPreset={(presetFilters) => {
-                    setFilters(presetFilters);
-                    // Update sliders
-                    if (presetFilters.minMW)
-                      setMwRange([
-                        presetFilters.minMW,
-                        presetFilters.maxMW || 1000,
-                      ]);
-                    if (presetFilters.minLogP)
-                      setLogpRange([
-                        presetFilters.minLogP,
-                        presetFilters.maxLogP || 10,
-                      ]);
-                    setPage(1);
-                  }}
+                <FilterPresets
+                  currentFilters={localFilters}
+                  onApplyPreset={handlePresetApply}
                 />
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 {/* Date From */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -438,30 +362,30 @@ const History = () => {
                   </label>
                   <input
                     type="date"
-                    value={filters.dateFrom}
+                    value={localFilters.dateFrom}
                     onChange={(e) =>
-                      handleFilterChange("dateFrom", e.target.value)
+                      handleLocalFilterChange("dateFrom", e.target.value)
                     }
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
-                {/* Date To - FIXED */}
+                {/* Date To */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     To Date
                   </label>
                   <input
                     type="date"
-                    value={filters.dateTo}
+                    value={localFilters.dateTo}
                     onChange={(e) =>
-                      handleFilterChange("dateTo", e.target.value)
+                      handleLocalFilterChange("dateTo", e.target.value)
                     }
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white [color-scheme:light] dark:[color-scheme:dark]"
                   />
                 </div>
 
-                {/* MW Range */}
+                {/* Sliders */}
                 <div>
                   <RangeSlider
                     label="Molecular Weight (g/mol)"
@@ -470,25 +394,13 @@ const History = () => {
                     step={10}
                     value={mwRange}
                     onChange={(range) => {
-                      // Update local state instantly (no reload)
                       setMwRange(range);
-
-                      // Clear previous timeout
-                      if (debounceTimeout.current) {
-                        clearTimeout(debounceTimeout.current);
-                      }
-
-                      // Set new timeout - call API after 800ms of no movement
-                      debounceTimeout.current = setTimeout(() => {
-                        handleFilterChange("minMW", range[0]);
-                        handleFilterChange("maxMW", range[1]);
-                      }, 800);
+                      handleLocalFilterChange("minMW", range[0]);
+                      handleLocalFilterChange("maxMW", range[1]);
                     }}
                     unit=" g/mol"
                   />
                 </div>
-
-                {/* LogP Range Slider */}
                 <div>
                   <RangeSlider
                     label="LogP (Lipophilicity)"
@@ -497,19 +409,9 @@ const History = () => {
                     step={0.1}
                     value={logpRange}
                     onChange={(range) => {
-                      // Update local state instantly (no reload)
                       setLogpRange(range);
-
-                      // Clear previous timeout
-                      if (debounceTimeout.current) {
-                        clearTimeout(debounceTimeout.current);
-                      }
-
-                      // Set new timeout - call API after 800ms
-                      debounceTimeout.current = setTimeout(() => {
-                        handleFilterChange("minLogP", range[0].toFixed(1));
-                        handleFilterChange("maxLogP", range[1].toFixed(1));
-                      }, 800);
+                      handleLocalFilterChange("minLogP", range[0].toFixed(1));
+                      handleLocalFilterChange("maxLogP", range[1].toFixed(1));
                     }}
                   />
                 </div>
@@ -520,9 +422,9 @@ const History = () => {
                     Input Mode
                   </label>
                   <select
-                    value={filters.inputMode}
+                    value={localFilters.inputMode}
                     onChange={(e) =>
-                      handleFilterChange("inputMode", e.target.value)
+                      handleLocalFilterChange("inputMode", e.target.value)
                     }
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white"
                   >
@@ -532,221 +434,229 @@ const History = () => {
                   </select>
                 </div>
               </div>
+
+              <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={applyFilters}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg shadow-sm transition-all transform active:scale-95"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Apply Filters
+                </button>
+              </div>
             </div>
           )}
         </div>
-        {/* Results Count & Clear Button */}
-        {(filteredDiscoveries.length > 0 || discoveries.length > 0) && (
-          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between">
-            <div>
-              Showing{" "}
-              <span className="font-semibold">
-                {filteredDiscoveries.length > 0
-                  ? filteredDiscoveries.length
-                  : discoveries.length}
-              </span>{" "}
-              discovery result
-              {(filteredDiscoveries.length > 0
-                ? filteredDiscoveries.length
-                : discoveries.length) === 1
-                ? ""
-                : "s"}
-              {filteredDiscoveries.length > 0 && (
-                <span className="text-purple-600 dark:text-purple-400 ml-2">
-                  (filtered from {discoveries.length} total)
-                </span>
-              )}
-            </div>
 
-            {/* Clear Advanced Filters Button */}
+        {/* Results Info */}
+        <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between">
+          <div>
+            Showing{" "}
+            <span className="font-semibold">{displayedDiscoveries.length}</span>{" "}
+            discovery results
             {filteredDiscoveries.length > 0 && (
-              <button
-                onClick={() => {
-                  setFilteredDiscoveries([]);
-                  setShowAdvancedSearch(false);
-                }}
-                className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center gap-1 font-medium"
-              >
-                <X className="w-4 h-4" />
-                Clear Advanced Filters
-              </button>
+              <span className="text-purple-600 dark:text-purple-400 ml-2">
+                (filtered from {discoveries.length} total)
+              </span>
             )}
           </div>
-        )}
+          {filteredDiscoveries.length > 0 && (
+            <button
+              onClick={() => {
+                setFilteredDiscoveries([]);
+                setShowAdvancedSearch(false);
+              }}
+              className="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center gap-1 font-medium"
+            >
+              <X className="w-4 h-4" /> Clear Advanced Filters
+            </button>
+          )}
+        </div>
 
-        {/* Results */}
-        {(filteredDiscoveries.length > 0 ? filteredDiscoveries : discoveries)
-          .length === 0 ? (
+        {/* 🌟 NEW RESULTS GRID - "Summary Card Style" 🌟 */}
+        {displayedDiscoveries.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
             <HistoryIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {filters.search || activeFilterCount > 0 || showAdvancedSearch
-                ? "No results found"
-                : "No discoveries yet"}
+              No results found
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
-              {filters.search ||
-              activeFilterCount > 0 ||
-              (filteredDiscoveries.length === 0 && showAdvancedSearch)
-                ? "Try different search terms or adjust filters"
-                : "Start discovering compounds to see them here"}
+              Try adjusting your filters or start a new discovery.
             </p>
           </div>
         ) : (
-          <>
-            {/* Results Count */}
-            {/* Mengganti displayedDiscoveries dengan discoveries karena logika loadHistory sudah melakukan filter */}
-
-            {/* Discovery Grid - CLICKABLE CARDS */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {(filteredDiscoveries.length > 0
-                ? filteredDiscoveries
-                : discoveries
-              ).map((discovery) => (
-                <div
-                  key={discovery._id}
-                  className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg hover:border-orange-300 dark:hover:border-orange-700 transition-all cursor-pointer group"
-                  onClick={() => setSelectedCompound(discovery.compounds[0])} // Click to view first compound
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full font-medium ${
-                        discovery.inputMode === "structured"
-                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                          : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                      }`}
-                    >
-                      {discovery.inputMode === "structured"
-                        ? "📋 Structured"
-                        : "💬 AI Prompt"}
-                    </span>
-
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedCompound(discovery.compounds[0]);
-                        }}
-                        className="p-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50"
-                        title="View Details"
-                      >
-                        <Maximize2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-2 line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                    {discovery.criteria.substring(0, 60)}...
-                  </h3>
-
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                    <span>🧪 {discovery.compounds?.length || 0} compounds</span>
-                    {discovery.metadata?.overall_confidence && (
-                      <span>
-                        ✓{" "}
-                        {(discovery.metadata.overall_confidence * 100).toFixed(
-                          0
-                        )}
-                        %
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {displayedDiscoveries.map((discovery) => (
+              <div
+                key={discovery._id}
+                className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-600 transition-all duration-300 flex flex-col h-full overflow-hidden"
+                onClick={() => setSelectedCompound(discovery.compounds[0])}
+              >
+                {/* Header (Date & Type) */}
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <Calendar className="w-3.5 h-3.5" />
                     {new Date(discovery.createdAt).toLocaleDateString("id-ID", {
-                      year: "numeric",
-                      month: "short",
                       day: "numeric",
+                      month: "short",
+                      year: "numeric",
                     })}
                   </div>
+                  <span
+                    className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full border ${
+                      discovery.inputMode === "structured"
+                        ? "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800"
+                        : "bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800"
+                    }`}
+                  >
+                    {discovery.inputMode === "structured"
+                      ? "Structured"
+                      : "AI Prompt"}
+                  </span>
+                </div>
 
-                  {/* Compounds Preview */}
-                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex -space-x-2">
-                      {discovery.compounds.slice(0, 3).map((compound, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCompound(compound);
-                          }}
-                          className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 text-white text-xs font-bold flex items-center justify-center border-2 border-white dark:border-gray-800 hover:scale-110 transition-transform"
-                          title={compound.name}
-                        >
-                          {compound.name.charAt(0)}
-                        </button>
-                      ))}
-                      {discovery.compounds.length > 3 && (
-                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-bold flex items-center justify-center border-2 border-white dark:border-gray-800">
-                          +{discovery.compounds.length - 3}
+                {/* Body Content */}
+                <div className="p-5 flex-1 flex flex-col">
+                  {/* Criteria Title */}
+                  <h3 className="text-gray-900 dark:text-white font-bold text-lg leading-snug mb-4 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                    {discovery.criteria}
+                  </h3>
+
+                  {/* Top Compounds List (Replacing circles with readable list) */}
+                  <div className="space-y-3 mb-4 flex-1">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      Top Candidates
+                    </p>
+
+                    {discovery.compounds.slice(0, 3).map((compound, idx) => (
+                      <div
+                        key={idx}
+                        // ✅ FIX 1: Tambahkan onClick spesifik dengan stopPropagation
+                        onClick={(e) => {
+                          e.stopPropagation(); // Mencegah klik tembus ke parent card
+                          setSelectedCompound(compound); // Set data senyawa YANG DIKLIK
+                        }}
+                        // ✅ FIX 2: Tambahkan cursor-pointer dan hover effect yang lebih jelas
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-700 cursor-pointer group/item"
+                      >
+                        <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 group-hover/item:bg-white dark:group-hover/item:bg-gray-800 transition-colors">
+                          {compound.structure_image ? (
+                            <img
+                              src={compound.structure_image}
+                              alt=""
+                              className="w-4 h-4 object-cover"
+                            />
+                          ) : (
+                            <Beaker className="w-4 h-4" />
+                          )}
                         </div>
-                      )}
-                    </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover/item:text-indigo-600 dark:group-hover/item:text-indigo-400 transition-colors">
+                            {compound.name}
+                          </p>
+                          <p className="text-xs text-gray-500 font-mono truncate">
+                            {compound.formula}
+                          </p>
+                        </div>
+                        {compound.molecular_weight && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded font-mono">
+                            {Math.round(compound.molecular_weight)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {discovery.compounds.length > 3 && (
+                      <p className="text-xs text-center text-gray-400 mt-2 italic">
+                        + {discovery.compounds.length - 3} more compounds...
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                  {/* Confidence */}
+                  <div
+                    className="flex items-center gap-1.5"
+                    title="AI Confidence"
+                  >
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      {discovery.metadata?.overall_confidence
+                        ? `${(
+                            discovery.metadata.overall_confidence * 100
+                          ).toFixed(0)}% Score`
+                        : "N/A"}
+                    </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                  {/* Buttons */}
+                  <div className="flex gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleExportPDF(discovery);
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-xs font-medium transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md transition-colors"
+                      title="Download PDF"
                     >
-                      <Download className="w-3 h-3" />
-                      PDF
+                      <FileText className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(discovery._id);
                       }}
-                      className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded text-xs font-medium transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                      title="Delete"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md transition-colors group-hover:translate-x-1 duration-200">
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <span className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50"
-                >
-                  Next
-                </button>
               </div>
-            )}
-          </>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination - ✅ FIX: Text Color for Dark Mode */}
+        {totalPages > 1 && (
+          <div className="flex justify-center gap-2 mt-8">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors text-gray-700 dark:text-gray-200"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium flex items-center">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors text-gray-700 dark:text-gray-200"
+            >
+              Next
+            </button>
+          </div>
         )}
       </div>
 
-      {/* DETAIL MODAL - 3D + PROPERTIES */}
+      {/* DETAIL MODAL */}
       {selectedCompound && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedCompound(null)}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -759,23 +669,19 @@ const History = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleAddToFavorites(selectedCompound)}
-                  className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                  title="Add to Favorites"
+                  className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 transition-colors"
                 >
                   <Heart className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setSelectedCompound(null)}
-                  className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
-
-            {/* Content */}
             <div className="p-6 space-y-6">
-              {/* 2D Structure Image */}
               {selectedCompound.structure_image && (
                 <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -788,14 +694,10 @@ const History = () => {
                   />
                 </div>
               )}
-
-              {/* 3D Viewer */}
               <MolecularViewer3D
                 smiles={selectedCompound.smiles || selectedCompound.formula}
                 compoundName={selectedCompound.name}
               />
-
-              {/* Basic Info */}
               <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                   Basic Information
@@ -803,7 +705,7 @@ const History = () => {
                 <dl className="grid md:grid-cols-2 gap-3 text-sm">
                   <div>
                     <dt className="text-gray-500 dark:text-gray-400">SMILES</dt>
-                    <dd className="font-mono font-semibold text-gray-900 dark:text-white">
+                    <dd className="font-mono font-semibold text-gray-900 dark:text-white break-all">
                       {selectedCompound.smiles || "N/A"}
                     </dd>
                   </div>
@@ -831,8 +733,6 @@ const History = () => {
                   </div>
                 </dl>
               </div>
-
-              {/* Property Calculator Enhanced */}
               <PropertyCalculatorEnhanced compound={selectedCompound} />
             </div>
           </div>

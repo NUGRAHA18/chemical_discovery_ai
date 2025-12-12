@@ -48,7 +48,6 @@ exports.createDiscovery = async (req, res) => {
           error: "Invalid structured data",
           details: validation.error,
         });
-        x;
       }
 
       // Convert structured data to criteria string
@@ -83,7 +82,12 @@ exports.createDiscovery = async (req, res) => {
     // === SEND TO ML SERVICE ===
     console.log("Sending to ML service...");
     const mlResponse = await mlService.discover(
-      { inputMode, structuredData, criteria },
+      {
+        inputMode,
+        structuredData,
+        // ✅ FIX 1: Menggunakan finalCriteria (bukan criteria mentah)
+        criteria: finalCriteria,
+      },
       userId
     );
 
@@ -107,8 +111,9 @@ exports.createDiscovery = async (req, res) => {
       });
     }
 
+    // ✅ FIX 2: Menggunakan mlResponse (sebelumnya mlResult yang menyebabkan crash)
     console.log(
-      `ML service returned ${mlResult.compounds?.length || 0} compounds`
+      `ML service returned ${mlResponse.compounds?.length || 0} compounds`
     );
 
     // === CREATE DISCOVERY FIRST (to get _id) ===
@@ -119,19 +124,19 @@ exports.createDiscovery = async (req, res) => {
       criteria: finalCriteria,
       preprocessingAnalysis: {
         normalizedInput:
-          mlResponse.preprocessing_analysis?.normalized_input || "", // ✅ FIX
-        concepts: mlResponse.preprocessing_analysis?.concepts || {}, // ✅ FIX
+          mlResponse.preprocessing_analysis?.normalized_input || "",
+        concepts: mlResponse.preprocessing_analysis?.concepts || {},
         searchTermsUsed:
-          mlResponse.preprocessing_analysis?.search_terms_used || [], // ✅ FIX
+          mlResponse.preprocessing_analysis?.search_terms_used || [],
         confidenceScore:
-          mlResponse.preprocessing_analysis?.confidence_score || 0, // ✅ FIX
+          mlResponse.preprocessing_analysis?.confidence_score || 0,
       },
-      analysis: mlResponse.analysis || "Analysis not available", // ✅ FIX
-      research: mlResponse.research_insights || "Research not available", // ✅ FIX
+      analysis: mlResponse.analysis || "Analysis not available",
+      research: mlResponse.research_insights || "Research not available",
       compounds: [],
-      validation: mlResponse.validation || {}, // ✅ FIX
-      justification: mlResponse.justification || "Justification not available", // ✅ FIX
-      metadata: mlResponse.metadata || {}, // ✅ FIX
+      validation: mlResponse.validation || {},
+      justification: mlResponse.justification || "Justification not available",
+      metadata: mlResponse.metadata || {},
     });
     // SAVE to get _id
     await discovery.save();
@@ -140,14 +145,13 @@ exports.createDiscovery = async (req, res) => {
     // === PROCESS COMPOUNDS WITH IMAGES ===
     const processedCompounds = await Promise.all(
       (mlResponse.compounds || []).map(async (compound, index) => {
-        // ✅ FIX
         try {
           // Save structure image if available
           let structureImage = null;
           if (compound.structure_image) {
             structureImage = await saveBase64Image(
               compound.structure_image,
-              `${discovery._id}-${index}` // NOW _id is defined!
+              `${discovery._id}-${index}`
             );
             console.log(`Image saved for compound ${index}:`, structureImage);
           }
@@ -196,7 +200,7 @@ exports.createDiscovery = async (req, res) => {
       `Discovery complete with ${processedCompounds.length} compounds`
     );
 
-    // ✅ ADD: Emit completion logs
+    // ✅ Emit completion logs
     emitLog(userId, {
       type: "success",
       message: `✅ Discovery saved! Generated ${processedCompounds.length} compounds`,
@@ -211,7 +215,7 @@ exports.createDiscovery = async (req, res) => {
       discoveryId: discovery._id,
     });
 
-    // ✅ ADD: Emit completion event
+    // ✅ Emit completion event
     const { emitToUser } = require("../config/socket");
     emitToUser(userId, "discovery:complete", {
       discoveryId: discovery._id,
@@ -242,7 +246,6 @@ exports.createDiscovery = async (req, res) => {
   } catch (error) {
     console.error("Discovery error:", error);
 
-    // ✅ ADD: Error emission
     const userId = req.user?._id;
     if (userId) {
       emitLog(userId, {
@@ -265,15 +268,19 @@ exports.createDiscovery = async (req, res) => {
   }
 };
 
+// ✅ FIX 3: Get Discovery Lebih Robust (Pisah query ID dan User)
 exports.getDiscovery = async (req, res) => {
   try {
-    const discovery = await Discovery.findOne({
-      _id: req.params.id,
-      userId: req.user._id,
-    });
+    // 1. Cari berdasarkan ID saja dulu
+    const discovery = await Discovery.findById(req.params.id);
 
     if (!discovery) {
       return res.status(404).json({ error: "Discovery not found" });
+    }
+
+    // 2. Validasi User ID
+    if (discovery.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: "Access denied" });
     }
 
     res.json({

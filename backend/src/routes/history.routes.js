@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const historyController = require("../controllers/historyController");
+// ✅ FIX: Import discoveryController yang berisi getDiscovery
+const discoveryController = require("../controllers/discoveryController");
 const { protect } = require("../middleware/auth");
 const { cacheMiddleware } = require("../config/redis");
 
@@ -20,6 +22,11 @@ router.get(
   historyController.getStats
 );
 
-// ✅ NO DELETE ROUTE HERE - delete ada di discovery.routes.js
+// 🚀 FIX KRITIS: Tambahkan route untuk GET /api/history/:id
+router.get(
+  "/:id",
+  protect, // Middleware autentikasi
+  discoveryController.getDiscovery
+);
 
 module.exports = router;

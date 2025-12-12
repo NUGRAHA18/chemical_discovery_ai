@@ -20,7 +20,7 @@ exports.discover = async (requestData, userId = null) => {
       `${ML_SERVICE_URL}/api/discover`,
       requestData,
       {
-        timeout: 120000, // 2 minutes
+        timeout: 300000, // 5 minutes
         headers: {
           "Content-Type": "application/json",
           "X-User-Id": userId || "anonymous", // Pass userId to ML service

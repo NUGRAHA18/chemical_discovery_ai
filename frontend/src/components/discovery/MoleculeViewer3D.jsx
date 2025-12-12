@@ -13,7 +13,7 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   const controlsRef = useRef(null);
   const animationIdRef = useRef(null);
 
-  // Simple hash function untuk consistent random per SMILES
+  // Simple hash function
   const hashCode = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -29,6 +29,18 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     const x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
   };
+
+  // ✅ FIX 1: Body Scroll Lock (Mencegah scroll bar ganda saat fullscreen)
+  useEffect(() => {
+    if (isFullscreen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!mountRef.current || !smiles) return;
@@ -62,17 +74,16 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     // Renderer
     let renderer = rendererRef.current;
     if (!renderer) {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true, // Penting untuk screenshot
+      });
       renderer.setPixelRatio(window.devicePixelRatio);
       rendererRef.current = renderer;
     }
 
-    renderer.setSize(
-      mountRef.current.clientWidth,
-      mountRef.current.clientHeight
-    );
-
-    // Clear and append
+    // Append renderer
     while (mountRef.current.firstChild) {
       mountRef.current.removeChild(mountRef.current.firstChild);
     }
@@ -109,35 +120,37 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     };
     animate();
 
-    // Handle resize
+    // Resize Logic (ResizeObserver)
     const handleResize = () => {
-      if (!mountRef.current) return;
-      camera.aspect =
-        mountRef.current.clientWidth / mountRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(
-        mountRef.current.clientWidth,
-        mountRef.current.clientHeight
-      );
-    };
-    window.addEventListener("resize", handleResize);
+      if (!mountRef.current || !cameraRef.current || !rendererRef.current)
+        return;
 
-    // Cleanup
+      const width = mountRef.current.clientWidth;
+      const height = mountRef.current.clientHeight;
+
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(width, height);
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    resizeObserver.observe(mountRef.current);
+    handleResize();
+
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
-      // Don't dispose renderer/controls here, let unmount handle it
     };
   }, [smiles, renderMode]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
-      }
       if (controlsRef.current) {
         controlsRef.current.dispose();
         controlsRef.current = null;
@@ -150,12 +163,11 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   }, []);
 
   const createMolecule = (scene, atoms, mode) => {
-    // Clear existing molecule
     scene.children = scene.children.filter(
       (child) => !(child instanceof THREE.Mesh && child.userData.isMolecule)
     );
 
-    atoms.forEach((atom, idx) => {
+    atoms.forEach((atom) => {
       let geometry, material;
 
       if (mode === "ball-stick") {
@@ -183,7 +195,6 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       sphere.userData.isMolecule = true;
       scene.add(sphere);
 
-      // Add bonds
       atom.bonds?.forEach((bondTo) => {
         if (bondTo >= atoms.length) return;
         const target = atoms[bondTo];
@@ -213,6 +224,7 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   };
 
   const parseSmilesToAtoms = (smiles) => {
+    // (Logika parsing SMILES sama seperti sebelumnya - disingkat agar fokus pada layout)
     const atoms = [];
     const elementColors = {
       C: 0x909090,
@@ -224,25 +236,16 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       F: 0x90e050,
       Cl: 0x1ff01f,
     };
-
-    // Generate seed dari SMILES untuk consistent structure
     const seed = hashCode(smiles);
-
-    // Parse basic structure dari SMILES
     const numAtoms = Math.min(Math.max(smiles.length, 8), 25);
-
-    // Count elements dari SMILES
     const hasOxygen = smiles.includes("O");
     const hasNitrogen = smiles.includes("N");
     const hasSulfur = smiles.includes("S");
     const hasRing = smiles.includes("1") || smiles.includes("c");
 
-    // Generate structure berdasarkan SMILES characteristics
     for (let i = 0; i < numAtoms; i++) {
       let element = "C";
       let color = elementColors.C;
-
-      // Assign elements based on SMILES content
       if (hasOxygen && i % 4 === 0) {
         element = "O";
         color = elementColors.O;
@@ -254,23 +257,18 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
         color = elementColors.S;
       }
 
-      // Generate position dengan seeded random
       let x, y, z;
-
       if (hasRing) {
-        // Ring structure
         const angle = (i / numAtoms) * Math.PI * 2;
         const radius = 5 + seededRandom(seed + i) * 2;
         x = Math.cos(angle) * radius;
         y = Math.sin(angle) * radius;
         z = seededRandom(seed + i * 100) * 3 - 1.5;
       } else {
-        // Linear/branched structure
         x = (i - numAtoms / 2) * 2 + seededRandom(seed + i) * 2;
         y = seededRandom(seed + i * 10) * 4 - 2;
         z = seededRandom(seed + i * 20) * 4 - 2;
       }
-
       atoms.push({
         element,
         x,
@@ -281,7 +279,6 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
         bonds: i < numAtoms - 1 ? [i + 1] : hasRing ? [0] : [],
       });
     }
-
     return atoms;
   };
 
@@ -311,7 +308,15 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
   return (
     <div
       className={`relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 ${
-        isFullscreen ? "fixed inset-0 z-[9999]" : ""
+        isFullscreen
+          ? // ✅ FIX 2: CSS "Cinema Mode"
+            // fixed: Keluar dari layout normal
+            // h-screen: Tinggi penuh layar
+            // w-full max-w-5xl: Lebar tetap mengikuti modal (tidak melebar ke samping)
+            // left-0 right-0 mx-auto: Posisi di tengah horizontal
+            // z-[9999]: Di atas elemen lain
+            "fixed top-0 bottom-0 left-0 right-0 z-[9999] h-screen w-full max-w-5xl mx-auto shadow-2xl"
+          : "w-full h-full"
       }`}
     >
       {/* Controls */}
@@ -364,10 +369,11 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
         </div>
       </div>
 
-      {/* Canvas Container */}
+      {/* ✅ FIX 3: Canvas Container Sizing */}
+      {/* block ensures it fills the flex/fixed parent properly without strange gaps */}
       <div
         ref={mountRef}
-        className="w-full h-full"
+        className="w-full h-full block"
         style={{ minHeight: isFullscreen ? "100vh" : "400px" }}
       />
 
