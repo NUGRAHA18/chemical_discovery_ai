@@ -21,7 +21,7 @@ import {
   User,
 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -85,11 +85,15 @@ const Navbar = () => {
 
   const getImageUrl = (path) => {
     if (!path) return null;
+    if (path.includes("localhost")) {
+      const relativePath = path.substring(path.indexOf("/images"));
+      return relativePath;
+    }
 
     if (path.startsWith("http") || path.startsWith("https")) {
       return path;
     }
-    return `${API_BASE_URL}${path}`;
+    return path;
   };
 
   // Helper component untuk Avatar

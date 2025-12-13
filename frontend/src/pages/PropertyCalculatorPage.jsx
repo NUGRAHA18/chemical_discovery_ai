@@ -21,6 +21,8 @@ import {
   Eraser,
 } from "lucide-react";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const PropertyCalculator = () => {
   const [smiles, setSmiles] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,17 +54,14 @@ const PropertyCalculator = () => {
     }, 30000);
 
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/calculate-properties",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ smiles }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/calculate-properties`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ smiles }),
+      });
 
       const data = await response.json();
       clearTimeout(timeout);

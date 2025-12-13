@@ -86,7 +86,7 @@ const chatController = {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.flushHeaders();
 
-      const flaskUrl = process.env.FLASK_ML_URL || "http://localhost:5000";
+      const flaskUrl = process.env.ML_SERVICE_URL || "http://localhost:5000";
 
       try {
         const flaskResponse = await axios.post(

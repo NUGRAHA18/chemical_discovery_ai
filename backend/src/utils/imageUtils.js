@@ -29,7 +29,7 @@ const saveBase64Image = async (base64Data, compoundId) => {
     console.log("Image saved successfully:", filename);
 
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    return `${baseUrl}/images/structures/${filename}`;
+    return `/images/structures/${filename}`;
   } catch (error) {
     console.error("Save image error:", error);
     return null;

@@ -26,6 +26,7 @@ Thumbs.db
 # Build
 dist/
 build/
+database/
 *.egg-info/
 
 # Uploads

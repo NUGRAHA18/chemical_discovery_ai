@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import { showSuccess, showError } from "../utils/toast";
 import Loading from "../components/common/Loading";
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const getImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  return `${API_BASE_URL}${path}`;
+  return path;
 };
 
 const Profile = () => {
@@ -49,7 +49,7 @@ const Profile = () => {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/profile", {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -88,7 +88,7 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/profile", {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -149,7 +149,7 @@ const Profile = () => {
       formData.append("photo", file);
 
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/profile/photo", {
+      const response = await fetch(`${API_BASE_URL}/profile/photo`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -191,7 +191,7 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/profile/photo", {
+      const response = await fetch(`${API_BASE_URL}/profile/photo`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -250,20 +250,17 @@ const Profile = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://localhost:3000/api/profile/password",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            currentPassword: passwords.currentPassword,
-            newPassword: passwords.newPassword,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/profile/password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword,
+        }),
+      });
 
       const data = await response.json();
       if (data.success) {

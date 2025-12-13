@@ -5,6 +5,64 @@ import Button from "../common/Button";
 import Loading from "../common/Loading";
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
+// --- PERBAIKAN: InputField dipindah ke LUAR RegisterForm ---
+const InputField = ({
+  label,
+  name,
+  type,
+  value,
+  placeholder,
+  icon: Icon,
+  onChange, // Terima onChange dari props
+  disabled, // Terima disabled dari props
+  error, // Terima error spesifik dari props (bukan object errors utuh)
+  isPassword = false,
+  showPassState,
+  setShowPassState,
+}) => (
+  <div className="space-y-1.5">
+    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
+      {label}
+    </label>
+    <div className="relative group">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+        <Icon className="h-5 w-5" />
+      </div>
+      <input
+        type={isPassword ? (showPassState ? "text" : "password") : type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`block w-full pl-10 ${
+          isPassword ? "pr-10" : "pr-3"
+        } py-2.5 bg-slate-50 dark:bg-slate-900/50 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-200 ${
+          error
+            ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+            : "border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-200/50"
+        }`}
+        placeholder={placeholder}
+      />
+      {isPassword && (
+        <button
+          type="button"
+          onClick={() => setShowPassState(!showPassState)}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
+        >
+          {showPassState ? (
+            <EyeOff className="h-5 w-5" />
+          ) : (
+            <Eye className="h-5 w-5" />
+          )}
+        </button>
+      )}
+    </div>
+    {error && (
+      <p className="text-xs text-red-500 ml-1 animate-pulse">{error}</p>
+    )}
+  </div>
+);
+
 const RegisterForm = () => {
   const navigate = useNavigate();
 
@@ -89,62 +147,6 @@ const RegisterForm = () => {
     }
   };
 
-  const InputField = ({
-    label,
-    name,
-    type,
-    value,
-    placeholder,
-    icon: Icon,
-    isPassword = false,
-    showPassState,
-    setShowPassState,
-  }) => (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-slate-700 dark:text-slate-300 ml-1">
-        {label}
-      </label>
-      <div className="relative group">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
-          <Icon className="h-5 w-5" />
-        </div>
-        <input
-          type={isPassword ? (showPassState ? "text" : "password") : type}
-          name={name}
-          value={value}
-          onChange={handleChange}
-          disabled={loading}
-          className={`block w-full pl-10 ${
-            isPassword ? "pr-10" : "pr-3"
-          } py-2.5 bg-slate-50 dark:bg-slate-900/50 border rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 transition-all duration-200 ${
-            errors[name]
-              ? "border-red-300 focus:border-red-500 focus:ring-red-200"
-              : "border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-primary-200/50"
-          }`}
-          placeholder={placeholder}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassState(!showPassState)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
-          >
-            {showPassState ? (
-              <EyeOff className="h-5 w-5" />
-            ) : (
-              <Eye className="h-5 w-5" />
-            )}
-          </button>
-        )}
-      </div>
-      {errors[name] && (
-        <p className="text-xs text-red-500 ml-1 animate-pulse">
-          {errors[name]}
-        </p>
-      )}
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       {/* Error Alert */}
@@ -161,6 +163,9 @@ const RegisterForm = () => {
           name="name"
           type="text"
           value={formData.name}
+          onChange={handleChange}
+          disabled={loading}
+          error={errors.name} // Pass specific error
           placeholder="John Doe"
           icon={User}
         />
@@ -170,6 +175,9 @@ const RegisterForm = () => {
           name="email"
           type="email"
           value={formData.email}
+          onChange={handleChange}
+          disabled={loading}
+          error={errors.email} // Pass specific error
           placeholder="researcher@example.com"
           icon={Mail}
         />
@@ -179,6 +187,9 @@ const RegisterForm = () => {
           name="password"
           type="password"
           value={formData.password}
+          onChange={handleChange}
+          disabled={loading}
+          error={errors.password} // Pass specific error
           placeholder="Min 8 chars, uppercase & number"
           icon={Lock}
           isPassword={true}
@@ -191,6 +202,9 @@ const RegisterForm = () => {
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
+          onChange={handleChange}
+          disabled={loading}
+          error={errors.confirmPassword} // Pass specific error
           placeholder="Re-enter your password"
           icon={Lock}
           isPassword={true}

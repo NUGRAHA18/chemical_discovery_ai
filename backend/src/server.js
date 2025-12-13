@@ -35,7 +35,7 @@ app.use(morgan("dev"));
 // CORS Configuration
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? ["https://your-frontend-domain.com"]
+    ? ["https://chemical.rbwtech.io"]
     : ["http://localhost:3001", "http://localhost:3000"];
 
 app.use(
