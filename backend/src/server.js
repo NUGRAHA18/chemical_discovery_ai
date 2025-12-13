@@ -73,7 +73,10 @@ app.use(
 );
 
 // General Uploads
-app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "public/images/profiles"))
+);
 
 // ==========================================
 // 3. API ROUTES

@@ -3,6 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import molecularBackground from "../assets/molecular-background.jpg";
 import { motion, useScroll, useTransform } from "framer-motion";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
   visible: {
@@ -300,22 +302,31 @@ const Landing = () => {
                 name: "Cleo",
                 role: "Machine Learning",
                 uni: "Universitas Negeri Surabaya",
+                photo: "/images/profiles/cleophoto.jpg",
               },
               {
                 name: "Afif",
                 role: "Machine Learning",
                 uni: "Universitas Negeri Surabaya",
+                photo: "/images/profiles/afifphoto.jpg",
               },
-              { name: "Eska", role: "Backend", uni: "Institut Teknologi Del" },
+              {
+                name: "Eska",
+                role: "Backend",
+                uni: "Institut Teknologi Del",
+                photo: "/images/profiles/Eskaphoto.jpeg",
+              },
               {
                 name: "Agung",
                 role: "Full Stack",
                 uni: "UIN Sunan Kalijaga",
+                photo: "/images/profiles/agungphoto.jpg",
               },
               {
                 name: "Faris",
                 role: "Frontend",
-                uni: "UIN Sunan Kalijagar",
+                uni: "UIN Sunan Kalijaga",
+                photo: "/images/profiles/farisphoto.jpg",
               },
             ].map((member, idx) => (
               <motion.div
@@ -325,8 +336,18 @@ const Landing = () => {
               >
                 <div className="w-24 h-24 mx-auto mb-4 relative">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary-500 to-purple-500 rounded-full opacity-0 group-hover:opacity-50 blur-xl transition-opacity duration-300"></div>
-                  <div className="relative w-full h-full bg-slate-800 rounded-full flex items-center justify-center text-3xl font-bold text-slate-400 group-hover:text-white border-2 border-slate-700 group-hover:border-purple-400 transition-all">
-                    {member.name[0]}
+                  <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-slate-700 group-hover:border-purple-400 transition-all">
+                    {/* --- FIX IMAGE SOURCE DISINI --- */}
+                    <img
+                      src={`${BACKEND_URL}${member.photo}`}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src =
+                          "https://via.placeholder.com/150?text=User"; // Optional Fallback
+                      }}
+                    />
                   </div>
                 </div>
 

@@ -85,15 +85,15 @@ const Navbar = () => {
 
   const getImageUrl = (path) => {
     if (!path) return null;
-    if (path.includes("localhost")) {
-      const relativePath = path.substring(path.indexOf("/images"));
-      return relativePath;
-    }
 
-    if (path.startsWith("http") || path.startsWith("https")) {
-      return path;
-    }
-    return path;
+    // Jika path sudah full URL (http...), kembalikan langsung
+    if (path.startsWith("http")) return path;
+
+    // Arahkan ke Backend (Port 3010)
+    const backendUrl = API_BASE_URL.replace("/api", "");
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+    return `${backendUrl}${cleanPath}`;
   };
 
   // Helper component untuk Avatar

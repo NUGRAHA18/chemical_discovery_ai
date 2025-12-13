@@ -17,8 +17,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const getImageUrl = (path) => {
   if (!path) return null;
+
   if (path.startsWith("http")) return path;
-  return path;
+
+  const backendUrl = API_BASE_URL.replace("/api", "");
+
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${backendUrl}${cleanPath}`;
 };
 
 const Profile = () => {
