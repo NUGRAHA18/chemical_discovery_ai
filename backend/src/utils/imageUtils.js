@@ -13,6 +13,7 @@ const saveBase64Image = async (base64Data, compoundId) => {
     if (!fs.existsSync(imageDir)) {
       console.log("Creating images directory:", imageDir);
       fs.mkdirSync(imageDir, { recursive: true });
+      fs.chmodSync(imageDir, 0o755);
     }
 
     const filename = `${compoundId}-${Date.now()}.png`;
@@ -26,10 +27,19 @@ const saveBase64Image = async (base64Data, compoundId) => {
       .png({ compressionLevel: 9, quality: 80 })
       .toFile(filePath);
 
+    try {
+      fs.chmodSync(filePath, 0o644);
+    } catch (permError) {
+      console.error(
+        "Warning: Failed to set file permissions:",
+        permError.message
+      );
+    }
+
     console.log("Image saved successfully:", filename);
 
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    return `/images/structures/${filename}`;
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    return `${baseUrl}/images/structures/${filename}`;
   } catch (error) {
     console.error("Save image error:", error);
     return null;

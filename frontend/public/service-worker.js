@@ -13,13 +13,18 @@ self.addEventListener("install", (event) => {
 
 // Listen for requests
 self.addEventListener("fetch", (event) => {
+  if (event.request.method != "GET") {
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((response) => {
-      // Return cache if found, otherwise fetch from network
       if (response) {
         return response;
       }
-      return fetch(event.request);
+      return fetch(event.request).catch((error) => {
+        console.error("Fetching failed:", event.request.url, error);
+        throw error;
+      });
     })
   );
 });

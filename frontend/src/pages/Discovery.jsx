@@ -113,6 +113,24 @@ const Discovery = () => {
 
       await discoveryService.createDiscovery(formData);
     } catch (error) {
+      const isTimeout =
+        error.message?.includes("504") ||
+        error.message?.includes("timeout") ||
+        error.response?.status === 504 ||
+        error.code === "ECONNABORTED";
+
+      const isSocketActive =
+        discoveryProgress &&
+        discoveryProgress.step !== "error" &&
+        loading === true;
+
+      if (isTimeout && isSocketActive) {
+        console.warn(
+          "⚠️ HTTP Timeout detected, switching to WebSocket-only mode..."
+        );
+        return;
+      }
+
       setLoading(false);
       setError(
         error.response?.data?.error ||
@@ -282,12 +300,12 @@ const Discovery = () => {
   const handleProgressComplete = async (data) => {
     setLoading(false);
     clearProgress();
+    setError("");
 
     if (data.discoveryId) {
       showSuccess("Discovery complete! Fetching final results...");
       try {
         const response = await discoveryService.getDiscovery(data.discoveryId);
-
         setDiscovery(response.discovery);
         sessionStorage.removeItem(DISCOVERY_STATE_KEY);
         dismissToast();

@@ -302,31 +302,31 @@ const Landing = () => {
                 name: "Cleo",
                 role: "Machine Learning",
                 uni: "Universitas Negeri Surabaya",
-                photo: "/images/profiles/cleophoto.jpg",
+                photo: "images/profiles/cleophoto.jpg",
               },
               {
                 name: "Afif",
                 role: "Machine Learning",
                 uni: "Universitas Negeri Surabaya",
-                photo: "/images/profiles/afifphoto.jpg",
+                photo: "images/profiles/afifphoto.jpg",
               },
               {
                 name: "Eska",
                 role: "Backend",
                 uni: "Institut Teknologi Del",
-                photo: "/images/profiles/Eskaphoto.jpeg",
+                photo: "images/profiles/Eskaphoto.jpeg",
               },
               {
                 name: "Agung",
                 role: "Full Stack",
                 uni: "UIN Sunan Kalijaga",
-                photo: "/images/profiles/agungphoto.jpg",
+                photo: "images/profiles/agungphoto.jpg",
               },
               {
                 name: "Faris",
                 role: "Frontend",
                 uni: "UIN Sunan Kalijaga",
-                photo: "/images/profiles/farisphoto.jpg",
+                photo: "images/profiles/farisphoto.jpg",
               },
             ].map((member, idx) => (
               <motion.div
@@ -344,8 +344,7 @@ const Landing = () => {
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src =
-                          "https://via.placeholder.com/150?text=User"; // Optional Fallback
+                        e.target.src = `https://ui-avatars.com/api/?name=${member.name}&background=random&color=fff`;
                       }}
                     />
                   </div>

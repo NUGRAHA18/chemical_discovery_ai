@@ -27,6 +27,7 @@ import {
   FileText,
 } from "lucide-react";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
+import { getImageUrl } from "../config/env";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
@@ -539,7 +540,7 @@ const History = () => {
                         <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded text-indigo-600 dark:text-indigo-400 group-hover/item:bg-white dark:group-hover/item:bg-gray-800 transition-colors">
                           {compound.structure_image ? (
                             <img
-                              src={compound.structure_image}
+                              src={getImageUrl(compound.structure_image)}
                               alt=""
                               className="w-4 h-4 object-cover"
                             />
@@ -684,9 +685,13 @@ const History = () => {
                     2D Structure
                   </h3>
                   <img
-                    src={selectedCompound.structure_image}
+                    src={getImageUrl(selectedCompound.structure_image)}
                     alt={selectedCompound.name}
                     className="w-full max-w-md mx-auto rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = "none";
+                    }}
                   />
                 </div>
               )}

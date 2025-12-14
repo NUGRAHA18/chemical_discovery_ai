@@ -17,14 +17,6 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
     }
   }, [logs]);
 
-  useEffect(() => {
-    if (progress?.step === "complete" && onComplete) {
-      setTimeout(() => {
-        onComplete(progress);
-      }, 1500);
-    }
-  }, [progress, onComplete]);
-
   if (!progress) return null;
 
   const progressPercent = progress.progress || 0;

@@ -8,7 +8,6 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 const LoginForm = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -16,7 +15,6 @@ const LoginForm = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {

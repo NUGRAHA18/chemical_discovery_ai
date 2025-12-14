@@ -28,7 +28,9 @@ export const SocketProvider = ({ children }) => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      console.log("❌ No token found, skipping socket connection");
+      console.debug(
+        "ℹ️ Socket info: Tidak ada token (User belum login/Guest mode)."
+      );
       return;
     }
 

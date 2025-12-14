@@ -144,4 +144,6 @@ server.listen(PORT, () => {
   console.log(`✅ Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
+server.setTimeout(600000);
+
 module.exports = app;

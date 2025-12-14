@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Atom, Beaker, Download, X } from "lucide-react";
 import MoleculeViewer3D from "./MoleculeViewer3D";
+import { getImageUrl } from "../../config/env";
 
 const CompoundDetailModal = ({ compound, onClose }) => {
   const [imageError, setImageError] = useState(false);
   const [showImage, setShowImage] = useState(true);
+
   const handleDownload2D = async () => {
     if (!compound.structure_image) return;
+    const fixedUrl = getImageUrl(compound.structure_image);
 
     try {
-      const response = await fetch(compound.structure_image);
+      // Fetch ke URL yang benar (3010 / production)
+      const response = await fetch(fixedUrl);
       const blob = await response.blob();
 
       const url = window.URL.createObjectURL(blob);
@@ -26,7 +30,7 @@ const CompoundDetailModal = ({ compound, onClose }) => {
       console.error("Download failed:", error);
 
       const link = document.createElement("a");
-      link.href = compound.structure_image;
+      link.href = fixedUrl;
       link.download = `${compound.name}-2D.png`;
       link.click();
     }
@@ -106,7 +110,7 @@ const CompoundDetailModal = ({ compound, onClose }) => {
                 <div className="flex justify-center items-center h-full">
                   {compound.structure_image && !imageError ? (
                     <img
-                      src={compound.structure_image}
+                      src={getImageUrl(compound.structure_image)}
                       alt={compound.name}
                       className="max-w-full max-h-[400px] object-contain"
                       onError={() => setImageError(true)}
@@ -208,7 +212,6 @@ const CompoundDetailModal = ({ compound, onClose }) => {
             )}
           </div>
         </div>
-
         {/* Footer */}
         <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 flex-shrink-0">
           <button

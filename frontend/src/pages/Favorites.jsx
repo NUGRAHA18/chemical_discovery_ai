@@ -129,7 +129,6 @@ const Favorites = () => {
   // Apply filters
   const filteredFavorites = favorites
     .filter((fav) => {
-      // Search filter - WORD BASED
       if (filters.search) {
         const searchWords = filters.search.toLowerCase().trim().split(/\s+/);
         const searchableText = [
@@ -252,8 +251,7 @@ const Favorites = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by words 
- (e.g. benzene alcohol)"
+                  placeholder="Search by words (e.g. benzene alcohol)"
                   value={filters.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500"

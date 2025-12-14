@@ -3,7 +3,6 @@ const { generateToken } = require("../utils/jwtUtils");
 const fs = require("fs");
 const path = require("path");
 
-// Helper untuk format response user agar seragam
 const sanitizeUser = (user) => ({
   id: user._id,
   email: user.email,

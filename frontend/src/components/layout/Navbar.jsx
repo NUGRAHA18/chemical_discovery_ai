@@ -21,7 +21,9 @@ import {
   User,
 } from "lucide-react";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+const API_BASE_URL = (
+  process.env.REACT_APP_BACKEND_URL || "http://localhost:3010"
+).replace(/\/$/, "");
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -83,25 +85,44 @@ const Navbar = () => {
         : ""
     }`;
 
+  let targetPort = "3010"; // Default jaga-jaga
+  try {
+    const envUrl = new URL(API_BASE_URL);
+    targetPort = envUrl.port;
+  } catch (e) {
+    console.error("Format REACT_APP_BACKEND_URL di .env salah!", e);
+  }
+
   const getImageUrl = (path) => {
     if (!path) return null;
 
-    // Jika path sudah full URL (http...), kembalikan langsung
-    if (path.startsWith("http")) return path;
+    // --- LOGIC 1: Handle URL Absolut (http://...) ---
+    if (path.startsWith("http")) {
+      try {
+        const urlObj = new URL(path);
+        //cek jika user lama login (masih pakai 3000 diubah ke 3010)
+        if (urlObj.hostname === "localhost" && urlObj.port === "3000") {
+          // Ganti port lama ke port yang ada di ENV (Dinamis)
+          urlObj.port = targetPort;
 
-    // Arahkan ke Backend (Port 3010)
-    const backendUrl = API_BASE_URL.replace("/api", "");
+          return urlObj.toString();
+        }
+        return path;
+      } catch (error) {
+        return path;
+      }
+    }
+
+    const cleanBaseUrl = API_BASE_URL.replace(/\/$/, "");
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
 
-    return `${backendUrl}${cleanPath}`;
+    return `${cleanBaseUrl}${cleanPath}`;
   };
 
-  // Helper component untuk Avatar
   const UserAvatar = ({ className, fallbackClassName }) => (
     <>
       {profilePhoto ? (
         <img
-          // ✅ 2. Panggil helper function di sini
           src={getImageUrl(profilePhoto)}
           alt="Profile"
           className={`${className} object-cover border-2 border-primary-200 dark:border-primary-700`}

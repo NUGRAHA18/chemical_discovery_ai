@@ -19,6 +19,8 @@ MODEL_NAME = 'gemini-2.5-flash'
 try:
     from rdkit import Chem
     from rdkit.Chem import Draw, Descriptors, Crippen
+    from rdkit import RDLogger
+    RDLogger.DisableLog('rdApp.*') 
     from io import BytesIO
     import base64
     RDKIT_AVAILABLE = True
@@ -44,6 +46,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+logging.getLogger('pubchempy').setLevel(logging.WARNING)
 load_dotenv()
 print("✓ Gemini AI configured successfully (via GeminiManager)")
 
@@ -221,7 +224,6 @@ class ChemicalDatabase:
         return False
 
 
-# === ENHANCED CHEMICAL DISCOVERY AGENT ===
 class EnhancedChemicalDiscoveryAgent:
     def __init__(self):
         self.db = ChemicalDatabase()
@@ -464,7 +466,6 @@ Keep response under 200 words.
 """
         
         try:
-            # --- MODIFICATION: Use gemini_client ---
             response_text = gemini_client.generate_content_safe(
                 model_name=MODEL_NAME, 
                 prompt=prompt
@@ -474,19 +475,25 @@ Keep response under 200 words.
             logger.error(f"Analysis error: {e}")
             return "Based on the provided criteria, we will identify suitable chemical compounds with the desired properties."
     
-    def research_existing_compounds(self, analysis: str, search_terms: List[str]) -> str:
-        """Research existing compounds using database"""
+    def research_existing_compounds(self, analysis: str, search_terms: List[str]) -> Dict:
+        """Research existing compounds using database - UPDATED TO RETURN DICT"""
         
         if not search_terms:
-            return "No specific compounds identified for database search."
-        
-        # Search PubChem
+            return {
+                "text": "No specific compounds identified for database search.",
+                "count": 0,
+                "data": []
+            }
+
         research_results = self.db.search_pubchem_parallel(search_terms, max_results=2)
         
         if not research_results:
-            return "Database search did not return specific compounds. Proceeding with novel compound generation."
+            return {
+                "text": "Database search did not return specific compounds. Proceeding with novel compound generation.",
+                "count": 0,
+                "data": []
+            }
         
-        # Format research insights
         insights = "**Database Search Results:**\n\n"
         for i, result in enumerate(research_results[:5], 1):
             insights += f"{i}. **{result['name']}** (CID: {result['cid']})\n"
@@ -495,7 +502,11 @@ Keep response under 200 words.
         
         insights += "These compounds serve as basis for novel molecule design."
         
-        return insights
+        return {
+            "text": insights,
+            "count": len(research_results),
+            "data": research_results
+        }
     
     def generate_compounds(self, analysis: str, research: str, processed_input: ProcessedInput) -> List[CompoundRecommendation]:
         """Generate novel compounds"""
@@ -513,11 +524,13 @@ TASK: Generate EXACTLY 3 novel chemical compounds that meet the criteria.
 
 REQUIREMENTS:
 1. Each compound must be chemically valid and parseable by RDKit
-2. CRITICAL SMILES RULES:
-   - Respect atom valence: C=4, N=3, O=2, S=2/4/6
-   - Use proper charge notation: [N+] for quaternary nitrogen, [O-] for negative oxygen
+2. **CRITICAL SMILES RULES (STRICT):**
+   - Respect standard valences: C=4, N=3, O=2, S=2/4/6, H=1
+   - **PREFER AROMATIC NOTATION:** Use lowercase letters for aromatic rings (e.g., 'c1ccccc1' instead of 'C1=CC=CC=C1').
+   - **FOR POLYMERS/OLIGOMERS:** Do NOT try to represent the whole chain. Generate the **Monomer** structure or a **Representative Unit** only. Trying to write SMILES for large trimers often fails.
+   - Use proper charge notation: [N+] for quaternary nitrogen, [O-] for negative oxygen.
    - Example valid SMILES: "CCO", "c1ccccc1", "CC[N+](C)(C)C"
-   - NEVER generate SMILES with impossible valences
+   - NEVER generate SMILES with impossible valences (e.g. Oxygen with 3 bonds).
 3. Base on existing compounds but with strategic modifications
 4. Ensure diversity in structures
 5. Test your SMILES mentally before outputting
@@ -542,7 +555,6 @@ Generate EXACTLY 3 compounds in valid JSON format.
         
         for attempt in range(self.max_retries):
             try:
-                # --- MODIFICATION: Use gemini_client ---
                 response_text = gemini_client.generate_content_safe(
                     model_name=MODEL_NAME, 
                     prompt=prompt
@@ -555,7 +567,6 @@ Generate EXACTLY 3 compounds in valid JSON format.
                     if len(compounds) >= 3:
                         break
                     
-                    # Validate SMILES first
                     smiles = item.get('smiles', '')
                     if not self.db.validate_smiles(smiles):
                         logger.warning(f"Invalid SMILES for {item.get('name')}, skipping")
@@ -681,7 +692,6 @@ Keep under 300 words. Be clear and structured.
 """
         
         try:
-            # --- MODIFICATION: Use gemini_client ---
             response_text = gemini_client.generate_content_safe(
                 model_name=MODEL_NAME, 
                 prompt=prompt
@@ -854,19 +864,19 @@ def discover_chemicals():
         emit_progress(user_id, 'researching', 25, 'Researching existing compounds...', 'Researcher')
         emit_log(user_id, 'info', '📚 Searching PubChem database', 'Researcher')
         
-        research = enhanced_agent.research_existing_compounds(analysis, processed_input.search_terms)
+        research_data = enhanced_agent.research_existing_compounds(analysis, processed_input.search_terms)
         
-        # Count base compounds from research
-        base_count = len(research.get('base_compounds', [])) if isinstance(research, dict) else 0
+        research_text = research_data['text']
+
+        base_count = research_data['count']
+        
         emit_log(user_id, 'success', f'✅ Research complete - Found {base_count} base compounds', 'Researcher')
         emit_progress(user_id, 'researching', 40, f'Research complete ({base_count} base compounds found)', 'Researcher')
         
-        # STEP 4: GENERATING (40-70%)
         emit_progress(user_id, 'generating', 40, 'Generating novel compounds...', 'Generator')
         emit_log(user_id, 'info', '🧪 Generating compound 1/3...', 'Generator')
         
-        compounds = enhanced_agent.generate_compounds(analysis, research, processed_input)
-        
+        compounds = enhanced_agent.generate_compounds(analysis, research_text, processed_input)
         if not compounds:
             emit_log(user_id, 'error', '❌ Failed to generate compounds', 'Generator')
             return jsonify({
@@ -915,7 +925,7 @@ def discover_chemicals():
                 'confidence_score': processed_input.confidence_score
             },
             'analysis': analysis,
-            'research_insights': research,
+            'research_insights': research_text,
             'compounds': [
                 {
                     'name': c.name,
@@ -1019,34 +1029,57 @@ def chat_stream():
             return jsonify({'error': 'Message is required'}), 400
         
         def generate():
-            try:
-                prompt = build_chat_prompt(user_message, context)
-                logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")       
-                gemini_client.configure_current_key() 
-                streaming_model = genai.GenerativeModel(MODEL_NAME) 
-                response = streaming_model.generate_content(
-                    prompt,
-                    stream=True,
-                    generation_config=genai.types.GenerationConfig(
-                        temperature=0.7,
-                        max_output_tokens=2048,
+            max_retries = len(gemini_client.api_keys) + 1
+            retry_count = 0
+
+            while retry_count < max_retries:
+                try:
+                    prompt = build_chat_prompt(user_message, context)
+                    
+                    gemini_client.configure_current_key(sync=True)
+                    
+                    if retry_count == 0:
+                        logger.info(f"Chat request from user {user_id}: {user_message[:50]}...")
+                    else:
+                        logger.info(f"♻️ Retrying request (Attempt {retry_count+1})...")
+
+                    streaming_model = genai.GenerativeModel(MODEL_NAME) 
+                    response = streaming_model.generate_content(
+                        prompt,
+                        stream=True,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.7,
+                            max_output_tokens=2048,
+                        )
                     )
-                )
-                
-                for chunk in response:
-                    if chunk.text:
-                        yield f"data: {chunk.text}\n\n"
-                
-                yield f"data: [DONE]\n\n"
-                logger.info(f"Chat response completed for user {user_id}")
-                
-            except Exception as e:
-                if "429" in str(e) or "ResourceExhausted" in str(e):
-                     print(f"⚠️ Streaming kena limit ({e}), switching key untuk next request...")
-                     gemini_client.switch_key()
-                
-                logger.error(f"Chat stream error: {str(e)}")
-                yield f"data: [ERROR] {str(e)}\n\n"
+
+                    for chunk in response:
+                        if chunk.text:
+                            yield f"data: {chunk.text}\n\n"
+                    
+                    yield f"data: [DONE]\n\n"
+                    logger.info(f"Chat response completed for user {user_id}")
+                    return 
+
+                except Exception as e:
+                    error_msg = str(e)
+                    is_quota = "429" in error_msg or "ResourceExhausted" in error_msg
+                    is_server = "500" in error_msg or "ServiceUnavailable" in error_msg or "InternalServerError" in error_msg
+
+                    if is_quota or is_server:
+                        print(f"⚠️ Streaming Error ({error_msg[:50]}...), switching key & retrying...")
+                        gemini_client.switch_key()
+                        retry_count += 1
+                        time.sleep(1) 
+                        continue 
+                    
+                    else:
+                        logger.error(f"Chat stream fatal error: {error_msg}")
+                        yield f"data: [ERROR] {error_msg}\n\n"
+                        return
+
+            # Jika loop selesai tapi belum return (Semua key gagal)
+            yield f"data: [ERROR] All API keys exhausted or server busy. Please try again later.\n\n"
         
         return Response(generate(), mimetype='text/event-stream')
         
@@ -1095,7 +1128,7 @@ Generated Compounds:
 """
         
         base_prompt += context_section
-    base_prompt += f"\nUser Question: {message}\n\nAssistant:"
+        base_prompt += f"\nUser Question: {message}\n\nAssistant:"
     
     return base_prompt
 

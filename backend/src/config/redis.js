@@ -34,9 +34,6 @@ redis.on("close", () => {
   console.log("🔌 Redis connection closed");
 });
 
-// ============================================
-// CACHE MIDDLEWARE (for GET requests)
-// ============================================
 const cacheMiddleware = (duration = 300) => {
   return async (req, res, next) => {
     // Only cache GET requests
@@ -65,9 +62,7 @@ const cacheMiddleware = (duration = 300) => {
       // Store original res.json
       const originalJson = res.json.bind(res);
 
-      // Override res.json to cache response
       res.json = (data) => {
-        // Cache asynchronously (don't wait)
         redis.setex(key, duration, JSON.stringify(data)).catch((err) => {
           console.error("Cache set error:", err.message);
         });
@@ -77,14 +72,11 @@ const cacheMiddleware = (duration = 300) => {
       next();
     } catch (error) {
       console.error("Cache middleware error:", error.message);
-      next(); // Continue without cache
+      next();
     }
   };
 };
 
-// ============================================
-// GET CACHED VALUE
-// ============================================
 const getCached = async (key) => {
   try {
     if (redis.status !== "ready") {
@@ -99,9 +91,6 @@ const getCached = async (key) => {
   }
 };
 
-// ============================================
-// SET CACHE VALUE
-// ============================================
 const setCache = async (key, value, duration = 300) => {
   try {
     if (redis.status !== "ready") {
@@ -116,9 +105,6 @@ const setCache = async (key, value, duration = 300) => {
   }
 };
 
-// ============================================
-// DELETE SINGLE KEY
-// ============================================
 const deleteCache = async (key) => {
   try {
     if (redis.status !== "ready") {
@@ -133,9 +119,6 @@ const deleteCache = async (key) => {
   }
 };
 
-// ============================================
-// DELETE KEYS BY PATTERN
-// ============================================
 const deleteCachePattern = async (pattern) => {
   try {
     if (redis.status !== "ready") {
@@ -154,9 +137,6 @@ const deleteCachePattern = async (pattern) => {
   }
 };
 
-// ============================================
-// FLUSH ALL CACHE (use with caution!)
-// ============================================
 const flushCache = async () => {
   try {
     if (redis.status !== "ready") {
@@ -172,9 +152,6 @@ const flushCache = async () => {
   }
 };
 
-// ============================================
-// GET CACHE STATS
-// ============================================
 const getCacheStats = async () => {
   try {
     if (redis.status !== "ready") {

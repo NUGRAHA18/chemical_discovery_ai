@@ -8,16 +8,16 @@ Express.js API Gateway untuk platform Chemical Discovery AI. Backend ini menghub
 
 ### ✅ Phase 1: Backend Development (COMPLETE)
 
-- [x] Project structure setup
-- [x] MongoDB models (User, Discovery, Favorite)
-- [x] JWT authentication system
-- [x] Request validation middleware
-- [x] ML service integration
-- [x] Image processing (base64 → file)
-- [x] CRUD controllers (Auth, Discovery, History, Favorites)
-- [x] Export functionality (JSON, CSV)
-- [x] Error handling & security
-- [x] API documentation
+- [✅] Project structure setup
+- [✅] MongoDB models (User, Discovery, Favorite)
+- [✅] JWT authentication system
+- [✅] Request validation middleware
+- [✅] ML service integration
+- [✅] Image processing (base64 → file)
+- [✅] CRUD controllers (Auth, Discovery, History, Favorites)
+- [✅] Export functionality (JSON, CSV)
+- [✅] Error handling & security
+- [✅] API documentation
 
 ### 🟡 Phase 2: Testing & Integration (IN PROGRESS)
 
@@ -48,7 +48,7 @@ Express.js API Gateway untuk platform Chemical Discovery AI. Backend ini menghub
 ```
 ┌─────────────┐      ┌──────────────┐      ┌─────────────┐
 │   React     │─────→│  Express.js  │─────→│   Flask ML  │
-│  Frontend   │←─────│   (Port 3000)│←─────│ (Port 5000) │
+│  Frontend   │←─────│   (Port 3010)│←─────│ (Port 5000) │
 └─────────────┘      └──────────────┘      └─────────────┘
                             │
                             ↓

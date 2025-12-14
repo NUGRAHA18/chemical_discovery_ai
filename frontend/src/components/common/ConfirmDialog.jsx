@@ -1,8 +1,3 @@
-// ============================================
-// NEW FILE: ConfirmDialog.jsx
-// ============================================
-// Path: frontend/src/components/common/ConfirmDialog.jsx
-
 import { AlertTriangle, X } from "lucide-react";
 
 const ConfirmDialog = ({

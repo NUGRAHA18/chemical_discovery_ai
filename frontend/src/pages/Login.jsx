@@ -11,10 +11,8 @@ const Login = () => {
     <div className="min-h-screen bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans selection:bg-primary-500/30">
       <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px] opacity-40 pointer-events-none animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[120px] opacity-30 pointer-events-none"></div>
-
       <Atom className="absolute top-[15%] left-[10%] w-12 h-12 text-white/5 animate-[bounce_8s_infinite]" />
       <Sparkles className="absolute bottom-[20%] right-[10%] w-8 h-8 text-white/10 animate-pulse duration-[4000ms]" />
-
       <div className="max-w-[440px] w-full relative z-10">
         <div className="text-center mb-8 space-y-3">
           <Link

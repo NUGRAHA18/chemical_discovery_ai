@@ -9,6 +9,7 @@ public/images/structures/*
 
 public/images/profiles/*
 !public/images/profiles/.gitkeep
+
 .DS_Store
 .vscode/
 .idea/
