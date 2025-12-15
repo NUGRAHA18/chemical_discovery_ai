@@ -13,9 +13,8 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("theme");
-    if (saved) {
-      return saved === "dark";
-    }
+    if (saved === "dark") return true;
+    if (saved === "light") return false;
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 

@@ -4,7 +4,7 @@
   "description": "Express.js API Gateway for Chemical Discovery AI",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "run dev": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
   "dependencies": {

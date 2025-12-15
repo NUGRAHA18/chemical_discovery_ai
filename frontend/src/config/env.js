@@ -85,6 +85,25 @@ export const getImageUrl = (imagePath) => {
   return `${cleanBase}${cleanPath}`;
 };
 
+export const getFavoriteImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+
+  let finalUrl = imagePath;
+
+  // 1️⃣ Legacy data: localhost:3000
+  if (finalUrl.includes("localhost:3000")) {
+    const cleanBackend = BACKEND_URL.replace(/\/$/, "");
+    finalUrl = finalUrl.replace("http://localhost:3000", cleanBackend);
+  }
+
+  // 2️⃣ Relative path (/images/...)
+  if (!finalUrl.startsWith("http") && finalUrl.startsWith("/")) {
+    const cleanBackend = BACKEND_URL.replace(/\/$/, "");
+    finalUrl = `${cleanBackend}${finalUrl}`;
+  }
+
+  return finalUrl;
+};
 export default {
   API_URL,
   BACKEND_URL,

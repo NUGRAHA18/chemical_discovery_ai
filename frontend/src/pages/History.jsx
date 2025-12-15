@@ -695,10 +695,12 @@ const History = () => {
                   />
                 </div>
               )}
-              <MolecularViewer3D
-                smiles={selectedCompound.smiles || selectedCompound.formula}
-                compoundName={selectedCompound.name}
-              />
+              <div className="w-full h-[420px] min-h-[420px]">
+                <MolecularViewer3D
+                  smiles={selectedCompound.smiles || selectedCompound.formula}
+                  compoundName={selectedCompound.name}
+                />
+              </div>
               <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                   Basic Information

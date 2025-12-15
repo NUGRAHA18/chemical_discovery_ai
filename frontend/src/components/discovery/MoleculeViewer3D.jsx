@@ -237,7 +237,7 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       )}
 
       {/* Controls UI */}
-      <div className="absolute top-3 right-3 flex gap-2 z-20">
+      <div className="absolute top-3 right-3 flex gap-2">
         <button
           onClick={() => setShowLabels(!showLabels)}
           className={`p-2 backdrop-blur border rounded-lg shadow-sm transition-all ${
@@ -277,7 +277,7 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       </div>
 
       {/* Info Panel (Bottom Left) */}
-      <div className="absolute bottom-3 left-3 flex flex-col gap-2 z-20 pointer-events-none">
+      <div className="absolute bottom-3 left-3 flex flex-col gap-2 pointer-events-none">
         <div className="bg-white/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 backdrop-blur-sm pointer-events-auto">
           <p className="text-xs font-mono text-gray-700 dark:text-gray-300 font-bold max-w-[200px] truncate">
             {compoundName}
@@ -296,7 +296,7 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       </div>
 
       {/* Interaction Guide (Bottom Right) */}
-      <div className="absolute bottom-3 right-3 z-20 hidden sm:block pointer-events-none">
+      <div className="absolute bottom-3 right-3 hidden sm:block pointer-events-none">
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 shadow-lg">
           <h4 className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2 border-b border-gray-200 dark:border-gray-700 pb-1">
             Interaction Guide

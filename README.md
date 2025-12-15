@@ -11,6 +11,99 @@ AI-powered platform for discovering novel chemical compounds using multi-agent s
 
 ---
 
+## <a id="installation-guide"></a>🛠️ Installation Guide
+
+Pastikan kamu menjalankan **3 Terminal terpisah** untuk Backend, ML Service, dan Frontend agar semuanya berjalan bersamaan.
+
+### Prerequisites
+
+- Node.js 18+
+- Python 3.10+
+- MongoDB 7.0+
+- Git
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/NUGRAHA18/chemical_discovery_ai
+```
+
+### Port Allocation
+
+| Service    | Technology        | Port  | URL                   |
+| ---------- | ----------------- | ----- | --------------------- |
+| Frontend   | `React (CRA)`     | 3001  | http://localhost:3001 |
+| Backend    | `Node.js/Express` | 3010  | http://localhost:3010 |
+| ML Service | `Python/Flask`    | 5000  | http://localhost:5000 |
+| Database   | `MongoDB`         | 27017 |                       |
+| Cache      | `Redisd`          | 6379  |                       |
+
+### 2. Backend Setup (Terminal 1)
+
+**⚠️ Catatan:** Pastikan service MongoDB dan Redis sudah berjalan sebelum langkah ini.
+
+```bash
+cd backend
+npm install
+
+# Setup Environment Variables
+cp .env.example .env
+# Edit .env: Pastikan MONGODB_URI, REDIS_PASSWORD, dan JWT_SECRET sudah diisi
+
+# Jalankan dalam Mode Development (Auto-Reload saat ngoding)
+npm run dev
+# Output sukses: "Server running on port 3010"
+```
+
+### 3. ML Service Setup (Terminal 2)
+
+```bash
+cd ml-service
+
+# Buat dan aktifkan Virtual Environment
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup Environment
+cp .env.example .env
+# Edit .env: Masukkan GEMINI_API_KEY kamu
+
+# Jalankan Service
+python app.py
+# Output sukses: "Running on http://127.0.0.1:5000"
+```
+
+### 4. Frontend Setup (Terminal 3)
+
+```bash
+cd frontend
+npm install
+
+# Setup Environment
+cp .env.example .env
+
+# Edit .env: Pastikan REACT_APP_API_URL mengarah ke http://localhost:3010
+
+npm start
+# Browser akan otomatis terbuka di http://localhost:3001
+```
+
+**⚠️ IMPORTANT:** Generate secure JWT_SECRET:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+**Complete guide**: See Link youtube :
+
+---
+
 ## ✨ Key Features
 
 ### 🧪 AI-Powered Discovery
@@ -94,86 +187,6 @@ chemical-discovery-ai/
 │       └── services/
 ├── DOCUMENTATION.md      # Full system documentation
 └── ARCHITECTURE.md       # Architecture diagrams
-```
-
----
-
-## 🚀 Installation & Setup
-
-### Prerequisites
-
-- Node.js 18+
-- Python 3.10+
-- MongoDB 7.0+
-- Git
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/username/chemical-discovery-ai.git
-cd chemical-discovery-ai
-```
-
-### 2. Backend Setup
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Edit .env: Set JWT_SECRET, MONGODB_URI
-npm run dev
-```
-
-Backend runs on: http://localhost:3000
-
-### 3. ML Service Setup
-
-```bash
-cd ml-service
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env: Set GEMINI_API_KEY
-python app.py
-```
-
-ML Service runs on: http://localhost:5000
-
-### 4. Frontend Setup
-
-```bash
-cd frontend
-npm install
-cp .env.example .env
-# Edit .env: Verify REACT_APP_API_URL
-npm start
-```
-
-Frontend runs on: http://localhost:3001
-
----
-
-## 🔑 Environment Variables
-
-### Backend (.env)
-
-```env
-JWT_SECRET=your_secret_key
-MONGODB_URI=mongodb://localhost:27017/chemical-discovery
-ML_SERVICE_URL=http://localhost:5000
-PORT=3000
-```
-
-### ML Service (.env)
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-FLASK_PORT=5000
-```
-
-### Frontend (.env)
-
-```env
-REACT_APP_API_URL=http://localhost:3000/api
 ```
 
 ---

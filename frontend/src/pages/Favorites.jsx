@@ -16,6 +16,7 @@ import {
   Maximize2,
   ChevronDown,
 } from "lucide-react";
+import { getFavoriteImageUrl } from "../config/env";
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
@@ -449,12 +450,14 @@ const Favorites = () => {
                   </div>
 
                   {/* Structure Image */}
-                  <div className="mb-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 h-40 flex items-center justify-center">
+                  <div className="mb-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 h-40 flex items-center justify-center overflow-hidden">
                     {favorite.compoundData.structure_image ? (
                       <img
-                        src={favorite.compoundData.structure_image}
-                        alt={favorite.compoundData.name}
-                        className="max-h-full max-w-full object-contain"
+                        src={getFavoriteImageUrl(
+                          favorite.compoundData?.structure_image
+                        )}
+                        alt={favorite.compoundData?.name || "Compound"}
+                        className="max-w-md max-h-64 object-contain"
                         onError={(e) => {
                           e.target.style.display = "none";
                           e.target.nextElementSibling.style.display = "flex";
@@ -568,7 +571,7 @@ const Favorites = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10 overflow-hidden">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {selectedCompound.name}
@@ -595,14 +598,17 @@ const Favorites = () => {
                   </h3>
                   <div className="flex justify-center">
                     <img
-                      src={selectedCompound.structure_image}
-                      alt={selectedCompound.name}
+                      src={getFavoriteImageUrl(
+                        selectedCompound?.structure_image
+                      )}
+                      alt={selectedCompound?.name || "Compound"}
                       className="max-w-md max-h-64 object-contain"
                       onError={(e) => {
                         e.target.style.display = "none";
                         e.target.nextElementSibling.style.display = "flex";
                       }}
                     />
+
                     <div
                       className="flex-col items-center text-gray-400"
                       style={{ display: "none" }}
@@ -615,10 +621,12 @@ const Favorites = () => {
               )}
 
               {/* 3D Viewer */}
-              <MolecularViewer3D
-                smiles={selectedCompound.smiles || selectedCompound.formula}
-                compoundName={selectedCompound.name}
-              />
+              <div className="w-full h-[420px] min-h-[420px]">
+                <MolecularViewer3D
+                  smiles={selectedCompound.smiles || selectedCompound.formula}
+                  compoundName={selectedCompound.name}
+                />
+              </div>
 
               {/* Basic Info */}
               <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">

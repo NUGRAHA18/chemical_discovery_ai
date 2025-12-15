@@ -2,10 +2,12 @@
 
 **Project:** Novel Chemicals Discovery Agent  
 **Version:** 1.0.0  
-**Last Updated:** November 28, 2024  
+**Last Updated:** Desember 15, 2025
 **Team:** Cleo, Afif, Eska, Agung, Faris
 
----
+**Machine Learning Code** : https://drive.google.com/file/d/1W3rMWuEWgQOt-QiuTUvyWkuKO6k9B0vT/view?usp=sharing
+
+**nstallation Guide** : [see here](#installation-guide)
 
 ## 📑 Table of Contents
 
@@ -18,11 +20,11 @@
 7. [API Documentation](#api-documentation)
 8. [Installation Guide](#installation-guide)
 9. [Known Issues](#known-issues)
-10. [Future Improvements](#future-improvements)
+10.
 
 ---
 
-## 🎯 System Overview
+## <a id="system-overview"></a>🎯 System Overview
 
 Novel Chemicals Discovery Agent adalah platform berbasis AI yang membantu peneliti di industri petrokimia untuk menemukan senyawa kimia baru dengan lebih cepat dan efisien.
 
@@ -57,7 +59,7 @@ Platform ini menggunakan Agentic AI untuk:
 
 ---
 
-## 🏗️ Architecture
+## <a id="architecture"></a>🏗️ Architecture
 
 ### System Architecture Diagram
 
@@ -140,7 +142,7 @@ Platform ini menggunakan Agentic AI untuk:
 
 ---
 
-## 💻 Technology Stack
+## <a id="technology-stack"></a>💻 Technology Stack
 
 ### Frontend
 
@@ -187,7 +189,7 @@ Platform ini menggunakan Agentic AI untuk:
 
 ---
 
-## 🤖 AI Model Implementation
+## ## <a id="ai-model-implementation"></a>🤖 AI Model Implementation
 
 ### Gemini AI Integration
 
@@ -255,7 +257,7 @@ Platform ini menggunakan Agentic AI untuk:
 
 ---
 
-## 📊 Dataset & Data Sources
+## <a id="dataset--data-sources"></a>📊 Dataset & Data Sources
 
 ### 1. PubChem Database
 
@@ -385,7 +387,7 @@ fallback_surfactants = [
 
 ---
 
-## ⚠️ System Limitations
+## <a id="system-limitations"></a>⚠️ System Limitations
 
 ### 1. AI Model Limitations
 
@@ -526,7 +528,7 @@ fallback_surfactants = [
 
 ---
 
-## 📚 API Documentation
+## <a id="api-documentation"></a>📚 API Documentation
 
 See [Backend README](backend/README.md) for complete API documentation including:
 
@@ -545,7 +547,9 @@ See [Backend README](backend/README.md) for complete API documentation including
 
 ---
 
-## 🛠️ Installation Guide
+## <a id="installation-guide"></a>🛠️ Installation Guide
+
+Pastikan kamu menjalankan **3 Terminal terpisah** untuk Backend, ML Service, dan Frontend agar semuanya berjalan bersamaan.
 
 ### Prerequisites
 
@@ -554,39 +558,78 @@ See [Backend README](backend/README.md) for complete API documentation including
 - MongoDB 7.0+
 - Git
 
-### Backend Setup
+### Port Allocation
+
+| Service    | Technology        | Port  | URL                   |
+| ---------- | ----------------- | ----- | --------------------- |
+| Frontend   | `React (CRA)`     | 3001  | http://localhost:3001 |
+| Backend    | `Node.js/Express` | 3010  | http://localhost:3010 |
+| ML Service | `Python/Flask`    | 5000  | http://localhost:5000 |
+| Database   | `MongoDB`         | 27017 |                       |
+| Cache      | `Redisd`          | 6379  |                       |
+
+### 1. Backend Setup (Terminal 1)
 
 ```bash
 cd backend
 npm install
+
+# Setup Environment Variables
 cp .env.example .env
-# Edit .env: set JWT_SECRET, MONGODB_URI
+# Edit .env: Pastikan MONGODB_URI dan JWT_SECRET sudah diisi
+
 npm run dev
 ```
 
-### ML Service Setup
+### 2. ML Service Setup (Terminal 2)
 
 ```bash
 cd ml-service
+
+# Buat dan aktifkan Virtual Environment
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Setup Environment
 cp .env.example .env
-# Edit .env: set GEMINI_API_KEY
+# Edit .env: Masukkan GEMINI_API_KEY kamu
+
+# Jalankan Service
 python app-optimized.py
 ```
 
-### Frontend Setup
+### 3. Frontend Setup (Terminal 3)
 
 ```bash
 cd frontend
 npm install
+
+# Setup Environment (Penting untuk koneksi ke Backend)
+
+cp .env.example .env
+
+# Edit .env: Pastikan VITE_API_URL atau REACT_APP_API_URL mengarah ke port Backend
+
 npm start
+```
+
+**⚠️ IMPORTANT:** Generate secure JWT_SECRET:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
 **Complete guide**: See individual README files in each directory.
 
 ---
 
-## 🐛 Known Issues
+## <a id="known-issues"></a>🐛 Known Issues
 
 ### Issue #1: PubChem Import Sometimes Fails
 
@@ -623,37 +666,9 @@ npm start
 
 ---
 
-## 🚀 Future Improvements
-
-### Phase 2 Features (Post-MVP)
-
-- [ ] **Advanced Search**: Filter by compound properties, date range
-- [ ] **Batch Processing**: Upload CSV with multiple criteria
-- [ ] **Collaborative Features**: Share discoveries with team
-- [ ] **Real-time Updates**: WebSocket for progress updates
-- [ ] **3D Molecular Viewer**: Interactive structure visualization
-
-### Phase 3 Features (Advanced)
-
-- [ ] **Synthesis Route Prediction**: AI-suggested synthesis steps
-- [ ] **Cost Estimation**: Approximate synthesis cost
-- [ ] **Patent Search Integration**: Check novelty automatically
-- [ ] **Lab Integration**: Export to lab management systems
-- [ ] **Machine Learning**: Learn from user feedback to improve recommendations
-
-### Technical Improvements
-
-- [ ] **Automated Testing**: Unit tests, integration tests, E2E tests
-- [ ] **Performance**: Redis caching, worker pools, CDN for images
-- [ ] **Security**: Rate limiting, API key rotation, audit logs
-- [ ] **Monitoring**: Application monitoring, error tracking, analytics
-- [ ] **CI/CD**: Automated deployment pipeline
-
----
-
 ## 📞 Support & Contact
 
-**Repository**: https://github.com/[username]/chemical-discovery-ai  
+**Repository**: https://github.com/NUGRAHA18/chemical_discovery_ai
 **Issues**: Create issue on GitHub  
 **Team**: Cleo (ML), Afif (ML), Eska (Backend), Agung (Full Stack), Faris (Backend)
 
@@ -666,5 +681,5 @@ MIT License - See LICENSE file for details.
 ---
 
 **Document Version**: 1.0.0  
-**Last Updated**: November 28, 2024  
+**Last Updated**: DECEMBER 15, 2025
 **Status**: Complete ✅
