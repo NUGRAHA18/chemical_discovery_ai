@@ -7,7 +7,7 @@
 
 **Machine Learning Code** : https://drive.google.com/file/d/1W3rMWuEWgQOt-QiuTUvyWkuKO6k9B0vT/view?usp=sharing
 
-**nstallation Guide** : [see here](#installation-guide)
+**installation Guide** : [see here](#installation-guide)
 
 ## 📑 Table of Contents
 

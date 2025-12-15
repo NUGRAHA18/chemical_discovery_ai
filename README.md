@@ -4,14 +4,30 @@ AI-powered platform for discovering novel chemical compounds using multi-agent s
 
 ## 🎯 Project Overview
 
-**Novel Chemicals Discovery Agent** adalah platform web-based yang membantu peneliti di industri petrokimia menemukan senyawa kimia baru dengan lebih cepat dan efisien menggunakan Agentic AI.
+**Chemical Discovery** adalah platform web-based yang membantu peneliti di industri petrokimia menemukan senyawa kimia baru dengan lebih cepat dan efisien menggunakan Agentic AI.
 
-**Capstone Project - Dicoding 2025**  
-**Team:** Cleo (ML), Afif (ML), Eska (Backend), Agung (Full Stack), Faris (Backend)
+**Capstone Project - ASAH led by Dicoding 2025**  
+**Team:** Cleo (ML), Afif (ML), Eska (Backend), Agung (Full Stack), Faris (Frontend)
+
+**Machine Learning Code** : https://drive.google.com/file/d/1W3rMWuEWgQOt-QiuTUvyWkuKO6k9B0vT/view?usp=sharing
 
 ---
 
-## <a id="installation-guide"></a>🛠️ Installation Guide
+## 📑 Table of Contents
+
+1.  [Installation Guide](#installation)
+2.  [Key Features](#keyfeatures)
+3.  [Tech Stack](#tech)
+4.  [Usage](#usage)
+5.  [Requirements Compliance](#compliace)
+6.  [Documentation](#doc)
+7.  [System Limitations](#limitations)
+8.  [Testing](#testing)
+9.  [License](#license)
+10. [Team](#team)
+11. [Contact](#contact)
+
+## <a id="installation"></a>🛠️ Installation Guide
 
 Pastikan kamu menjalankan **3 Terminal terpisah** untuk Backend, ML Service, dan Frontend agar semuanya berjalan bersamaan.
 
@@ -104,7 +120,53 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ---
 
-## ✨ Key Features
+## <a id="keyfeatures"></a>✨ Key Features
+
+### 🧪 AI-Powered Discovery
+
+- Multi-agent system dengan 6 specialized agents
+- Google Gemini 2.5 Flash untuk intelligent compound generation
+- Generate 3 novel compounds dalam 5–15 detik
+- Parallel processing untuk mempercepat proses (ThreadPoolExecutor)
+
+### 📋 Hybrid Input System (Dicoding Requirement)
+
+- Structured Form: dropdown kategori + numeric inputs untuk target
+- AI Prompt: natural language input dengan examples
+- Toggle mode input untuk fleksibilitas workflow
+
+### 🔬 Computational Chemistry
+
+- RDKit integration untuk molecular calculations
+- PubChem database search (100M+ compounds)
+- Automatic SMILES validation
+- Molecular property calculations (MW, LogP, H-bonds, TPSA)
+
+### 📊 Complete Discovery Management
+
+- Discovery history dengan search & pagination
+- Favorites management dengan tags
+- Export results ke JSON & CSV
+- Validation scores dengan color-coding
+
+### 🔐 Security & Data Integrity
+
+- JWT Authentication untuk session/security
+- Password hashing (bcrypt) + request validation
+- Image processing & optimization untuk structure images (Sharp)
+
+### 🧩 Modular Architecture (Multi-service)
+
+- Frontend React (CRA) di port 3001
+- Backend Node.js/Express di port 3010
+- ML Service Python/Flask di port 5000
+- MongoDB sebagai database utama + Redis untuk caching
+
+### 🎨 Modern Web UI
+
+- React 18 + React Router v6
+- Tailwind CSS 3 untuk styling cepat & konsisten
+- Context API untuk state management di level aplikasi
 
 ### 🧪 AI-Powered Discovery
 
@@ -134,7 +196,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ---
 
-## 🏗️ Tech Stack
+## <a id="tech"></a>🏗️ Tech Stack
 
 ### Frontend
 
@@ -163,79 +225,68 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ---
 
-## 📦 Project Structure
+## <a id="usage"></a>📖 Usage
 
-```
-chemical-discovery-ai/
-├── backend/              # Express.js API (Port 3000)
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middleware/
-│   │   ├── services/
-│   │   └── utils/
-│   └── public/images/structures/
-├── ml-service/           # Flask ML Service (Port 5000)
-│   ├── app.py
-│   └── requirements.txt
-├── frontend/             # React App (Port 3001)
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       ├── contexts/
-│       └── services/
-├── DOCUMENTATION.md      # Full system documentation
-└── ARCHITECTURE.md       # Architecture diagrams
-```
+### 0) Start the app (required)
 
----
+Make sure all services are running (usually in separate terminals):
 
-## 📖 Usage
+- **Backend** (Node/Express)
+- **ML Service** (Python/Flask)
+- **Frontend** (React)
+- Also ensure **MongoDB** and **Redis** are up.
 
-1. **Register/Login**: Create account atau login
-2. **Discovery**:
-   - Choose input mode (Structured Form atau AI Prompt)
-   - Structured: Fill kategori, boiling point, viscosity, dll
-   - AI Prompt: Describe requirements in natural language
-   - Submit untuk generate 3 novel compounds
-3. **View Results**: See compounds dengan molecular structures, properties, validation scores
-4. **Save Favorites**: Add promising compounds to favorites
-5. **History**: Browse past discoveries, search, export
-6. **Favorites**: Manage saved compounds, edit tags & notes
+> Tip: If API calls or images fail to load, double-check which service is down and confirm the ports match your `.env` files.
 
----
+### 1) Register / Login
 
-## 📊 API Endpoints
+1. Open the app in your browser.
+2. **Register** to create a new account, or **Login** if you already have one.
 
-### Authentication
+### 2) Discovery (Generate compounds)
 
-- `POST /api/auth/register` - Register user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
+1. Go to the **Discover/Discovery** page.
+2. Choose an input mode:
+   - **Structured Form**
+     - Select a category.
+     - Fill in target properties (e.g., boiling point, viscosity, thermal stability, biodegradable, etc.).
+   - **AI Prompt**
+     - Describe your requirements in natural language (you can follow the examples shown in the UI).
+3. Click **Submit/Generate**.
+4. The system will generate **3 compounds** (typically within a few seconds).
 
-### Discovery
+### 3) View Results
 
-- `POST /api/discover` - Generate compounds (hybrid input)
-- `GET /api/history` - Get discovery history
-- `GET /api/history/stats` - Get statistics
-- `DELETE /api/history/:id` - Delete discovery
+On the results page you can:
 
-### Favorites
+- Browse the generated compounds.
+- Open each compound to view details such as structure/visualization (2D/3D if available), SMILES, properties, and validation score.
 
-- `GET /api/favorites` - Get favorites
-- `POST /api/favorites` - Add favorite
-- `PUT /api/favorites/:id` - Update favorite
-- `DELETE /api/favorites/:id` - Delete favorite
+### 4) Save to Favorites
 
-### Export
+1. From the results/detail view, click **Add to Favorites** for promising compounds.
+2. The compound will appear in the **Favorites** page.
 
-- `POST /api/export/json` - Export as JSON
-- `POST /api/export/csv` - Export as CSV
+### 5) History
+
+1. Open **History** to review previous discovery runs.
+2. Use available features such as:
+   - Search / filter
+   - Pagination
+   - Export (JSON/CSV) if available in the UI
+
+### 6) Manage Favorites
+
+In the **Favorites** page, you can:
+
+- View all saved compounds.
+- **Edit tags and notes**.
+- **Remove** compounds from favorites.
+- Click a card to open the detail modal (including 3D viewer / property calculator if available).
 
 ---
 
-## 🎯 Dicoding Requirements Compliance
+## <a id="compliace"></a>🎯 Dicoding Requirements Compliance
 
 ✅ **Portal web-based** - React frontend dengan Express backend  
 ✅ **Input kriteria spesifik** - Structured form dengan dropdown & number inputs  
@@ -248,7 +299,7 @@ chemical-discovery-ai/
 
 ---
 
-## 📄 Documentation
+## <a id="doc"></a>📄 Documentation
 
 - [📘 Complete Documentation](DOCUMENTATION.md) - System overview, limitations, dataset
 - [🏗️ Architecture Diagrams](ARCHITECTURE.md) - Visual architecture
@@ -257,7 +308,7 @@ chemical-discovery-ai/
 
 ---
 
-## ⚠️ System Limitations
+## <a id="limitations"></a>⚠️ System Limitations
 
 ### AI Model
 
@@ -282,12 +333,13 @@ See [DOCUMENTATION.md](DOCUMENTATION.md) for complete limitations.
 
 ---
 
-## 🧪 Testing
+## <a id="testing"></a>🧪 Testing
 
 ### Test User
 
-- Email: test@example.com
-- Password: Test1234
+- Email: jarannnn@gmail.com
+- Password: KURAKURA123
+- (or you can register first)
 
 ### Test Flow
 
@@ -304,13 +356,13 @@ See [DOCUMENTATION.md](DOCUMENTATION.md) for complete limitations.
 
 ---
 
-## 📝 License
+## <a id="license"></a>📝 License
 
 MIT License - See LICENSE file for details
 
 ---
 
-## 👥 Team
+## <a id="team"></a>👥 Team
 
 - **Cleo** - Machine Learning Engineer
 - **Afif** - Machine Learning Engineer
@@ -329,6 +381,15 @@ MIT License - See LICENSE file for details
 
 ---
 
-**Project Status:** ✅ Complete & Ready for Submission
+## <a id="contact"></a>📬 Contact
 
-**Last Updated:** December 2, 2025
+If you have questions, feedback, or want to collaborate, feel free to reach out:
+
+- **GitHub:** https://github.com/NUGRAHA18
+- **Project Repository:** https://github.com/NUGRAHA18/chemical_discovery_ai
+- **email:** agungnugraha180405@gmail.com
+  > For bugs/issues, please open an Issue in this repository with steps to reproduce and screenshots/logs if possible.
+
+**Project Status:** ✅ Complete & Ready
+
+**Last Updated:** 15 December 2025
