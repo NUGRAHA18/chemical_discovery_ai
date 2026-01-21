@@ -32,18 +32,10 @@ root.render(
 // --- PWA SERVICE WORKER REGISTRATION ---
 // Memeriksa apakah browser mendukung Service Worker
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    // Mendaftarkan Service Worker di root path ('/')
-    navigator.serviceWorker
-      .register("/service-worker.js")
-      .then((registration) => {
-        console.log(
-          "Service Worker registered successfully. Scope:",
-          registration.scope
-        );
-      })
-      .catch((registrationError) => {
-        console.error("Service Worker registration failed:", registrationError);
-      });
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister();
+      console.log("Service Worker unregistered.");
+    }
   });
 }

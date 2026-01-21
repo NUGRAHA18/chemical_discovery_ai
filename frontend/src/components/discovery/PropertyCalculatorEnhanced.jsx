@@ -259,7 +259,6 @@ const PropertyCalculatorEnhanced = ({ compound }) => {
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Calculator className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">
             Enhanced Property Calculator
           </h3>

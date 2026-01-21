@@ -29,6 +29,10 @@ const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
 
+  // --- DETEKSI LANDING PAGE ---
+  // Jika path adalah "/", maka kita anggap ini Landing Page
+  const isLandingPage = location.pathname === "/";
+
   // --- STATE ---
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -63,7 +67,7 @@ const Navbar = () => {
     return () => {
       window.removeEventListener(
         "profilePhotoUpdated",
-        handleProfilePhotoUpdate
+        handleProfilePhotoUpdate,
       );
     };
   }, []);
@@ -263,9 +267,11 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* --- RIGHT SIDE ACTIONS --- */}
+          {/* --- RIGHT SIDE ACTIONS (DESKTOP) --- */}
           <div className="hidden lg:flex items-center space-x-4">
-            <DarkModeToggle />
+            {/* Logic Sembunyikan Dark Mode di Landing Page */}
+            {!isLandingPage && <DarkModeToggle />}
+
             {isAuthenticated ? (
               <div className="flex items-center space-x-4 pl-4 border-l border-gray-200 dark:border-slate-700">
                 {/* USER MENU DROPDOWN */}
@@ -351,7 +357,9 @@ const Navbar = () => {
 
           {/* --- MOBILE TOGGLE --- */}
           <div className="flex items-center space-x-4 lg:hidden">
-            <DarkModeToggle />
+            {/* Logic Sembunyikan Dark Mode di Landing Page Mobile */}
+            {!isLandingPage && <DarkModeToggle />}
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"

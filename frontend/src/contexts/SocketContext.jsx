@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
+// Import sesuai permintaan Anda
+import { BACKEND_URL } from "../config/env";
 
 const SocketContext = createContext();
 
@@ -16,96 +18,126 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const [discoveryProgress, setDiscoveryProgress] = useState(null);
   const [discoveryLogs, setDiscoveryLogs] = useState([]);
-  const isComponentMounted = useRef(false);
+
+  // Ref untuk mengecek apakah komponen masih ter-mount (Mencegah memory leak)
+  const isMounted = useRef(true);
+
+  // State token agar socket me-refresh diri saat login/logout
+  const [token, setToken] = useState(localStorage.getItem("token"));
+
+  // Effect untuk memantau lifecycle component
   useEffect(() => {
-    isComponentMounted.current = true;
+    isMounted.current = true;
     return () => {
-      isComponentMounted.current = false;
+      isMounted.current = false;
     };
   }, []);
 
+  // Effect untuk memantau perubahan token (Login/Logout)
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const handleStorageChange = () => setToken(localStorage.getItem("token"));
 
+    // Listen event storage (jika login dari tab lain)
+    window.addEventListener("storage", handleStorageChange);
+
+    // Cek manual (poling sederhana) jaga-jaga jika event listener tidak trigger
+    const interval = setInterval(handleStorageChange, 2000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Effect Utama Socket.io
+  useEffect(() => {
+    // 1. Jika tidak ada token, reset state dan jangan connect
     if (!token) {
-      console.debug(
-        "ℹ️ Socket info: Tidak ada token (User belum login/Guest mode)."
-      );
+      console.log("ℹ️ Socket: Menunggu token...");
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+        setConnected(false);
+      }
       return;
     }
 
-    const newSocket = io(
-      process.env.REACT_APP_BACKEND_URL || "http://localhost:3000",
-      {
-        auth: { token },
-        transports: ["websocket", "polling"],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-      }
-    );
+    // 2. Setup Socket
+    const serverUrl = BACKEND_URL || "http://localhost:3010"; // Fallback aman
+    console.log("🔌 Initializing Socket to:", serverUrl);
 
+    const newSocket = io(serverUrl, {
+      auth: { token }, // Kirim token untuk handshake
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      autoConnect: false, // Connect manual setelah listener siap
+    });
+
+    // 3. Setup Event Listeners
     newSocket.on("connect", () => {
-      if (isComponentMounted.current) {
-        setConnected(true);
-      }
+      console.log("✅ Socket Connected ID:", newSocket.id);
+      if (isMounted.current) setConnected(true);
     });
 
     newSocket.on("disconnect", (reason) => {
-      if (isComponentMounted.current) {
-        console.log("🔌 Socket disconnected:", reason);
-        setConnected(false);
-      }
+      console.log("🔌 Socket Disconnected:", reason);
+      if (isMounted.current) setConnected(false);
     });
 
-    newSocket.on("connect_error", (error) => {
-      if (isComponentMounted.current) {
-        console.error("❌ Socket connection error:", error.message);
-        setConnected(false);
-      }
+    newSocket.on("connect_error", (err) => {
+      console.error("❌ Socket Connection Error:", err.message);
+      if (isMounted.current) setConnected(false);
     });
 
+    // --- Events Spesifik Discovery ---
     newSocket.on("discovery:progress", (data) => {
-      if (isComponentMounted.current) {
-        setDiscoveryProgress(data);
-      }
+      if (isMounted.current) setDiscoveryProgress(data);
     });
 
     newSocket.on("discovery:log", (data) => {
-      if (isComponentMounted.current) {
+      if (isMounted.current) {
         setDiscoveryLogs((prev) => [...prev, data]);
       }
     });
 
     newSocket.on("discovery:complete", (data) => {
-      if (isComponentMounted.current) {
+      if (isMounted.current) {
         setDiscoveryProgress({
           step: "complete",
           progress: 100,
-          message: "Complete!",
+          message: "Discovery Complete!",
           ...data,
         });
       }
     });
 
     newSocket.on("discovery:error", (data) => {
-      if (isComponentMounted.current) {
-        console.error("❌ Discovery error:", data);
+      console.error("❌ Discovery Error Event:", data);
+      if (isMounted.current) {
         setDiscoveryProgress({
           step: "error",
           progress: 0,
-          message: data.error,
+          message: data.error || "Terjadi kesalahan",
           error: true,
         });
       }
     });
 
+    // 4. Lakukan Koneksi
+    newSocket.connect();
     setSocket(newSocket);
 
+    // 5. Cleanup Function (Dijalankan saat unmount atau token berubah)
     return () => {
-      if (newSocket) newSocket.disconnect();
+      console.log("🧹 Cleaning up socket...");
+
+      // FIX BUG: Gunakan .off() bukan .offAll()
+      newSocket.off(); // Menghapus semua event listener
+      newSocket.disconnect(); // Putus koneksi
     };
-  }, []);
+  }, [token]); // Re-run effect jika token berubah
 
   const clearProgress = () => {
     setDiscoveryProgress(null);

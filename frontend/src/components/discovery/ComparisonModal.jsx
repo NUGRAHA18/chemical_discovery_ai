@@ -8,7 +8,7 @@ import {
   showLoading,
   dismissToast,
 } from "../../utils/toast";
-
+import { getImageUrl } from "../../config/env";
 const ComparisonModal = ({ isOpen, onClose }) => {
   const { comparisonList, removeFromComparison, clearComparison } =
     useComparison();
@@ -217,9 +217,16 @@ const TableView = ({
             {compound.structure_image && (
               <div className="mb-3 bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
                 <img
-                  src={compound.structure_image}
+                  // 2. GUNAKAN HELPER DI SINI 👇
+                  src={getImageUrl(compound.structure_image)}
                   alt={compound.name}
                   className="w-full h-32 object-contain"
+                  // Opsional: Tambahkan error handling agar rapi kalau gambar rusak
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src =
+                      "https://via.placeholder.com/150?text=No+Image"; // Gambar cadangan
+                  }}
                 />
               </div>
             )}
@@ -240,8 +247,8 @@ const TableView = ({
                     compound.validation_score >= 0.8
                       ? "bg-green-500"
                       : compound.validation_score >= 0.6
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
                   }`}
                   style={{
                     width: `${(compound.validation_score || 0) * 100}%`,
@@ -393,12 +400,12 @@ const ChartsView = ({
                               idx === 0
                                 ? "bg-gradient-to-r from-blue-400 to-blue-600"
                                 : idx === 1
-                                ? "bg-gradient-to-r from-green-400 to-green-600"
-                                : idx === 2
-                                ? "bg-gradient-to-r from-purple-400 to-purple-600"
-                                : idx === 3
-                                ? "bg-gradient-to-r from-orange-400 to-orange-600"
-                                : "bg-gradient-to-r from-pink-400 to-pink-600"
+                                  ? "bg-gradient-to-r from-green-400 to-green-600"
+                                  : idx === 2
+                                    ? "bg-gradient-to-r from-purple-400 to-purple-600"
+                                    : idx === 3
+                                      ? "bg-gradient-to-r from-orange-400 to-orange-600"
+                                      : "bg-gradient-to-r from-pink-400 to-pink-600"
                             }`}
                             style={{ width: `${percentage}%` }}
                           />

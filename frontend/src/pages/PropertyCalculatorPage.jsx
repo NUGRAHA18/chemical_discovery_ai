@@ -49,7 +49,7 @@ const PropertyCalculator = () => {
       setLoading(false);
       dismissToast(loadingToast);
       showError(
-        "Request timeout. Please check if backend and ML service are running."
+        "Request timeout. Please check if backend and ML service are running.",
       );
     }, 30000);
 
@@ -77,7 +77,7 @@ const PropertyCalculator = () => {
               timestamp: new Date().toISOString(),
             },
             ...prev,
-          ].slice(0, 10)
+          ].slice(0, 10),
         );
         showSuccess("Properties calculated successfully!");
       } else {
@@ -337,7 +337,7 @@ const PropertyCalculator = () => {
                               <span
                                 className={`text-xl font-bold font-mono ${getPropertyColor(
                                   key,
-                                  value
+                                  value,
                                 )}`}
                               >
                                 {typeof value === "boolean"
@@ -345,8 +345,8 @@ const PropertyCalculator = () => {
                                     ? "Yes"
                                     : "No"
                                   : typeof value === "number"
-                                  ? value.toFixed(2)
-                                  : value}
+                                    ? value.toFixed(2)
+                                    : value}
                                 {info.unit && (
                                   <span className="text-xs text-gray-400 ml-1 font-sans font-normal">
                                     {info.unit}
@@ -481,7 +481,7 @@ const PropertyCalculator = () => {
                                 <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
                                 <span>
                                   {new Date(
-                                    item.timestamp
+                                    item.timestamp,
                                   ).toLocaleTimeString()}
                                 </span>
                               </div>

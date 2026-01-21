@@ -6,7 +6,11 @@ let io;
 const initializeSocket = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:3001",
+      origin: [
+        process.env.FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:3001",
+      ],
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -15,10 +19,12 @@ const initializeSocket = (server) => {
 
   // Authentication middleware
   io.use((socket, next) => {
+    console.log(`🔌 Handshake attempt from: ${socket.id}`);
     try {
       const token = socket.handshake.auth.token;
 
       if (!token) {
+        console.log("❌ No token provided in handshake");
         return next(new Error("Authentication error: No token"));
       }
 
@@ -27,7 +33,7 @@ const initializeSocket = (server) => {
       socket.userEmail = decoded.email;
 
       console.log(
-        `✅ Socket authenticated: ${socket.userEmail} (${socket.id})`
+        `✅ Socket authenticated: ${socket.userEmail} (${socket.id})`,
       );
       next();
     } catch (error) {
@@ -39,7 +45,7 @@ const initializeSocket = (server) => {
   // Connection handler
   io.on("connection", (socket) => {
     console.log(
-      `🔌 Client connected: ${socket.id} (User: ${socket.userEmail})`
+      `🔌 Client connected: ${socket.id} (User: ${socket.userEmail})`,
     );
 
     // Join user-specific room

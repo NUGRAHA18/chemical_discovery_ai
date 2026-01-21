@@ -58,7 +58,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
     setFormData((prev) => ({
       ...prev,
       additionalProperties: prev.additionalProperties.filter(
-        (_, i) => i !== index
+        (_, i) => i !== index,
       ),
     }));
   };

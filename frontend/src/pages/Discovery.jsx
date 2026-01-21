@@ -15,8 +15,8 @@ import { useComparison } from "../contexts/ComparisonContext";
 import ComparisonModal from "../components/discovery/ComparisonModal";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
 import TemplatesModal from "../components/discovery/TemplatesModal";
-import { useSocket } from "../contexts/SocketContext"; // ✅ ADD
-import ProgressTracker from "../components/discovery/ProgressTracker"; // ✅ ADD
+import { useSocket } from "../contexts/SocketContext";
+import ProgressTracker from "../components/discovery/ProgressTracker";
 
 // Import Icons
 import {
@@ -42,7 +42,10 @@ const Discovery = () => {
   const [discovery, setDiscovery] = useState(null);
   const [error, setError] = useState("");
   const [showComparison, setShowComparison] = useState(false);
+
+  // --- SOCKET CONTEXT ---
   const { discoveryProgress, discoveryLogs, clearProgress } = useSocket();
+
   const { comparisonList, addToComparison } = useComparison();
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedCompound, setSelectedCompound] = useState(null);
@@ -60,13 +63,12 @@ const Discovery = () => {
     notes: "",
   });
 
+  // --- RESTORE STATE LOGIC ---
   useEffect(() => {
-    // Restore discovery state on mount
     const savedState = sessionStorage.getItem(DISCOVERY_STATE_KEY);
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
-        setLoading(parsed.loading);
         if (parsed.discovery) {
           setDiscovery(parsed.discovery);
         }
@@ -76,34 +78,21 @@ const Discovery = () => {
     }
   }, []);
 
-  // Save state whenever it changes
   useEffect(() => {
-    if (loading || discovery) {
+    if (discovery) {
       sessionStorage.setItem(
         DISCOVERY_STATE_KEY,
         JSON.stringify({
           discovery,
           timestamp: Date.now(),
-        })
+        }),
       );
-    } else {
+    } else if (!loading && !discovery) {
       sessionStorage.removeItem(DISCOVERY_STATE_KEY);
     }
   }, [loading, discovery]);
 
-  useEffect(() => {
-    const checkStaleSession = () => {
-      const saved = sessionStorage.getItem(DISCOVERY_STATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const age = Date.now() - parsed.timestamp;
-        if (age > 300000) {
-          sessionStorage.removeItem(DISCOVERY_STATE_KEY);
-        }
-      }
-    };
-    checkStaleSession();
-  }, []);
+  // --- CORE SUBMIT LOGIC (Hybrid HTTP + WebSocket) ---
   const handleSubmit = async (formData) => {
     try {
       setLoading(true);
@@ -111,8 +100,18 @@ const Discovery = () => {
       setDiscovery(null);
       clearProgress();
 
-      await discoveryService.createDiscovery(formData);
+      // 1. Kirim Request HTTP
+      const response = await discoveryService.createDiscovery(formData);
+
+      // 2. Jika API langsung memberikan hasil (Synchronous)
+      if (response && response.compounds) {
+        setDiscovery(response);
+        setLoading(false);
+        showSuccess("Discovery completed successfully!");
+      }
+      // 3. Jika API masih processing (WebSocket akan mengambil alih via useEffect/ProgressTracker)
     } catch (error) {
+      // 4. Handling Timeout / Error
       const isTimeout =
         error.message?.includes("504") ||
         error.message?.includes("timeout") ||
@@ -120,24 +119,41 @@ const Discovery = () => {
         error.code === "ECONNABORTED";
 
       const isSocketActive =
-        discoveryProgress &&
-        discoveryProgress.step !== "error" &&
-        loading === true;
+        discoveryProgress && discoveryProgress.step !== "error";
 
       if (isTimeout && isSocketActive) {
         console.warn(
-          "⚠️ HTTP Timeout detected, switching to WebSocket-only mode..."
+          "⚠️ HTTP Timeout detected, but WebSocket is active. Switching to socket-only mode.",
         );
-        return;
+        return; // Jangan matikan loading, biarkan socket lanjut
       }
 
       setLoading(false);
       setError(
         error.response?.data?.error ||
           error.message ||
-          "Failed to create discovery"
+          "Failed to create discovery",
       );
       showError(error.message || "Failed to create discovery");
+    }
+  };
+
+  // --- SOCKET COMPLETION HANDLER ---
+  const handleProgressComplete = async (data) => {
+    try {
+      if (data.discoveryId) {
+        const response = await discoveryService.getDiscovery(data.discoveryId);
+        setDiscovery(response);
+        setLoading(false);
+        clearProgress();
+        dismissToast();
+      } else {
+        throw new Error("Missing Discovery ID");
+      }
+    } catch (fetchError) {
+      setLoading(false);
+      showError("Discovery complete, but failed to fetch final result.");
+      setError("Failed to fetch final discovery result.");
     }
   };
 
@@ -155,11 +171,12 @@ const Discovery = () => {
     });
   };
 
+  // --- ACTION HANDLERS ---
   const handleAddToFavorites = async (compound) => {
     try {
       const existing = await favoritesService.getFavorites();
       const isDuplicate = existing.favorites?.some(
-        (fav) => fav.compoundData.smiles === compound.smiles
+        (fav) => fav.compoundData.smiles === compound.smiles,
       );
 
       if (isDuplicate) {
@@ -168,23 +185,16 @@ const Discovery = () => {
       }
 
       await favoritesService.addFavorite({
-        compoundData: {
-          name: compound.name,
-          formula: compound.formula,
-          smiles: compound.smiles,
-          properties: compound.properties,
-          base_compound: compound.base_compound,
-          modifications: compound.modifications,
-          molecular_weight: compound.molecular_weight,
-          logp: compound.logp,
-          structure_image: compound.structure_image,
-        },
+        compoundData: { ...compound },
         tags: ["from-discovery"],
         notes: "Added from discovery",
       });
       showSuccess(`${compound.name} added to favorites!`);
     } catch (err) {
-      showError("Failed to add to favorites: " + err.response?.data?.error);
+      showError(
+        "Failed to add to favorites: " +
+          (err.response?.data?.error || err.message),
+      );
     }
   };
 
@@ -193,16 +203,13 @@ const Discovery = () => {
       showError("You can only compare up to 3 compounds at once.");
       return;
     }
-
     const alreadyAdded = comparisonList.some(
-      (c) => c.smiles === compound.smiles
+      (c) => c.smiles === compound.smiles,
     );
-
     if (alreadyAdded) {
       showError("This compound is already in comparison!");
       return;
     }
-
     addToComparison(compound);
     showSuccess(`${compound.name} added to comparison!`);
   };
@@ -217,13 +224,11 @@ const Discovery = () => {
       showError("No discovery to export");
       return;
     }
-
     try {
       if (format === "pdf") {
         const loadingToast = showLoading("Generating PDF...");
         const result = await exportDiscoveryToPDF(discovery);
         dismissToast(loadingToast);
-
         if (result.success) {
           showSuccess(`PDF exported: ${result.filename}`);
         } else {
@@ -241,7 +246,6 @@ const Discovery = () => {
         showSuccess("Discovery exported as JSON");
       } else if (format === "csv") {
         let csvContent = "Name,Formula,SMILES,MW,LogP,Validation Score\n";
-
         discovery.compounds?.forEach((compound) => {
           csvContent += `"${compound.name}","${compound.formula}","${compound.smiles}",`;
           csvContent += `${compound.molecular_weight || "N/A"},`;
@@ -252,7 +256,6 @@ const Discovery = () => {
           },`;
           csvContent += `${compound.validation_score || "N/A"}\n`;
         });
-
         const csvBlob = new Blob([csvContent], { type: "text/csv" });
         const url = URL.createObjectURL(csvBlob);
         const link = document.createElement("a");
@@ -270,7 +273,6 @@ const Discovery = () => {
   const handleSelectTemplate = (template) => {
     if (template.inputMode === "structured") {
       setInputMode("structured");
-
       const categoryMap = {
         Surfactant: "surfactant",
         Polymer: "polymer",
@@ -282,7 +284,6 @@ const Discovery = () => {
         Resin: "resin",
         Other: "other",
       };
-
       const templateCategory =
         categoryMap[template.category] || template.category.toLowerCase();
 
@@ -297,32 +298,10 @@ const Discovery = () => {
     setShowTemplates(false);
   };
 
-  const handleProgressComplete = async (data) => {
-    setLoading(false);
-    clearProgress();
-    setError("");
-
-    if (data.discoveryId) {
-      showSuccess("Discovery complete! Fetching final results...");
-      try {
-        const response = await discoveryService.getDiscovery(data.discoveryId);
-        setDiscovery(response.discovery);
-        sessionStorage.removeItem(DISCOVERY_STATE_KEY);
-        dismissToast();
-        showSuccess("Discovery results loaded!");
-      } catch (fetchError) {
-        showError("Discovery complete, but failed to fetch final result.");
-        setError("Failed to fetch final discovery result.");
-      }
-    } else {
-      showError("Discovery complete, but missing result ID.");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 font-sans transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* HEADER SECTION */}
+        {/* --- HEADER SECTION --- */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -341,7 +320,7 @@ const Discovery = () => {
           <div className="flex space-x-3">
             <button
               onClick={() => setShowTemplates(true)}
-              className="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm font-medium text-sm"
+              className="inline-flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors shadow-sm font-medium text-sm"
             >
               <LayoutTemplate className="w-4 h-4 mr-2 text-gray-500" />
               Templates
@@ -361,61 +340,70 @@ const Discovery = () => {
           </div>
         </div>
 
-        {/* INPUT CARD */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-8">
+        {/* --- INPUT CARD (STYLED) --- */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-cyan-900/30 overflow-hidden mb-8 transition-all duration-300 dark:shadow-[0_0_20px_rgba(8,145,178,0.1)]">
           {/* Tabs Navigation */}
-          <div className="border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 px-6 py-4">
-            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              Select Input Method
-            </label>
-            <div className="flex space-x-2 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg w-fit">
-              <button
-                onClick={() => setInputMode("structured")}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  inputMode === "structured"
-                    ? "bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                }`}
-              >
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Structured Form
-              </button>
-              <button
-                onClick={() => setInputMode("ai-prompt")}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  inputMode === "ai-prompt"
-                    ? "bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                }`}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                AI Prompt
-              </button>
+          <div className="border-b border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 px-6 py-4 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <label className="block text-xs font-bold text-slate-500 dark:text-cyan-400 uppercase tracking-widest">
+                Configuration Engine
+              </label>
+
+              {/* Styled Toggle Switch */}
+              <div className="flex space-x-1 bg-gray-200/50 dark:bg-slate-950/50 p-1 rounded-lg border border-gray-200 dark:border-slate-700">
+                <button
+                  onClick={() => setInputMode("structured")}
+                  className={`flex items-center px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    inputMode === "structured"
+                      ? "bg-white dark:bg-slate-800 text-primary-600 dark:text-cyan-400 shadow-sm ring-1 ring-black/5 dark:ring-cyan-500/30"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-200/50 dark:hover:bg-slate-800/50"
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Structured
+                </button>
+                <button
+                  onClick={() => setInputMode("ai-prompt")}
+                  className={`flex items-center px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    inputMode === "ai-prompt"
+                      ? "bg-white dark:bg-slate-800 text-primary-600 dark:text-cyan-400 shadow-sm ring-1 ring-black/5 dark:ring-cyan-500/30"
+                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-gray-200/50 dark:hover:bg-slate-800/50"
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  AI Prompt
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Form Content */}
-          <div className="p-6">
-            {inputMode === "structured" ? (
-              <StructuredForm
-                onSubmit={handleStructuredSubmit}
-                loading={loading}
-                initialData={structuredData}
-              />
-            ) : (
-              <AIPromptForm
-                onSubmit={handleAIPromptSubmit}
-                loading={loading}
-                initialValue={criteria}
-                onChange={setCriteria}
-              />
-            )}
+          <div className="p-6 sm:p-8 bg-white dark:bg-slate-800 relative">
+            {/* Background Noise Decoration (Optional for Sci-fi feel) */}
+            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-soft-light"></div>
+
+            <div className="relative z-10">
+              {inputMode === "structured" ? (
+                <StructuredForm
+                  onSubmit={handleStructuredSubmit}
+                  loading={loading}
+                  initialData={structuredData}
+                />
+              ) : (
+                <AIPromptForm
+                  onSubmit={handleAIPromptSubmit}
+                  loading={loading}
+                  initialValue={criteria}
+                  onChange={setCriteria}
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ERROR STATE */}
+        {/* --- ERROR STATE --- */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-8 flex items-start">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-8 flex items-start animate-fade-in">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 mr-3 flex-shrink-0" />
             <div>
               <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
@@ -428,10 +416,12 @@ const Discovery = () => {
           </div>
         )}
 
+        {/* --- RESULTS SECTION --- */}
         {discovery && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6 animate-fade-in pb-12">
+            {/* ANALYSIS CARD */}
             {discovery.analysis && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <BookOpen className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   Analysis
@@ -465,8 +455,9 @@ const Discovery = () => {
               </div>
             )}
 
+            {/* JUSTIFICATION CARD */}
             {discovery.justification && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                   <Lightbulb className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   Justification
@@ -500,8 +491,8 @@ const Discovery = () => {
               </div>
             )}
 
-            {/* COMPOUNDS SECTION */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            {/* COMPOUNDS GRID */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -514,28 +505,29 @@ const Discovery = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+                {/* Export Buttons */}
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-lg border border-gray-200 dark:border-slate-700">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 uppercase">
                     Export
                   </span>
-                  <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                  <div className="h-4 w-px bg-gray-300 dark:bg-slate-600 mx-1"></div>
                   <button
                     onClick={() => handleExport("json")}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
                     title="Export JSON"
                   >
                     <FileJson className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleExport("csv")}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
                     title="Export CSV"
                   >
                     <FileSpreadsheet className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleExport("pdf")}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-gray-600 dark:text-gray-300 transition-colors"
                     title="Export PDF"
                   >
                     <FileText className="w-4 h-4" />
@@ -566,7 +558,7 @@ const Discovery = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* --- MODALS --- */}
       <ComparisonModal
         isOpen={showComparison}
         onClose={() => setShowComparison(false)}
@@ -578,7 +570,6 @@ const Discovery = () => {
         onSelectTemplate={handleSelectTemplate}
       />
 
-      {/* COMPOUND DETAIL MODAL */}
       {showDetailModal && selectedCompound && (
         <CompoundDetailModal
           compound={selectedCompound}
@@ -590,8 +581,10 @@ const Discovery = () => {
           onAddToCompare={handleAddToCompare}
         />
       )}
-      {/*  ADD: Progress Tracker with WebSocket */}
-      {(discoveryProgress || loading) && (
+
+      {/* --- PROGRESS TRACKER OVERLAY --- */}
+      {(loading ||
+        (discoveryProgress && discoveryProgress.step !== "error")) && (
         <ProgressTracker
           progress={discoveryProgress}
           logs={discoveryLogs}

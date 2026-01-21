@@ -76,7 +76,7 @@ const ChatAssistant = () => {
             session.messages.map((msg) => ({
               ...msg,
               sessionId: session.sessionId,
-            }))
+            })),
           )
           .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
         setMessages(allMessages);
@@ -112,7 +112,7 @@ const ChatAssistant = () => {
     try {
       const { sessionId } = await chatService.sendMessage(
         message.trim(),
-        selectedDiscovery || null
+        selectedDiscovery || null,
       );
 
       setIsLoading(false);
@@ -160,7 +160,7 @@ const ChatAssistant = () => {
             eventSourceRef.current.close();
             eventSourceRef.current = null;
           }
-        }
+        },
       );
     } catch (error) {
       setIsLoading(false);
@@ -193,7 +193,7 @@ const ChatAssistant = () => {
     try {
       let result;
       const selectedDiscoveryData = discoveries.find(
-        (d) => d._id === selectedDiscovery
+        (d) => d._id === selectedDiscovery,
       );
 
       if (format === "pdf") {
@@ -243,9 +243,6 @@ const ChatAssistant = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                <Bot className="w-7 h-7 text-white" />
-              </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                   AI Chat Assistant

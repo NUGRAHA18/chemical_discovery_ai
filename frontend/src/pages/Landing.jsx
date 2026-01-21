@@ -3,7 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import molecularBackground from "../assets/molecular-background.jpg";
 import { motion, useScroll, useTransform } from "framer-motion";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL =
+  process.env.REACT_APP_BACKEND_URL || "https://chemical.rbwtech.io";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -130,8 +131,8 @@ const Landing = () => {
           >
             {[
               { val: "100M+", label: "Compounds" },
-              { val: "30-50s", label: "Generation Time" },
-              { val: "99.9%", label: "Accuracy" },
+              { val: "40-150s", label: "Generation Time" },
+              { val: "10%", label: "Accuracy" },
             ].map((stat, idx) => (
               <div key={idx} className="text-center group cursor-default">
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors duration-300 font-mono">

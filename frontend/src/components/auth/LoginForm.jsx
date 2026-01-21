@@ -53,7 +53,7 @@ const LoginForm = () => {
       navigate("/dashboard");
     } catch (error) {
       setApiError(
-        error.response?.data?.error || "Login failed. Please try again."
+        error.response?.data?.error || "Login failed. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -64,9 +64,9 @@ const LoginForm = () => {
     <div className="space-y-6">
       {/* Error Alert dengan Icon */}
       {apiError && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 px-4 py-3 rounded-xl flex items-start gap-3 text-sm animate-in fade-in slide-in-from-top-2">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <span>{apiError}</span>
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg flex items-start gap-3 text-sm animate-in fade-in slide-in-from-top-1 shadow-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 stroke-2" />
+          <span className="font-medium">{apiError}</span>
         </div>
       )}
 

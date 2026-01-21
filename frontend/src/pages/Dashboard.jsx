@@ -253,7 +253,7 @@ const Dashboard = () => {
                   <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {stats?.totalDiscoveries > 0
                       ? (stats.totalCompounds / stats.totalDiscoveries).toFixed(
-                          1
+                          1,
                         )
                       : "0"}
                   </p>
@@ -290,8 +290,8 @@ const Dashboard = () => {
                     chartData?.inputMode?.datasets?.[0]?.data?.[1]
                       ? "Structured Data"
                       : chartData?.inputMode?.datasets?.[0]?.data?.[1] > 0
-                      ? "AI Prompting"
-                      : "N/A"}
+                        ? "AI Prompting"
+                        : "N/A"}
                   </p>
                 </div>
               </div>
