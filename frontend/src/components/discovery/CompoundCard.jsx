@@ -3,7 +3,7 @@ import { Star, Eye, Beaker, GitCompare } from "lucide-react";
 import { favoritesService } from "../../services/favorites";
 import { showError, showSuccess } from "../../utils/toast";
 import ReactMarkdown from "react-markdown";
-import { getImageUrl } from "../../config/env";
+import { getImageUrl } from "../../utils/imageHelper";
 
 const CompoundCard = ({
   compound,
@@ -57,7 +57,7 @@ const CompoundCard = ({
           {compound.validation_score !== undefined && (
             <span
               className={`px-2 py-1 rounded-full text-xs font-bold flex-shrink-0 ${getValidationColor(
-                compound.validation_score
+                compound.validation_score,
               )}`}
             >
               {(compound.validation_score * 100).toFixed(0)}%

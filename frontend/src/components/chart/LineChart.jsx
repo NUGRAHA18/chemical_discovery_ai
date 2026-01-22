@@ -20,7 +20,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 );
 
 const LineChart = ({ data }) => {
@@ -28,7 +28,7 @@ const LineChart = ({ data }) => {
 
   const options = {
     responsive: true,
-    maintainAspectRatio: false,
+    maintainAspectRatio: false, // Penting agar chart mengikuti ukuran container
     plugins: {
       legend: {
         display: false,
@@ -65,8 +65,10 @@ const LineChart = ({ data }) => {
   };
 
   return (
-    <div className="relative h-64 w-full">
-      <Line data={data} options={options} />
+    // PERBAIKAN: Gunakan h-full agar mengikuti tinggi container di Dashboard (300px)
+    // dan tambahkan conditional rendering
+    <div className="relative w-full h-full">
+      {data && <Line data={data} options={options} />}
     </div>
   );
 };

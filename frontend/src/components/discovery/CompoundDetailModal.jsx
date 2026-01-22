@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Atom, Beaker, Download, X } from "lucide-react";
 import MoleculeViewer3D from "./MoleculeViewer3D";
-import { getImageUrl } from "../../config/env";
+import { getImageUrl } from "../../utils/imageHelper";
 
 const CompoundDetailModal = ({ compound, onClose }) => {
   const [imageError, setImageError] = useState(false);
@@ -193,7 +193,7 @@ const CompoundDetailModal = ({ compound, onClose }) => {
                                 : value}
                             </p>
                           </div>
-                        )
+                        ),
                       )}
                     </>
                   )}

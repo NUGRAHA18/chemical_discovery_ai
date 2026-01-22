@@ -2,9 +2,12 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import molecularBackground from "../assets/molecular-background.jpg";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { getImageUrl } from "../utils/imageHelper";
 
 const BACKEND_URL =
-  process.env.REACT_APP_BACKEND_URL || "https://chemical.rbwtech.io";
+  process.env.REACT_APP_BACKEND_URL ||
+  "https://chemical.rbwtech.io" ||
+  "http://localhost:3010";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -340,11 +343,12 @@ const Landing = () => {
                   <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-slate-700 group-hover:border-purple-400 transition-all">
                     {/* --- FIX IMAGE SOURCE DISINI --- */}
                     <img
-                      src={`${BACKEND_URL}${member.photo}`}
+                      src={getImageUrl(member.photo)}
                       alt={member.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
+
                         e.target.src = `https://ui-avatars.com/api/?name=${member.name}&background=random&color=fff`;
                       }}
                     />

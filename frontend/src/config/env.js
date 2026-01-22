@@ -55,21 +55,35 @@ export const getApiEndpoint = (path) => {
 };
 
 export const getImageUrl = (imagePath) => {
-  if (!imagePath) return "";
+  if (!imagePath) return "/assets/placeholder-molecule.png"; // Saran: Berikan default image jika null
 
+  // 1. Bersihkan path dari string "undefined" atau "null" (peninggalan bug lama)
   let cleanPath = imagePath
-    .replace(/^undefined\//, "") // Hapus "undefined/" di awal
-    .replace(/^null\//, "") // Hapus "null/" di awal
-    .replace("undefined/", "") // Hapus jika terselip di tengah
+    .replace(/^undefined\//, "")
+    .replace(/^null\//, "")
+    .replace("undefined/", "")
     .trim();
 
-  if (cleanPath.startsWith("http")) {
-    if (cleanPath.includes("localhost:3000")) {
-      const cleanBackend = BACKEND_URL.replace(/\/$/, "");
-      return cleanPath.replace("http://localhost:3000", cleanBackend);
-    }
+  // 2. DETEKSI & GANTI LOCALHOST (PENTING!)
+  // Menggunakan Regex untuk menangkap http://localhost:ANGKA_APAPUN
+  if (cleanPath.match(/http:\/\/localhost:\d+/)) {
+    const cleanBackend = BACKEND_URL.replace(/\/$/, ""); // Hapus slash akhir backend url
+    // Ganti localhost:xxxx dengan domain production
+    return cleanPath.replace(/http:\/\/localhost:\d+/, cleanBackend);
+  }
+
+  // 3. Jika URL sudah HTTPS (Aman, misal dari Google/Cloudinary)
+  if (cleanPath.startsWith("https://")) {
     return cleanPath;
   }
+
+  // 4. Jika URL HTTP biasa (Bukan localhost, tapi tidak aman - opsional)
+  // Biasanya tetap kita return, atau kita paksa upgrade ke https jika perlu
+  if (cleanPath.startsWith("http://")) {
+    return cleanPath;
+  }
+
+  // 5. Handle Relative Path (misal: "/images/struc.png")
   const cleanBase = BACKEND_URL.replace(/\/$/, "");
   const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 
@@ -79,10 +93,7 @@ export const getImageUrl = (imagePath) => {
 export const getFavoriteImageUrl = (imagePath) => {
   if (!imagePath) return "";
 
-  let finalUrl = imagePath
-    .replace(/^undefined\//, "")
-    .replace(/^null\//, "")
-    .replace("undefined/", "");
+  let finalUrl = imagePath;
 
   // 1️⃣ Legacy data: localhost:3000
   if (finalUrl.includes("localhost:3000")) {
@@ -91,11 +102,9 @@ export const getFavoriteImageUrl = (imagePath) => {
   }
 
   // 2️⃣ Relative path (/images/...)
-  if (!finalUrl.startsWith("http")) {
+  if (!finalUrl.startsWith("http") && finalUrl.startsWith("/")) {
     const cleanBackend = BACKEND_URL.replace(/\/$/, "");
-    // Pastikan ada slash pembuka
-    const cleanPath = finalUrl.startsWith("/") ? finalUrl : `/${finalUrl}`;
-    finalUrl = `${cleanBackend}${cleanPath}`;
+    finalUrl = `${cleanBackend}${finalUrl}`;
   }
 
   return finalUrl;

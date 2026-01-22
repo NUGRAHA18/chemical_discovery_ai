@@ -103,15 +103,18 @@ const Discovery = () => {
       // 1. Kirim Request HTTP
       const response = await discoveryService.createDiscovery(formData);
 
-      // 2. Jika API langsung memberikan hasil (Synchronous)
+      if (response && response.success && response.discovery) {
+        setDiscovery(response.discovery);
+        setLoading(false);
+        showSuccess("Discovery completed successfully!");
+      }
+
       if (response && response.compounds) {
         setDiscovery(response);
         setLoading(false);
         showSuccess("Discovery completed successfully!");
       }
-      // 3. Jika API masih processing (WebSocket akan mengambil alih via useEffect/ProgressTracker)
     } catch (error) {
-      // 4. Handling Timeout / Error
       const isTimeout =
         error.message?.includes("504") ||
         error.message?.includes("timeout") ||
@@ -125,7 +128,7 @@ const Discovery = () => {
         console.warn(
           "⚠️ HTTP Timeout detected, but WebSocket is active. Switching to socket-only mode.",
         );
-        return; // Jangan matikan loading, biarkan socket lanjut
+        return;
       }
 
       setLoading(false);
@@ -143,7 +146,15 @@ const Discovery = () => {
     try {
       if (data.discoveryId) {
         const response = await discoveryService.getDiscovery(data.discoveryId);
-        setDiscovery(response);
+
+        // PERBAIKAN DI SINI: Ambil response.discovery
+        if (response && response.discovery) {
+          setDiscovery(response.discovery);
+        } else {
+          // Fallback jika struktur berbeda (misal backend berubah)
+          setDiscovery(response);
+        }
+
         setLoading(false);
         clearProgress();
         dismissToast();
@@ -151,6 +162,7 @@ const Discovery = () => {
         throw new Error("Missing Discovery ID");
       }
     } catch (fetchError) {
+      console.error(fetchError);
       setLoading(false);
       showError("Discovery complete, but failed to fetch final result.");
       setError("Failed to fetch final discovery result.");

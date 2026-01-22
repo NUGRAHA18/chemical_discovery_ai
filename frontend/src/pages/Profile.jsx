@@ -120,7 +120,7 @@ const Profile = () => {
             name: data.user.name,
             company: data.user.company,
             bio: data.user.bio,
-          })
+          }),
         );
 
         showSuccess("Profile updated successfully!");
@@ -176,7 +176,7 @@ const Profile = () => {
           JSON.stringify({
             ...storedUser,
             profilePhoto: data.profilePhoto,
-          })
+          }),
         );
 
         showSuccess("Profile photo updated!");
@@ -217,7 +217,7 @@ const Profile = () => {
           JSON.stringify({
             ...storedUser,
             profilePhoto: null,
-          })
+          }),
         );
 
         showSuccess("Profile photo deleted");

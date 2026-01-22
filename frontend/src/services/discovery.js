@@ -2,7 +2,11 @@ import api from "./api";
 
 export const discoveryService = {
   createDiscovery: async (data) => {
-    const response = await api.post("/discover", data);
+    // TAMBAHKAN CONFIG TIMEOUT DI SINI
+    // timeout: 600000 ms = 10 menit (Cukup untuk menunggu Gemini yang sedang limit)
+    const response = await api.post("/discover", data, {
+      timeout: 600000,
+    });
     return response.data;
   },
 
@@ -35,7 +39,7 @@ export const discoveryService = {
       { discoveryId },
       {
         responseType: "blob",
-      }
+      },
     );
     return response.data;
   },
@@ -46,7 +50,7 @@ export const discoveryService = {
       { discoveryId },
       {
         responseType: "blob",
-      }
+      },
     );
     return response.data;
   },

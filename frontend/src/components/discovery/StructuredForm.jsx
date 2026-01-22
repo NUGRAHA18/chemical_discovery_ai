@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 import {
   ClipboardList,
   Thermometer,
@@ -10,25 +11,36 @@ import {
 
 const DEFAULT_STATE = {
   category: "",
+
   boilingPointMin: "",
+
   boilingPointMax: "",
+
   viscosityMin: "",
+
   viscosityMax: "",
+
   solubility: "",
+
   thermalStabilityMin: "",
+
   additionalProperties: [],
+
   notes: "",
 };
 
 const StructuredForm = ({ onSubmit, loading, initialData }) => {
   const [formData, setFormData] = useState(initialData || DEFAULT_STATE);
+
   const [newProperty, setNewProperty] = useState("");
 
   useEffect(() => {
     if (initialData) {
       setFormData({
         ...DEFAULT_STATE,
+
         ...initialData,
+
         category: initialData.category || "",
       });
     }
@@ -38,6 +50,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -45,11 +58,14 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
     if (newProperty.trim()) {
       setFormData((prev) => ({
         ...prev,
+
         additionalProperties: [
           ...prev.additionalProperties,
+
           newProperty.trim(),
         ],
       }));
+
       setNewProperty("");
     }
   };
@@ -57,6 +73,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
   const handleRemoveProperty = (index) => {
     setFormData((prev) => ({
       ...prev,
+
       additionalProperties: prev.additionalProperties.filter(
         (_, i) => i !== index,
       ),
@@ -65,6 +82,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const parseNum = (val) =>
       val === "" || val === null || val === undefined
         ? undefined
@@ -72,30 +90,38 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
     const payload = {
       category: formData.category,
+
       boilingPoint:
         formData.boilingPointMin || formData.boilingPointMax
           ? {
               min: parseNum(formData.boilingPointMin),
+
               max: parseNum(formData.boilingPointMax),
             }
           : undefined,
+
       viscosity:
         formData.viscosityMin || formData.viscosityMax
           ? {
               min: parseNum(formData.viscosityMin),
+
               max: parseNum(formData.viscosityMax),
             }
           : undefined,
+
       solubility: formData.solubility || undefined,
+
       thermalStability: formData.thermalStabilityMin
         ? {
             min: parseNum(formData.thermalStabilityMin),
           }
         : undefined,
+
       additionalProperties:
         formData.additionalProperties.length > 0
           ? formData.additionalProperties
           : undefined,
+
       notes: formData.notes ? formData.notes.trim() : undefined,
     };
 
@@ -105,10 +131,12 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
       {/* Category Selection */}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Chemical Category <span className="text-red-500">*</span>
         </label>
+
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <FlaskConical className="h-5 w-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
@@ -122,14 +150,23 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
             required
           >
             <option value="">Select a category</option>
+
             <option value="surfactant">Surfactant</option>
+
             <option value="polymer">Polymer</option>
+
             <option value="catalyst">Catalyst</option>
+
             <option value="solvent">Solvent</option>
+
             <option value="additive">Additive</option>
+
             <option value="coating">Coating</option>
+
             <option value="lubricant">Lubricant</option>
+
             <option value="resin">Resin</option>
+
             <option value="other">Other</option>
           </select>
         </div>
@@ -137,13 +174,16 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Boiling Point */}
+
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Boiling Point Range (°C)
           </label>
+
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 group">
               <Thermometer className="absolute top-2.5 left-3 h-4 w-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+
               <input
                 type="number"
                 name="boilingPointMin"
@@ -153,7 +193,9 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
                 className="input-field pl-9 w-full"
               />
             </div>
+
             <span className="text-gray-400 font-medium">-</span>
+
             <div className="relative flex-1">
               <input
                 type="number"
@@ -168,13 +210,16 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
         </div>
 
         {/* Viscosity */}
+
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Viscosity Range (cP)
           </label>
+
           <div className="flex items-center space-x-2">
             <div className="relative flex-1 group">
               <Droplets className="absolute top-2.5 left-3 h-4 w-4 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
+
               <input
                 type="number"
                 name="viscosityMin"
@@ -184,7 +229,9 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
                 className="input-field pl-9 w-full"
               />
             </div>
+
             <span className="text-gray-400 font-medium">-</span>
+
             <div className="relative flex-1">
               <input
                 type="number"
@@ -200,11 +247,13 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
       </div>
 
       {/* Solubility & Thermal Stability */}
+
       <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Solubility Preference
           </label>
+
           <select
             name="solubility"
             value={formData.solubility}
@@ -212,9 +261,13 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
             className="input-field w-full"
           >
             <option value="">Any</option>
+
             <option value="water-soluble">Water Soluble</option>
+
             <option value="oil-soluble">Oil Soluble</option>
+
             <option value="alcohol-soluble">Alcohol Soluble</option>
+
             <option value="insoluble">Insoluble</option>
           </select>
         </div>
@@ -223,6 +276,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Min Thermal Stability (°C)
           </label>
+
           <input
             type="number"
             name="thermalStabilityMin"
@@ -235,6 +289,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
       </div>
 
       {/* Additional Properties */}
+
       <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
           <ClipboardList className="w-4 h-4 text-primary-500" />
@@ -252,6 +307,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
             placeholder="e.g. Biodegradable, Non-toxic"
             className="input-field flex-1"
           />
+
           <button
             type="button"
             onClick={handleAddProperty}
@@ -269,6 +325,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
                 className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm"
               >
                 {prop}
+
                 <button
                   type="button"
                   onClick={() => handleRemoveProperty(idx)}
@@ -294,6 +351,7 @@ const StructuredForm = ({ onSubmit, loading, initialData }) => {
         {loading ? (
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+
             <span>Synthesizing...</span>
           </div>
         ) : (

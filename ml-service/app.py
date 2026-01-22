@@ -87,13 +87,14 @@ class ChemicalDatabase:
         self.property_cache = {}
     
     def search_pubchem_parallel(self, queries: List[str], max_results: int = 3) -> List[Dict]:
-        """Search PubChem for multiple queries in parallel"""
+        """Search PubChem for multiple queries in parallel (OPTIMIZED)"""
         if not PUBCHEM_AVAILABLE or not queries:
             return []
         
         results = []
         
-        with ThreadPoolExecutor(max_workers=min(len(queries), 5)) as executor:
+        # PERBAIKAN 1: Kurangi worker dari 5 ke 2 agar tidak kena blokir PubChem/Network Error
+        with ThreadPoolExecutor(max_workers=2) as executor:
             future_to_query = {
                 executor.submit(self._single_pubchem_search, query, max_results): query 
                 for query in queries
@@ -106,6 +107,10 @@ class ChemicalDatabase:
                     if query_results:
                         results.extend(query_results)
                         logger.info(f"✅ Found {len(query_results)} results for: {query}")
+                    
+                    # PERBAIKAN 2: Beri jeda sedikit antar request selesai
+                    time.sleep(0.5) 
+
                 except Exception as e:
                     logger.error(f"Search failed for {query}: {e}")
         
@@ -114,47 +119,60 @@ class ChemicalDatabase:
         unique_results = []
         for comp in results:
             cid = str(comp.get('cid', ''))
-            if cid not in seen_cids:
+            if cid and cid not in seen_cids:
                 seen_cids.add(cid)
                 unique_results.append(comp)
         
         return unique_results[:max_results * 2]
     
     def _single_pubchem_search(self, query: str, max_results: int) -> List[Dict]:
-        """Single PubChem search operation"""
-        try:
-            # Check cache first
-            cache_key = f"{query}_{max_results}"
-            if cache_key in self.search_cache:
-                return self.search_cache[cache_key]
-            
-            compounds = pcp.get_compounds(query, 'name', listkey_count=max_results)
-            results = []
-            
-            for compound in compounds[:max_results]:
-                try:
-                    result = {
-                        'cid': compound.cid,
-                        'name': compound.iupac_name or (compound.synonyms[0] if compound.synonyms else "Unknown"),
-                        'formula': compound.molecular_formula,
-                        'smiles': compound.isomeric_smiles or compound.canonical_smiles,
-                        'molecular_weight': compound.molecular_weight,
-                        'search_query': query
-                    }
-                    results.append(result)
-                except Exception as e:
-                    logger.warning(f"Error processing compound {compound.cid}: {e}")
-                    continue
-            
-            # Cache successful results
-            if results:
-                self.search_cache[cache_key] = results
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"PubChem search error for '{query}': {e}")
-            return []
+        """Single PubChem search operation with RETRY mechanism"""
+        # Check cache first
+        cache_key = f"{query}_{max_results}"
+        if cache_key in self.search_cache:
+            return self.search_cache[cache_key]
+
+        # PERBAIKAN 3: Retry mechanism (Coba 3x jika timeout/error)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Throttling agar tidak timeout
+                time.sleep(1) 
+
+                compounds = pcp.get_compounds(query, 'name', listkey_count=max_results)
+                results = []
+                
+                for compound in compounds[:max_results]:
+                    try:
+                        result = {
+                            'cid': compound.cid,
+                            'name': compound.iupac_name or (compound.synonyms[0] if compound.synonyms else "Unknown"),
+                            'formula': compound.molecular_formula,
+                            'smiles': getattr(compound, 'smiles', None) or compound.canonical_smiles,                            'molecular_weight': compound.molecular_weight,
+                            'search_query': query
+                        }
+                        results.append(result)
+                    except Exception as e:
+                        continue
+                
+                # Cache successful results
+                if results:
+                    self.search_cache[cache_key] = results
+                
+                return results
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.warning(f"⚠️ PubChem attempt {attempt+1} failed for '{query}': {error_msg}")
+                
+                # Jika errornya timeout (WinError 10060), tunggu lebih lama
+                if "10060" in error_msg or "timed out" in error_msg:
+                    time.sleep(3) # Tunggu 3 detik sebelum retry
+                else:
+                    time.sleep(1)
+        
+        logger.error(f"❌ PubChem search gave up for '{query}' after {max_retries} attempts.")
+        return []
     
     def get_compound_properties(self, smiles: str) -> Dict:
         """Calculate molecular properties using RDKit dengan caching"""
@@ -379,7 +397,7 @@ Pastikan 'specific_compounds' berisi **nama senyawa kimia yang valid**!
             if normalized and len(normalized) > 2:
                 valid_compounds.append(normalized)
         
-        return valid_compounds[:6]  # Maximum 6 compounds
+        return valid_compounds[:3]  # Maximum 6 compounds
     
     def _normalize_compound_name(self, name: str) -> str:
         """Normalize compound name"""

@@ -27,7 +27,7 @@ import {
   FileText,
 } from "lucide-react";
 import { exportDiscoveryToPDF } from "../utils/pdfExport";
-import { getImageUrl } from "../config/env";
+import { getImageUrl } from "../utils/imageHelper";
 
 const History = () => {
   const [discoveries, setDiscoveries] = useState([]);
@@ -70,7 +70,7 @@ const History = () => {
   }, [filters]);
 
   const activeFilterCount = Object.values(filters).filter(
-    (v) => v && v !== "all" && v !== "date" && v !== "desc"
+    (v) => v && v !== "all" && v !== "date" && v !== "desc",
   ).length;
 
   const loadHistory = useCallback(async () => {
@@ -86,7 +86,7 @@ const History = () => {
       setTotalPages(data.pagination?.totalPages || 1);
 
       const compounds = (data.discoveries || []).flatMap(
-        (d) => d.compounds || []
+        (d) => d.compounds || [],
       );
       setAllCompounds(compounds);
     } catch (error) {
@@ -260,8 +260,8 @@ const History = () => {
                     (c) =>
                       compoundIds.includes(c._id) ||
                       compoundIds.includes(c.id) ||
-                      compoundIds.includes(c.name)
-                  )
+                      compoundIds.includes(c.name),
+                  ),
                 );
                 setFilteredDiscoveries(filtered);
               }}
@@ -275,8 +275,8 @@ const History = () => {
                     (c) =>
                       compoundIds.includes(c._id) ||
                       compoundIds.includes(c.id) ||
-                      compoundIds.includes(c.name)
-                  )
+                      compoundIds.includes(c.name),
+                  ),
                 );
                 setFilteredDiscoveries(filtered);
               }}

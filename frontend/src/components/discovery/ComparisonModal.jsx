@@ -8,7 +8,7 @@ import {
   showLoading,
   dismissToast,
 } from "../../utils/toast";
-import { getImageUrl } from "../../config/env";
+import { getImageUrl } from "../../utils/imageHelper";
 const ComparisonModal = ({ isOpen, onClose }) => {
   const { comparisonList, removeFromComparison, clearComparison } =
     useComparison();
