@@ -84,7 +84,7 @@ exports.updateFavorite = async (req, res) => {
     const favorite = await Favorite.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { tags, notes },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!favorite) {

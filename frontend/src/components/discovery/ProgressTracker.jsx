@@ -68,8 +68,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                   isComplete
                     ? "bg-green-100 dark:bg-green-900/30"
                     : isError
-                    ? "bg-red-100 dark:bg-red-900/30"
-                    : "bg-orange-100 dark:bg-orange-900/30"
+                      ? "bg-red-100 dark:bg-red-900/30"
+                      : "bg-orange-100 dark:bg-orange-900/30"
                 }`}
               >
                 {isComplete ? (
@@ -85,8 +85,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                   {isComplete
                     ? "✅ Discovery Complete!"
                     : isError
-                    ? "❌ Discovery Failed"
-                    : "🔬 Generating Compounds..."}
+                      ? "❌ Discovery Failed"
+                      : "🔬 Generating Compounds..."}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   {progress.message || "Processing..."}
@@ -111,8 +111,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                   isComplete
                     ? "bg-gradient-to-r from-green-500 to-emerald-500"
                     : isError
-                    ? "bg-gradient-to-r from-red-500 to-rose-500"
-                    : "bg-gradient-to-r from-orange-500 to-red-500"
+                      ? "bg-gradient-to-r from-red-500 to-rose-500"
+                      : "bg-gradient-to-r from-orange-500 to-red-500"
                 }`}
                 style={{ width: `${progressPercent}%` }}
               />
@@ -145,8 +145,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                     status === "complete"
                       ? "bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600"
                       : status === "active"
-                      ? "bg-orange-50 dark:bg-orange-900/20 border-orange-500 dark:border-orange-600 animate-pulse"
-                      : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                        ? "bg-orange-50 dark:bg-orange-900/20 border-orange-500 dark:border-orange-600 animate-pulse"
+                        : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -162,8 +162,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                         status === "complete"
                           ? "text-green-700 dark:text-green-300"
                           : status === "active"
-                          ? "text-orange-700 dark:text-orange-300"
-                          : "text-gray-500 dark:text-gray-400"
+                            ? "text-orange-700 dark:text-orange-300"
+                            : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {agent.name}
@@ -211,8 +211,8 @@ const ProgressTracker = ({ progress, logs, onComplete }) => {
                         log.type === "error"
                           ? "text-red-400"
                           : log.type === "success"
-                          ? "text-green-400"
-                          : "text-gray-300"
+                            ? "text-green-400"
+                            : "text-gray-300"
                       }`}
                     >
                       {log.message}

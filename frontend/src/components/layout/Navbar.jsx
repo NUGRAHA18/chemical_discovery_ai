@@ -89,7 +89,7 @@ const Navbar = () => {
         : ""
     }`;
 
-  let targetPort = "3010"; // Default jaga-jaga
+  let targetPort = "3010";
   try {
     const envUrl = new URL(API_BASE_URL);
     targetPort = envUrl.port;
@@ -100,13 +100,11 @@ const Navbar = () => {
   const getImageUrl = (path) => {
     if (!path) return null;
 
-    // --- LOGIC 1: Handle URL Absolut (http://...) ---
     if (path.startsWith("http")) {
       try {
         const urlObj = new URL(path);
-        //cek jika user lama login (masih pakai 3000 diubah ke 3010)
+
         if (urlObj.hostname === "localhost" && urlObj.port === "3000") {
-          // Ganti port lama ke port yang ada di ENV (Dinamis)
           urlObj.port = targetPort;
 
           return urlObj.toString();

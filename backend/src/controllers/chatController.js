@@ -99,7 +99,7 @@ const chatController = {
           {
             responseType: "stream",
             timeout: 60000,
-          }
+          },
         );
 
         let fullResponse = "";
@@ -184,7 +184,7 @@ const chatController = {
       const sessions = Object.keys(groupedBySession).map((sessionId) => ({
         sessionId,
         messages: groupedBySession[sessionId].sort(
-          (a, b) => a.createdAt - b.createdAt
+          (a, b) => a.createdAt - b.createdAt,
         ),
       }));
 

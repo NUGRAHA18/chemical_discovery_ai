@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    // ✅ NEW FIELDS
+
     profilePhoto: {
       type: String,
       default: null,
@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 userSchema.pre("save", async function (next) {

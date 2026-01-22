@@ -8,14 +8,13 @@ export const exportDiscoveryToPDF = async (discovery) => {
     const contentWidth = pageWidth - margin * 2;
     let yPos = 20;
 
-    // Helper function for adding text with wrapping
     const addText = (
       text,
       x,
       y,
       maxWidth,
       fontSize = 10,
-      color = [0, 0, 0]
+      color = [0, 0, 0],
     ) => {
       doc.setFontSize(fontSize);
       doc.setTextColor(...color);
@@ -24,7 +23,6 @@ export const exportDiscoveryToPDF = async (discovery) => {
       return y + lines.length * fontSize * 0.5 + 2;
     };
 
-    // Helper function for drawing table
     const drawTable = (headers, rows, startY) => {
       const colWidth = contentWidth / headers.length;
       let y = startY;
@@ -78,7 +76,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
       `Generated: ${new Date(discovery.createdAt).toLocaleDateString()}`,
       pageWidth / 2,
       yPos,
-      { align: "center" }
+      { align: "center" },
     );
 
     yPos += 10;
@@ -102,7 +100,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
       yPos,
       contentWidth,
       10,
-      [60, 60, 60]
+      [60, 60, 60],
     );
 
     // Input Mode Badge
@@ -114,7 +112,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
     doc.text(
       discovery.inputMode === "structured" ? "Structured" : "AI Prompt",
       margin + 2,
-      yPos + 5
+      yPos + 5,
     );
     yPos += 15;
 
@@ -131,7 +129,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
       yPos,
       contentWidth,
       10,
-      [60, 60, 60]
+      [60, 60, 60],
     );
     yPos += 10;
 
@@ -150,7 +148,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
       yPos,
       contentWidth,
       10,
-      [60, 60, 60]
+      [60, 60, 60],
     );
 
     doc.addPage();
@@ -161,7 +159,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
     doc.text(
       `Generated Compounds (${discovery.compounds?.length || 0})`,
       margin,
-      yPos
+      yPos,
     );
     yPos += 15;
 
@@ -218,7 +216,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
         yPos,
         contentWidth,
         8,
-        [60, 60, 60]
+        [60, 60, 60],
       );
       doc.setFont(undefined, "normal");
       yPos += 5;
@@ -240,7 +238,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
           ([key, value]) => [
             key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
             String(value),
-          ]
+          ],
         );
         yPos = drawTable(propsHeaders, propsRows, yPos);
       }
@@ -260,7 +258,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
           yPos,
           contentWidth,
           8,
-          [100, 100, 100]
+          [100, 100, 100],
         );
         yPos += 5;
       }
@@ -287,7 +285,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
       [
         "Preprocessing Confidence",
         `${((discovery.metadata?.preprocessing_confidence || 0) * 100).toFixed(
-          0
+          0,
         )}%`,
       ],
       ["RDKit Used", discovery.metadata?.rdkit_used ? "Yes" : "No"],
@@ -315,7 +313,7 @@ export const exportDiscoveryToPDF = async (discovery) => {
         `ChemDiscovery AI - Page ${i} of ${pageCount}`,
         pageWidth / 2,
         290,
-        { align: "center" }
+        { align: "center" },
       );
     }
 

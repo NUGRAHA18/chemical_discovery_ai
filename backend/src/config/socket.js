@@ -17,7 +17,6 @@ const initializeSocket = (server) => {
     transports: ["websocket", "polling"],
   });
 
-  // Authentication middleware
   io.use((socket, next) => {
     console.log(`🔌 Handshake attempt from: ${socket.id}`);
     try {
@@ -42,21 +41,17 @@ const initializeSocket = (server) => {
     }
   });
 
-  // Connection handler
   io.on("connection", (socket) => {
     console.log(
       `🔌 Client connected: ${socket.id} (User: ${socket.userEmail})`,
     );
 
-    // Join user-specific room
     socket.join(`user:${socket.userId}`);
 
-    // Handle disconnect
     socket.on("disconnect", (reason) => {
       console.log(`🔌 Client disconnected: ${socket.id} - ${reason}`);
     });
 
-    // Ping/Pong for connection health
     socket.on("ping", () => {
       socket.emit("pong");
     });
@@ -73,14 +68,12 @@ const getIO = () => {
   return io;
 };
 
-// Emit to specific user
 const emitToUser = (userId, event, data) => {
   if (io) {
     io.to(`user:${userId}`).emit(event, data);
   }
 };
 
-// Progress event helper
 const emitProgress = (userId, progressData) => {
   emitToUser(userId, "discovery:progress", {
     timestamp: new Date().toISOString(),
@@ -88,7 +81,6 @@ const emitProgress = (userId, progressData) => {
   });
 };
 
-// Log event helper
 const emitLog = (userId, logData) => {
   emitToUser(userId, "discovery:log", {
     timestamp: new Date().toISOString(),

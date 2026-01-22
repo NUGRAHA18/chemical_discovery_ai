@@ -76,7 +76,7 @@ exports.uploadProfilePhoto = async (req, res) => {
       const oldPhotoPath = path.join(
         __dirname,
         "../../public",
-        user.profilePhoto
+        user.profilePhoto,
       );
       if (fs.existsSync(oldPhotoPath)) {
         fs.unlinkSync(oldPhotoPath);

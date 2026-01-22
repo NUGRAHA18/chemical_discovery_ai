@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // <--- PERUBAHAN 1: Import sebagai variable
+import autoTable from "jspdf-autotable";
 
 export const exportComparisonToPDF = async (compounds) => {
   try {
@@ -8,7 +8,6 @@ export const exportComparisonToPDF = async (compounds) => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let currentY = 20;
 
-    // --- HEADER SECTION ---
     doc.setFontSize(24);
     doc.setTextColor(41, 128, 185);
     doc.text("Compound Comparison Report", pageWidth / 2, currentY, {
@@ -74,8 +73,6 @@ export const exportComparisonToPDF = async (compounds) => {
     const tableHeaders = [
       ["Property", ...compounds.map((c, i) => `Compound ${i + 1}`)],
     ];
-
-    // <--- PERUBAHAN 2: Panggil autoTable sebagai fungsi, masukkan 'doc' sebagai parameter pertama
     autoTable(doc, {
       startY: currentY,
       head: tableHeaders,
@@ -109,7 +106,6 @@ export const exportComparisonToPDF = async (compounds) => {
       margin: { left: 15, right: 15 },
     });
 
-    // Update posisi Y setelah tabel selesai (ambil dari properti lastAutoTable milik doc)
     currentY = doc.lastAutoTable.finalY + 15;
 
     // --- SMILES SECTION ---

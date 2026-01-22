@@ -5,7 +5,6 @@ import Button from "../common/Button";
 import Loading from "../common/Loading";
 import { User, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 
-// --- PERBAIKAN: InputField dipindah ke LUAR RegisterForm ---
 const InputField = ({
   label,
   name,
@@ -13,9 +12,9 @@ const InputField = ({
   value,
   placeholder,
   icon: Icon,
-  onChange, // Terima onChange dari props
-  disabled, // Terima disabled dari props
-  error, // Terima error spesifik dari props (bukan object errors utuh)
+  onChange,
+  disabled,
+  error,
   isPassword = false,
   showPassState,
   setShowPassState,
@@ -140,7 +139,7 @@ const RegisterForm = () => {
       });
     } catch (error) {
       setApiError(
-        error.response?.data?.error || "Registration failed. Please try again."
+        error.response?.data?.error || "Registration failed. Please try again.",
       );
     } finally {
       setLoading(false);

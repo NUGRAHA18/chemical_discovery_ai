@@ -49,7 +49,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
@@ -67,7 +66,6 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    // req.user didapat dari middleware protect
     const user = await User.findById(req.user.id);
     res.json({
       success: true,
@@ -105,7 +103,7 @@ exports.updateProfile = async (req, res) => {
         const oldPhotoPath = path.join(
           __dirname,
           "../../public",
-          user.profilePhoto
+          user.profilePhoto,
         );
         if (fs.existsSync(oldPhotoPath)) {
           fs.unlinkSync(oldPhotoPath);

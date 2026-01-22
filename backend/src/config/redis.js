@@ -1,6 +1,5 @@
 const Redis = require("ioredis");
 
-// Create Redis client
 const redis = new Redis({
   host: process.env.REDIS_HOST || "localhost",
   port: process.env.REDIS_PORT || 6379,
@@ -14,11 +13,10 @@ const redis = new Redis({
   lazyConnect: true,
 });
 
-// Connect with error handling
 redis.connect().catch((err) => {
   console.warn(
     "⚠️ Redis connection failed (running without cache):",
-    err.message
+    err.message,
   );
 });
 
@@ -36,7 +34,6 @@ redis.on("close", () => {
 
 const cacheMiddleware = (duration = 300) => {
   return async (req, res, next) => {
-    // Only cache GET requests
     if (req.method !== "GET") {
       return next();
     }
@@ -44,7 +41,6 @@ const cacheMiddleware = (duration = 300) => {
     const key = `cache:${req.originalUrl}`;
 
     try {
-      // Check if Redis is connected
       if (redis.status !== "ready") {
         console.log("⚠️ Redis not ready, skipping cache");
         return next();
@@ -59,7 +55,6 @@ const cacheMiddleware = (duration = 300) => {
 
       console.log(`❌ Cache MISS: ${key}`);
 
-      // Store original res.json
       const originalJson = res.json.bind(res);
 
       res.json = (data) => {

@@ -25,7 +25,7 @@ exports.getHistory = async (req, res) => {
     if (search) {
       const searchWords = search.trim().split(/\s+/);
       const searchRegex = searchWords.map(
-        (word) => new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+        (word) => new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
       );
 
       query.$and = searchRegex.map((regex) => ({

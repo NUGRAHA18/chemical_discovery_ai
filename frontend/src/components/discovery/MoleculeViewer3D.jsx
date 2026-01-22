@@ -23,7 +23,6 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
 
   const glViewerRef = useRef(null);
 
-  // 1. Load Library
   useEffect(() => {
     if (window.$3Dmol) {
       setIsLibLoaded(true);
@@ -37,32 +36,27 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     document.body.appendChild(script);
   }, []);
 
-  // 2. Fetch & Render Data
   useEffect(() => {
     if (!isLibLoaded || !viewerRef.current || !smiles) return;
 
     const element = viewerRef.current;
     const config = { backgroundColor: isFullscreen ? "#ffffff" : "#f9fafb" };
 
-    // @ts-ignore
-    // Inisialisasi Viewer
     let viewer = null;
     try {
       viewer = window.$3Dmol.createViewer(element, config);
       glViewerRef.current = viewer;
     } catch (e) {
-      return; // Cegah crash jika inisialisasi gagal
+      return;
     }
 
-    // --- 🛠️ FIX: RESIZE OBSERVER YANG LEBIH PINTAR ---
-    // Observer ini tugasnya: "Tunggu sampai kotak punya ukuran, baru gambar ulang"
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        // Hanya resize & render jika ukurannya VALID (bukan 0)
+
         if (width > 0 && height > 0 && viewer) {
           viewer.resize();
-          viewer.render(); // Render ulang saat ukuran berubah (animasi modal selesai)
+          viewer.render();
         }
       }
     });
@@ -76,11 +70,8 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       viewer.clear();
 
       try {
-        // ============================================================
-        // 1️⃣ TAHAP UTAMA: PUBCHEM
-        // ============================================================
         const cidUrl = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(
-          smiles
+          smiles,
         )}/cids/TXT`;
         const cidRes = await fetch(cidUrl);
 
@@ -103,12 +94,9 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
 
         throw new Error("PubChem unavailable");
       } catch (pubchemError) {
-        // ============================================================
-        // 2️⃣ TAHAP FALLBACK: NCI CACTUS
-        // ============================================================
         try {
           const nciUrl = `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(
-            smiles
+            smiles,
           )}/file?format=sdf&get3d=true`;
 
           const nciRes = await fetch(nciUrl);
@@ -132,16 +120,12 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
       }
     };
 
-    // --- 🛠️ FIX: SAFE RENDER FUNCTION ---
     const finishRender = () => {
       if (!viewer) return;
 
       viewer.setStyle({}, { stick: { radius: 0.2 }, sphere: { scale: 0.3 } });
       viewer.zoomTo();
 
-      // KUNCI PERBAIKAN:
-      // Jangan pernah panggil .render() jika ukuran elemen masih 0!
-      // Biarkan ResizeObserver yang melakukan render nanti saat modal sudah terbuka.
       const rect = element.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
         viewer.render();
@@ -163,12 +147,10 @@ const MolecularViewer3D = ({ smiles, compoundName = "Molecule" }) => {
     };
   }, [isLibLoaded, smiles, isFullscreen]);
 
-  // Efek Toggle Label
   useEffect(() => {
     if (!glViewerRef.current || isLoadingData) return;
     const viewer = glViewerRef.current;
 
-    // Safety check render label
     const element = viewerRef.current;
     if (!element || element.clientWidth === 0) return;
 

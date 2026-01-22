@@ -80,7 +80,7 @@ exports.createDiscovery = async (req, res) => {
 
         criteria: finalCriteria,
       },
-      userId
+      userId,
     );
 
     emitLog(userId, {
@@ -104,7 +104,7 @@ exports.createDiscovery = async (req, res) => {
     }
 
     console.log(
-      `ML service returned ${mlResponse.compounds?.length || 0} compounds`
+      `ML service returned ${mlResponse.compounds?.length || 0} compounds`,
     );
 
     const discovery = new Discovery({
@@ -139,7 +139,7 @@ exports.createDiscovery = async (req, res) => {
           if (compound.structure_image) {
             structureImage = await saveBase64Image(
               compound.structure_image,
-              `${discovery._id}-${index}`
+              `${discovery._id}-${index}`,
             );
             console.log(`Image saved for compound ${index}:`, structureImage);
           }
@@ -177,14 +177,14 @@ exports.createDiscovery = async (req, res) => {
             feasibility_notes: "",
           };
         }
-      })
+      }),
     );
 
     discovery.compounds = processedCompounds;
     await discovery.save();
 
     console.log(
-      `Discovery complete with ${processedCompounds.length} compounds`
+      `Discovery complete with ${processedCompounds.length} compounds`,
     );
 
     emitLog(userId, {
@@ -294,7 +294,7 @@ exports.deleteDiscovery = async (req, res) => {
           const imagePath = path.join(
             __dirname,
             "../../public",
-            compound.structure_image
+            compound.structure_image,
           );
           if (fs.existsSync(imagePath)) {
             fs.unlinkSync(imagePath);

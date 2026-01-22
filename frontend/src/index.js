@@ -26,11 +26,9 @@ root.render(
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
 
-// --- PWA SERVICE WORKER REGISTRATION ---
-// Memeriksa apakah browser mendukung Service Worker
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (let registration of registrations) {

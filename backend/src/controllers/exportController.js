@@ -16,7 +16,7 @@ exports.exportJSON = async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="discovery-${discoveryId}.json"`
+      `attachment; filename="discovery-${discoveryId}.json"`,
     );
 
     res.json(discovery);
@@ -63,14 +63,14 @@ exports.exportCSV = async (req, res) => {
     const csv = [
       headers.join(","),
       ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       ),
     ].join("\n");
 
     res.setHeader("Content-Type", "text/csv");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="discovery-${discoveryId}.csv"`
+      `attachment; filename="discovery-${discoveryId}.csv"`,
     );
 
     res.send(csv);
