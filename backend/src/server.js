@@ -29,7 +29,11 @@ app.use(morgan("dev"));
 
 const allowedOrigins =
   process.env.NODE_ENV === "production"
-    ? ["https://chemical.rbwtech.io"]
+    ? [
+        process.env.CLIENT_URL,
+        "http://157.15.40.59",
+        "https://chemical.rbwtech.io",
+      ].filter(Boolean)
     : ["http://localhost:3001", "http://localhost:3000"];
 
 app.use(

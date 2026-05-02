@@ -1,6 +1,5 @@
 # docker-compose.prod.yml
-# Untuk deployment di VPS — hanya backend services.
-# Frontend di-deploy terpisah (static build ke CDN/Nginx/Vercel).
+# Untuk deployment di VPS — semua services termasuk frontend.
 #
 # Usage:
 #   cp backend/.env.example backend/.env   # edit sesuai production values
@@ -8,6 +7,21 @@
 #   docker compose -f docker-compose.prod.yml up -d --build
 
 services:
+  # ─────────────────────────────────────────
+  # Frontend — React build + Nginx
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: http://157.15.40.59:3010/api
+        REACT_APP_BACKEND_URL: http://157.15.40.59:3010
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   # ─────────────────────────────────────────
   # Backend — Node.js/Express API
   # ─────────────────────────────────────────
@@ -22,6 +36,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ML_SERVICE_URL=http://ml-service:5000
+      - CLIENT_URL=http://157.15.40.59
     volumes:
       - backend_images:/app/public/images
     depends_on:
