@@ -61,7 +61,7 @@ app.use(
 
 app.use(
   "/uploads",
-  express.static(path.join(__dirname, "public/images/profiles")),
+  express.static(path.join(__dirname, "../public/images/profiles")),
 );
 
 app.get("/api/cache/stats", async (req, res) => {
@@ -106,7 +106,7 @@ app.use((err, req, res, next) => {
 
 initializeSocket(server);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`✅ Socket.io ready`);

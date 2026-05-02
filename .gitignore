@@ -1,4 +1,3 @@
-```
 # Environment
 .env
 *.env.local
@@ -23,12 +22,22 @@ Thumbs.db
 .idea/
 *.swp
 
-# Build
+# Build output
 dist/
 build/
-database/
 *.egg-info/
 
-# Uploads
+# Database
+database/
+
+# Uploaded images — jangan commit ke repo
 backend/public/images/structures/*
 !backend/public/images/structures/.gitkeep
+backend/public/images/profiles/*
+!backend/public/images/profiles/.gitkeep
+
+# ML Service — API key state file
+ml-service/gemini_key_state.txt
+
+# Claude Code internal
+.claude/

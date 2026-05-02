@@ -1,0 +1,78 @@
+services:
+  # ─────────────────────────────────────────
+  # Frontend — React (build) + Nginx (serve)
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: http://localhost:3010/api
+        REACT_APP_BACKEND_URL: http://localhost:3010
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # Backend — Node.js/Express API
+  # ─────────────────────────────────────────
+  backend:
+    build: ./backend
+    ports:
+      - "3010:3010"
+    env_file: ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/chemical-discovery
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ML_SERVICE_URL=http://ml-service:5000
+      - CLIENT_URL=http://localhost:3001
+    volumes:
+      - backend_images:/app/public/images
+    depends_on:
+      - mongodb
+      - redis
+      - ml-service
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # ML Service — Python/Flask
+  # ─────────────────────────────────────────
+  ml-service:
+    build: ./ml-service
+    ports:
+      - "5000:5000"
+    env_file: ./ml-service/.env
+    environment:
+      - FLASK_ENV=production
+      - BACKEND_URL=http://backend:3010
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # MongoDB
+  # ─────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # Redis
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:
+  backend_images:

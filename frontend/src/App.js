@@ -8,10 +8,7 @@ import { DarkModeProvider } from "./contexts/DarkModeContext";
 import ToastNotification from "./components/common/ToastNotification";
 import { ComparisonProvider } from "./contexts/ComparisonContext";
 import Loading from "./components/common/Loading";
-import ChatAssistant from "./pages/ChatAssistant";
 import ErrorBoundary from "./components/common/ErrorBoundary";
-import Profile from "./pages/Profile";
-import PropertyCalculatorPage from "./pages/PropertyCalculatorPage";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const Login = lazy(() => import("./pages/Login"));
@@ -20,6 +17,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Discovery = lazy(() => import("./pages/Discovery"));
 const History = lazy(() => import("./pages/History"));
 const Favorites = lazy(() => import("./pages/Favorites"));
+const ChatAssistant = lazy(() => import("./pages/ChatAssistant"));
+const Profile = lazy(() => import("./pages/Profile"));
+const PropertyCalculatorPage = lazy(() => import("./pages/PropertyCalculatorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function App() {

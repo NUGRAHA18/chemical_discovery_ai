@@ -1,0 +1,72 @@
+# docker-compose.prod.yml
+# Untuk deployment di VPS — hanya backend services.
+# Frontend di-deploy terpisah (static build ke CDN/Nginx/Vercel).
+#
+# Usage:
+#   cp backend/.env.example backend/.env   # edit sesuai production values
+#   cp ml-service/.env.example ml-service/.env
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  # ─────────────────────────────────────────
+  # Backend — Node.js/Express API
+  # ─────────────────────────────────────────
+  backend:
+    build: ./backend
+    ports:
+      - "3010:3010"
+    env_file: ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/chemical-discovery
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ML_SERVICE_URL=http://ml-service:5000
+    volumes:
+      - backend_images:/app/public/images
+    depends_on:
+      - mongodb
+      - redis
+      - ml-service
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # ML Service — Python/Flask
+  # ─────────────────────────────────────────
+  ml-service:
+    build: ./ml-service
+    # Port tidak diexpose ke luar — hanya backend yang boleh akses via internal network
+    expose:
+      - "5000"
+    env_file: ./ml-service/.env
+    environment:
+      - FLASK_ENV=production
+      - BACKEND_URL=http://backend:3010
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # MongoDB — internal only
+  # ─────────────────────────────────────────
+  mongodb:
+    image: mongo:7
+    expose:
+      - "27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────
+  # Redis — internal only
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:
+  backend_images:

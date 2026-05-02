@@ -52,9 +52,9 @@ export const SocketProvider = ({ children }) => {
     }
 
     const serverUrl =
-      BACKEND_URL || process.env.NODE_ENV === "production"
+      process.env.NODE_ENV === "production"
         ? "/"
-        : "http://localhost:3010";
+        : BACKEND_URL || "http://localhost:3010";
 
     console.log("🔌 Initializing Socket to:", serverUrl);
 

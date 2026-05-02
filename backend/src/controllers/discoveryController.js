@@ -5,7 +5,7 @@ const {
   buildCriteriaFromStructured,
   validateStructuredData,
 } = require("../utils/criteriaBuilder");
-const { emitProgress, emitLog } = require("../config/socket");
+const { emitProgress, emitLog, emitToUser } = require("../config/socket");
 
 exports.createDiscovery = async (req, res) => {
   try {
@@ -201,7 +201,6 @@ exports.createDiscovery = async (req, res) => {
       discoveryId: discovery._id,
     });
 
-    const { emitToUser } = require("../config/socket");
     emitToUser(userId, "discovery:complete", {
       discoveryId: discovery._id,
       compounds: processedCompounds.length,
@@ -238,8 +237,7 @@ exports.createDiscovery = async (req, res) => {
         agent: "System",
       });
 
-      const { emitToUser } = require("../config/socket");
-      emitToUser(userId, "discovery:error", {
+        emitToUser(userId, "discovery:error", {
         error: error.message,
         details: error.stack,
       });
