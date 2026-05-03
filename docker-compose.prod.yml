@@ -1,34 +1,21 @@
-# docker-compose.prod.yml
-# Untuk deployment di VPS — semua services termasuk frontend.
-#
-# Usage:
-#   cp backend/.env.example backend/.env   # edit sesuai production values
-#   cp ml-service/.env.example ml-service/.env
-#   docker compose -f docker-compose.prod.yml up -d --build
+version: "3.9"
 
 services:
-  # ─────────────────────────────────────────
-  # Frontend — React build + Nginx
-  # ─────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       args:
-        REACT_APP_API_URL: http://157.15.40.59:3010/api
-        REACT_APP_BACKEND_URL: http://157.15.40.59:3010
+        REACT_APP_API_URL: /api
+        REACT_APP_BACKEND_URL: /
     ports:
-      - "3001:80"
+      - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
 
-  # ─────────────────────────────────────────
-  # Backend — Node.js/Express API
-  # ─────────────────────────────────────────
   backend:
     build: ./backend
-    ports:
-      - "3010:3010"
+    # ❌ TIDAK expose ke luar
     env_file: ./backend/.env
     environment:
       - NODE_ENV=production
@@ -45,12 +32,8 @@ services:
       - ml-service
     restart: unless-stopped
 
-  # ─────────────────────────────────────────
-  # ML Service — Python/Flask
-  # ─────────────────────────────────────────
   ml-service:
     build: ./ml-service
-    # Port tidak diexpose ke luar — hanya backend yang boleh akses via internal network
     expose:
       - "5000"
     env_file: ./ml-service/.env
@@ -59,9 +42,6 @@ services:
       - BACKEND_URL=http://backend:3010
     restart: unless-stopped
 
-  # ─────────────────────────────────────────
-  # MongoDB — internal only
-  # ─────────────────────────────────────────
   mongodb:
     image: mongo:7
     expose:
@@ -70,9 +50,6 @@ services:
       - mongo_data:/data/db
     restart: unless-stopped
 
-  # ─────────────────────────────────────────
-  # Redis — internal only
-  # ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
     expose:
