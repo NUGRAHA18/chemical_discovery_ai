@@ -17,7 +17,7 @@ services:
         REACT_APP_API_URL: http://157.15.40.59:3010/api
         REACT_APP_BACKEND_URL: http://157.15.40.59:3010
     ports:
-      - "80:80"
+      - "3001:80"
     depends_on:
       - backend
     restart: unless-stopped
