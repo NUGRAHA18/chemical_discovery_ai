@@ -10,6 +10,8 @@ const initializeSocket = (server) => {
         process.env.CLIENT_URL,
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://157.15.40.59",
+        "https://chemical.rbwtech.io",
       ].filter(Boolean),
       methods: ["GET", "POST"],
       credentials: true,
